@@ -1,6 +1,6 @@
-# IsaacLab DevOps Dashboard
+# git-dboard
 
-A full-stack DevOps platform for monitoring, automating, and improving the CI/CD pipeline of [isaac-sim/IsaacLab](https://github.com/isaac-sim/IsaacLab).
+A full-stack DevOps dashboard that connects to any GitHub repository and gives you a unified platform for monitoring, automating, and improving your CI/CD pipeline.
 
 ## Stack
 
@@ -34,10 +34,10 @@ A full-stack DevOps platform for monitoring, automating, and improving the CI/CD
 
 - **PR gate evaluation** — classifies PRs by changed files (docs/tests/source/ci) and evaluates required check categories
 - **PR automation** — auto-label, auto-comment gate status, auto-trigger CI, auto-merge on gate pass
-- **Runner recommendations** — maps PR type to optimal runner (ubuntu-latest vs A100-80GB GPU)
-- **CI/CD improvement plan** — 17 prioritised items derived from analysis of 150 open issues and 100 open PRs, segregated into infrastructure vs product scope, with active PR tracking
+- **Runner recommendations** — maps PR type to optimal runner (hosted vs GPU/self-hosted)
+- **CI/CD improvement plan** — prioritised items derived from live issue and PR analysis, segregated into infrastructure vs product scope, with active PR tracking
 - **GitHub issue analysis** — breaks down open issues into infrastructure / product bugs / features with severity ratings
-- **Nightly matrix heatmap** — 14-day pass/fail grid across Isaac Sim versions and extensions
+- **Nightly matrix heatmap** — 14-day pass/fail grid across workflow matrix dimensions
 - **DORA metrics** — deployment frequency, lead time, change failure rate, MTTR
 - **WebSocket log streaming** — live build log tailing
 
@@ -72,9 +72,9 @@ npm run dev        # runs on http://localhost:5173
 ### Environment variables
 
 ```
-GITHUB_TOKEN=ghp_...          # GitHub PAT
-GITHUB_OWNER=isaac-sim         # repo owner
-GITHUB_REPO=IsaacLab           # repo name
+GITHUB_TOKEN=ghp_...          # GitHub PAT (repo + workflow scopes)
+GITHUB_OWNER=your-org          # Repository owner or org
+GITHUB_REPO=your-repo          # Repository name
 AWS_REGION=us-east-1           # optional: for ECR registry features
 AWS_ACCESS_KEY_ID=...          # optional: for ECR
 AWS_SECRET_ACCESS_KEY=...      # optional: for ECR
@@ -99,7 +99,7 @@ git-dboard/
 │   │   ├── components/        # Sidebar, Layout, UI primitives
 │   │   └── lib/api.ts         # Typed API client
 │   └── package.json
-├── docker/scripts/            # nightly-tags.sh, resolve-matrix.py
+├── docker/scripts/            # nightly tag scripts, matrix resolution
 ├── services/pr-handler/       # Standalone GitHub App webhook handler (TypeScript)
 └── start.sh                   # Start both backend and frontend
 ```
