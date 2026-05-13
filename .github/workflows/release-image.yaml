@@ -1,0 +1,355 @@
+# =============================================================================
+# .github/workflows/release-image.yaml
+#
+# Purpose  : IsaacLab Release Image Build Pipeline
+#            Triggered by semver tag pushes (v*.*.*) or workflow_dispatch.
+#            Builds, smoke-tests, and pushes versioned + latest image tags to
+#            NGC (all three tags) and GHCR (versioned tag only).
+#
+# Tag conventions (different from nightly):
+#   Versioned : {release_version}-{image_ext}-sim{sim_major_minor}
+#               e.g.  2.3.2-base-sim4.5
+#   SHA pin   : sha-{short_sha}-{image_ext}-sim{sim_major_minor}
+#   Latest    : latest-{image_ext}-sim{sim_major_minor}
+#
+# Runner label requirements: same as nightly-build.yaml
+#
+# Required secrets:
+#   NGC_USERNAME   NGC username (usually "$oauthtoken")
+#   NGC_API_KEY    NGC Personal API key
+#   GITHUB_TOKEN   Automatic — no registration needed
+# =============================================================================
+name: "Release image build"
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"        # Semver tags: v2.3.2, v3.0.0, …
+
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release version without 'v' prefix (e.g. 2.3.2)"
+        required: true
+      image_exts:
+        description: "Image extensions — comma-separated or 'all'"
+        required: false
+        default: "all"
+      dry_run:
+        description: "Build and test only — skip registry push"
+        type: boolean
+        required: false
+        default: false
+      skip_smoke_tests:
+        description: "Skip container smoke tests"
+        type: boolean
+        required: false
+        default: false
+
+# A release build in flight must NEVER be cancelled automatically.
+concurrency:
+  group: "release-${{ github.ref }}"
+  cancel-in-progress: false
+
+env:
+  NGC_IMAGE:  "nvcr.io/nvidia/isaac-lab"
+  GHCR_IMAGE: "ghcr.io/isaac-sim/isaaclab"
+  PYTHON:     "3.11"
+
+# =============================================================================
+jobs:
+# =============================================================================
+
+  # ---------------------------------------------------------------------------
+  # JOB 1 · setup
+  # Derive release version from the tag ref or the dispatch input; resolve matrix.
+  # ---------------------------------------------------------------------------
+  setup:
+    name: "Resolve release matrix"
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.meta.outputs.release_version }}
+      short_sha:       ${{ steps.meta.outputs.short_sha }}
+      matrix:          ${{ steps.resolve.outputs.matrix }}
+      cell_count:      ${{ steps.resolve.outputs.cell_count }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON }}
+
+      - name: Derive release metadata
+        id: meta
+        run: |
+          # Strip leading 'v' from tag ref, e.g. refs/tags/v2.3.2 → 2.3.2
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VER="${{ github.ref_name }}"
+            VER="${VER#v}"
+          else
+            VER="${{ github.event.inputs.release_version }}"
+          fi
+          echo "release_version=${VER}"                 >> "$GITHUB_OUTPUT"
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve build matrix
+        id: resolve
+        env:
+          INPUT_SIM_VERSIONS: "all"
+          INPUT_IMAGE_EXTS:   ${{ github.event.inputs.image_exts }}
+        run: python3 docker/scripts/resolve-matrix.py
+
+      - name: Print release plan
+        run: |
+          echo "Release version : ${{ steps.meta.outputs.release_version }}"
+          echo "Short SHA       : ${{ steps.meta.outputs.short_sha }}"
+          echo "Cells           : ${{ steps.resolve.outputs.cell_count }}"
+          echo "${{ steps.resolve.outputs.matrix }}" | python3 -m json.tool
+
+
+  # ---------------------------------------------------------------------------
+  # JOB 2 · build
+  # Build, smoke-test, and push versioned + latest + SHA tags.
+  # ---------------------------------------------------------------------------
+  build:
+    name: "Release [${{ matrix.cell_slug }}]"
+    needs: setup
+    runs-on: ${{ matrix.runner_labels }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      RELEASE_VERSION:   ${{ needs.setup.outputs.release_version }}
+      SHORT_SHA:         ${{ needs.setup.outputs.short_sha }}
+      ISAAC_SIM_VERSION: ${{ matrix.isaac_sim_version }}
+      SIM_MAJOR_MINOR:   ${{ matrix.sim_major_minor }}
+      IMAGE_EXT:         ${{ matrix.image_ext }}
+      NGC_IMAGE:         ${{ env.NGC_IMAGE }}
+      GHCR_IMAGE:        ${{ env.GHCR_IMAGE }}
+      ACCEPT_EULA:       "Y"
+      PRIVACY_CONSENT:   "Y"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      # ── Runner health ─────────────────────────────────────────────────────────
+      - name: Verify GPU and NVIDIA container toolkit
+        run: |
+          nvidia-smi \
+            --query-gpu=name,memory.total,driver_version,cuda_version \
+            --format=csv,noheader
+          dpkg -l nvidia-container-toolkit 2>/dev/null \
+            || rpm -qa nvidia-container-toolkit 2>/dev/null \
+            || echo "WARNING: nvidia-container-toolkit not found via package manager"
+
+      - name: Free disk space
+        run: |
+          echo "Disk before cleanup:"; df -h /
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /opt/hostedtoolcache/CodeQL \
+            || true
+          echo "Disk after cleanup:"; df -h /
+
+      # ── Registry auth ─────────────────────────────────────────────────────────
+      - name: Log in to NVIDIA NGC
+        uses: docker/login-action@v3
+        with:
+          registry: nvcr.io
+          username: ${{ secrets.NGC_USERNAME }}
+          password: ${{ secrets.NGC_API_KEY }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Buildx ───────────────────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: "network=host"
+
+      # ── Compute release tags ──────────────────────────────────────────────────
+      - name: Compute release image tags
+        id: tags
+        run: |
+          VER="${RELEASE_VERSION}"
+          EXT="${IMAGE_EXT}"
+          SIM="${SIM_MAJOR_MINOR}"
+          SHA="${SHORT_SHA}"
+
+          VERSIONED_TAG="${VER}-${EXT}-sim${SIM}"
+          SHA_TAG="sha-${SHA}-${EXT}-sim${SIM}"
+          LATEST_TAG="latest-${EXT}-sim${SIM}"
+          CACHE_TAG="cache-${EXT}-sim${SIM}"
+
+          # Dockerfile — mirrors nightly-tags.sh logic
+          if [[ "${EXT}" == "ros2" && -f "docker/Dockerfile.ros2" ]]; then
+            DOCKERFILE="docker/Dockerfile.ros2"
+          elif [[ "${EXT}" == "ngc-slim" && -f "docker/Dockerfile.slim" ]]; then
+            DOCKERFILE="docker/Dockerfile.slim"
+          else
+            DOCKERFILE="docker/Dockerfile.base"
+          fi
+
+          {
+            echo "versioned_tag=${VERSIONED_TAG}"
+            echo "sha_tag=${SHA_TAG}"
+            echo "latest_tag=${LATEST_TAG}"
+            echo "cache_tag=${CACHE_TAG}"
+
+            echo "ngc_versioned=${NGC_IMAGE}:${VERSIONED_TAG}"
+            echo "ngc_sha=${NGC_IMAGE}:${SHA_TAG}"
+            echo "ngc_latest=${NGC_IMAGE}:${LATEST_TAG}"
+            echo "ghcr_versioned=${GHCR_IMAGE}:${VERSIONED_TAG}"
+            echo "ghcr_cache=${GHCR_IMAGE}:${CACHE_TAG}"
+
+            echo "dockerfile=${DOCKERFILE}"
+
+            # all_tags used by build-push-action
+            echo "all_tags<<TAGS_EOF"
+            echo "${NGC_IMAGE}:${VERSIONED_TAG}"
+            echo "${NGC_IMAGE}:${SHA_TAG}"
+            echo "${NGC_IMAGE}:${LATEST_TAG}"
+            echo "${GHCR_IMAGE}:${VERSIONED_TAG}"
+            echo "TAGS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          cat <<SUMMARY
+          ── Release tag plan ──────────────────────────────────────
+            Versioned : ${NGC_IMAGE}:${VERSIONED_TAG}
+            SHA pin   : ${NGC_IMAGE}:${SHA_TAG}
+            Latest    : ${NGC_IMAGE}:${LATEST_TAG}
+            GHCR      : ${GHCR_IMAGE}:${VERSIONED_TAG}
+            Cache ref : ${GHCR_IMAGE}:${CACHE_TAG}
+            Dockerfile: ${DOCKERFILE}
+          ──────────────────────────────────────────────────────────
+          SUMMARY
+
+      # ── Build ─────────────────────────────────────────────────────────────────
+      - name: Build Docker image
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          context: "."
+          file:    ${{ steps.tags.outputs.dockerfile }}
+          push:    false
+          load:    true
+          tags:    ${{ steps.tags.outputs.all_tags }}
+          build-args: |
+            ISAACSIM_VERSION_ARG=${{ matrix.isaac_sim_version }}
+            IMAGE_EXT=${{ matrix.image_ext }}
+            GIT_SHA=${{ needs.setup.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/isaac-sim/IsaacLab
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.setup.outputs.release_version }}
+            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.isaac_sim_version }}
+            com.nvidia.isaaclab.image-ext=${{ matrix.image_ext }}
+            com.nvidia.isaaclab.build-type=release
+          cache-from: |
+            type=registry,ref=${{ steps.tags.outputs.ghcr_cache }}
+          cache-to: |
+            type=registry,ref=${{ steps.tags.outputs.ghcr_cache }},mode=max
+
+      # ── Smoke tests ───────────────────────────────────────────────────────────
+      - name: "Smoke · isaaclab import"
+        if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
+        run: |
+          docker run --rm \
+            --gpus all --runtime=nvidia \
+            --ipc=host \
+            -e ACCEPT_EULA -e PRIVACY_CONSENT \
+            "${{ steps.tags.outputs.ngc_versioned }}" \
+            bash -c "python -c 'import isaaclab; print(f\"isaaclab {isaaclab.__version__} — ok\")'"
+
+      - name: "Smoke · Isaac Sim version pin"
+        if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
+        run: |
+          REPORTED=$(docker run --rm \
+            --gpus all --runtime=nvidia \
+            -e ACCEPT_EULA -e PRIVACY_CONSENT \
+            "${{ steps.tags.outputs.ngc_versioned }}" \
+            bash -c "python -c 'import isaacsim; print(isaacsim.__version__)'" 2>&1 \
+            | head -1 | tr -d '[:space:]')
+
+          echo "Reported : $REPORTED"
+          echo "Expected : ${{ matrix.isaac_sim_version }}"
+
+          if [[ "$REPORTED" != "${{ matrix.isaac_sim_version }}"* ]]; then
+            echo "::error::Isaac Sim version mismatch — got '$REPORTED'"
+            exit 1
+          fi
+          echo "Version pin OK ✓"
+
+      - name: "Smoke · ROS2 bridge (ros2 ext only)"
+        if: >
+          matrix.image_ext == 'ros2' &&
+          github.event.inputs.skip_smoke_tests != 'true'
+        run: |
+          docker run --rm \
+            --gpus all --runtime=nvidia \
+            -e ACCEPT_EULA -e PRIVACY_CONSENT \
+            "${{ steps.tags.outputs.ngc_versioned }}" \
+            bash -c "source /opt/ros/humble/setup.bash && ros2 --version && echo 'ROS2 bridge ok'"
+
+      - name: "Smoke · CloudXR runtime (cloudxr ext only)"
+        if: >
+          matrix.image_ext == 'cloudxr' &&
+          github.event.inputs.skip_smoke_tests != 'true'
+        run: |
+          docker run --rm \
+            --gpus all --runtime=nvidia \
+            -e ACCEPT_EULA -e PRIVACY_CONSENT \
+            "${{ steps.tags.outputs.ngc_versioned }}" \
+            bash -c "ls /opt/cloudxr && echo 'CloudXR runtime present'"
+
+      # ── Push to NGC (versioned + SHA + latest) ────────────────────────────────
+      - name: Push to NGC
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          docker push "${{ steps.tags.outputs.ngc_versioned }}"
+          docker push "${{ steps.tags.outputs.ngc_sha }}"
+          docker push "${{ steps.tags.outputs.ngc_latest }}"
+          echo "NGC push complete ✓"
+          echo "  ${{ steps.tags.outputs.ngc_versioned }}"
+          echo "  ${{ steps.tags.outputs.ngc_sha }}"
+          echo "  ${{ steps.tags.outputs.ngc_latest }}"
+
+      # ── Push to GHCR (versioned tag only for releases) ────────────────────────
+      - name: Push to GHCR
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          docker push "${{ steps.tags.outputs.ghcr_versioned }}"
+          echo "GHCR push complete ✓"
+
+      # ── Cleanup ───────────────────────────────────────────────────────────────
+      - name: Clean up local images
+        if: always()
+        run: |
+          docker rmi \
+            "${{ steps.tags.outputs.ngc_versioned }}" \
+            "${{ steps.tags.outputs.ngc_sha }}" \
+            "${{ steps.tags.outputs.ngc_latest }}" \
+            "${{ steps.tags.outputs.ghcr_versioned }}" \
+            2>/dev/null || true
+          docker buildx prune --filter "until=48h" --force 2>/dev/null || true
+          docker system prune --filter "until=48h" --force
+          echo "Runner disk after cleanup:"
+          df -h /

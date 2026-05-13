@@ -1,0 +1,120 @@
+# .github/workflows/pr-docs.yaml
+# Builds the IsaacLab Sphinx documentation and validates all internal links.
+#
+# Check run name: "PR docs / run"
+# Skip conditions:
+#   - 'skip-ci' label
+#   - 'docs-only' label (paradoxically skipped here — docs-only PRs only need lint)
+#     Wait: docs-only PRs SHOULD run this check. Revisiting:
+#     The gate classifier marks docs-only PRs as requiring [lint, docs, license].
+#     So this workflow must NOT be skipped for docs-only PRs.
+#     Only skip when 'skip-ci' is present.
+#
+# Concurrency: cancel in-progress on new push to same PR.
+
+name: "PR docs"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.x"
+    paths:
+      - "docs/**"
+      - "source/**/*.py"
+      - "source/**/*.rst"
+      - "*.md"
+      - "pyproject.toml"
+      - ".github/workflows/pr-docs.yaml"
+
+concurrency:
+  group: "pr-docs-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  run:
+    name: "run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: >
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-ci')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Cache Sphinx environment
+        uses: actions/cache@v4
+        with:
+          path:  docs/_build/.doctrees
+          key:   sphinx-doctrees-${{ runner.os }}-${{ hashFiles('docs/conf.py', 'source/**/*.rst') }}
+          restore-keys: sphinx-doctrees-${{ runner.os }}-
+
+      - name: Install documentation dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r docs/requirements.txt
+          # Install the package itself so autodoc can import it
+          pip install -e "." --no-deps || true
+
+      - name: Build documentation (fail on warnings)
+        run: |
+          cd docs
+          sphinx-build \
+            -b html \
+            -W \
+            --keep-going \
+            -d _build/.doctrees \
+            . _build/html \
+            2>&1 | tee sphinx-build.log
+
+          echo "::notice::Sphinx build succeeded"
+
+      - name: Check for broken internal links
+        run: |
+          cd docs
+          sphinx-build \
+            -b linkcheck \
+            -d _build/.doctrees \
+            . _build/linkcheck \
+            2>&1 | tee linkcheck.log
+
+          # Fail only on broken links (code 1), not timeouts (code 2) or redirects
+          BROKEN=$(grep -c "broken" linkcheck.log || true)
+          if [[ "$BROKEN" -gt 0 ]]; then
+            echo "::error::Found $BROKEN broken link(s) — see linkcheck.log"
+            grep "broken" linkcheck.log | head -40
+            exit 1
+          fi
+          echo "::notice::No broken links found"
+
+      - name: Upload HTML docs artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name:            docs-html-pr-${{ github.event.pull_request.number }}
+          path:            docs/_build/html/
+          retention-days:  7
+
+      - name: Upload Sphinx build log on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name:            sphinx-build-log-pr-${{ github.event.pull_request.number }}
+          path:            |
+            docs/sphinx-build.log
+            docs/linkcheck.log
+          retention-days:  7

@@ -1,0 +1,85 @@
+# .github/workflows/pr-tests-cpu.yaml
+# Runs the IsaacLab pytest suite on a CPU-only runner (no Isaac Sim GPU needed).
+#
+# Scope: unit tests and integration tests that mock the Isaac Sim layer.
+# GPU simulation tests are handled by the optional 'PR gpu / run' workflow.
+#
+# Check run name: "PR tests cpu / run"
+# Skip conditions:
+#   - 'skip-ci' label
+#   - 'skip-tests' label
+#   - 'docs-only' label
+#   - PR touches only docs/ or .rst files (classifier skips this check)
+
+name: "PR tests cpu"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.x"
+
+concurrency:
+  group: "pr-tests-cpu-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  run:
+    name: "run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-ci') &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests') &&
+      !contains(github.event.pull_request.labels.*.name, 'docs-only')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Isaac Lab (no sim — CPU mode)
+        run: |
+          pip install --upgrade pip
+          # Install Isaac Lab source without the Isaac Sim backend
+          # CPU-only tests use the --headless flag and a sim stub
+          pip install -e ".[test]" --no-deps \
+            || pip install -r requirements-test.txt
+
+      - name: Run pytest (CPU tests only)
+        run: |
+          python -m pytest \
+            source/isaaclab/tests/ \
+            --ignore=source/isaaclab/tests/sim/ \
+            --ignore=source/isaaclab/tests/envs/ \
+            -m "not gpu and not slow" \
+            -x \
+            --tb=short \
+            --junitxml=test-results-cpu.xml \
+            -v
+
+      - name: Publish test results
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths:    "test-results-cpu.xml"
+          check_name:      "Pytest CPU results"
+          fail_on_failure: false
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name:            test-results-cpu-pr-${{ github.event.pull_request.number }}
+          path:            test-results-cpu.xml
+          retention-days:  14

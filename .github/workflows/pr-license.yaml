@@ -1,0 +1,134 @@
+# .github/workflows/pr-license.yaml
+# Validates that every Python source file carries the correct SPDX license
+# header.  IsaacLab uses SPDX-License-Identifier: BSD-3-Clause.
+#
+# Check run name: "PR license / run"
+#
+# Expected header in each .py file (first 3 lines):
+#   # Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+#   # All rights reserved.
+#   #
+#   # SPDX-License-Identifier: BSD-3-Clause
+#
+# Skipped by: 'skip-ci' label or 'docs-only' label.
+
+name: "PR license"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.x"
+    paths:
+      - "**.py"
+      - ".github/workflows/pr-license.yaml"
+
+concurrency:
+  group: "pr-license-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  # Required SPDX identifier — update if the project license changes
+  SPDX_ID: "BSD-3-Clause"
+
+jobs:
+  run:
+    name: "run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-ci') &&
+      !contains(github.event.pull_request.labels.*.name, 'docs-only')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Determine changed Python files
+        id: changed
+        run: |
+          # Get the list of added or modified .py files in this PR
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+          CHANGED=$(git diff --name-only --diff-filter=AM \
+            "origin/${{ github.event.pull_request.base.ref }}" HEAD \
+            | grep '\.py$' || true)
+
+          if [[ -z "$CHANGED" ]]; then
+            echo "No Python files changed — skipping license check"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "$CHANGED" > changed_files.txt
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Changed Python files:"
+            cat changed_files.txt
+          fi
+
+      - name: Check SPDX headers
+        if: steps.changed.outputs.skip == 'false'
+        run: |
+          python3 - << 'PYEOF'
+          import sys
+          from pathlib import Path
+
+          SPDX_ID    = "${{ env.SPDX_ID }}"
+          SPDX_LINE  = f"# SPDX-License-Identifier: {SPDX_ID}"
+          # Also accept the older comment style
+          ALT_LINE   = f"# SPDX-License-Identifier:{SPDX_ID}"
+
+          # Directories that are explicitly excluded from the header requirement
+          EXCLUDED_DIRS = {
+            "docs",
+            ".github",
+            "setup.py",
+          }
+
+          def needs_header(path: Path) -> bool:
+              for part in path.parts:
+                  if part in EXCLUDED_DIRS:
+                      return False
+              return True
+
+          violations: list[str] = []
+
+          with open("changed_files.txt") as f:
+              files = [line.strip() for line in f if line.strip()]
+
+          for filepath in files:
+              p = Path(filepath)
+              if not p.exists():
+                  continue  # deleted file
+              if not needs_header(p):
+                  continue
+
+              content = p.read_text(encoding="utf-8", errors="replace")
+              first_500 = content[:500]
+
+              if SPDX_LINE not in first_500 and ALT_LINE not in first_500:
+                  violations.append(filepath)
+                  print(f"::error file={filepath}::Missing SPDX-License-Identifier: {SPDX_ID}")
+
+          if violations:
+              print(f"\n❌ {len(violations)} file(s) missing the SPDX header:")
+              for v in violations:
+                  print(f"  {v}")
+              print(f"\nExpected near the top of each file:")
+              print(f'  # SPDX-License-Identifier: {SPDX_ID}')
+              print(f"\nSee CONTRIBUTING.md for the full required header template.")
+              sys.exit(1)
+
+          print(f"✅ All {len(files)} Python file(s) carry the required SPDX header")
+          PYEOF
+
+      - name: (info) All files clean
+        if: steps.changed.outputs.skip == 'true'
+        run: echo "No Python files changed — license check not required"

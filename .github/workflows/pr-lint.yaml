@@ -1,0 +1,79 @@
+# .github/workflows/pr-lint.yaml
+# Pre-commit lint and format check for every pull request.
+#
+# GitHub Actions automatically creates a check run named "PR lint / run"
+# for this workflow on every pull_request event.  The pr-handler App watches
+# for check_run.completed on that name and uses it to evaluate pr/gate.
+#
+# Skipping: add the 'skip-ci' label to bypass all checks including this one.
+# Note: lint is ALWAYS required by the gate even with other skip labels.
+
+name: "PR lint"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+.x"   # maintenance branches
+
+# Cancel in-progress runs for the same PR on new pushes
+concurrency:
+  group: "pr-lint-${{ github.event.pull_request.number }}"
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  run:
+    name: "run"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      !github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-ci')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch the full history so pre-commit can diff correctly
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path:  ~/.cache/pre-commit
+          key:   pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-${{ runner.os }}-
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit (all files on PRs from forks, changed files otherwise)
+        run: |
+          if [[ "${{ github.event.pull_request.head.repo.fork }}" == "true" ]]; then
+            echo "Fork PR — running pre-commit on all files"
+            pre-commit run --all-files --show-diff-on-failure
+          else
+            echo "Same-repo PR — running pre-commit on changed files only"
+            pre-commit run \
+              --from-ref "${{ github.event.pull_request.base.sha }}" \
+              --to-ref   "${{ github.event.pull_request.head.sha }}" \
+              --show-diff-on-failure
+          fi
+
+      - name: Upload pre-commit log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name:            pre-commit-log-pr-${{ github.event.pull_request.number }}
+          path:            ~/.cache/pre-commit/pre-commit.log
+          retention-days:  7
