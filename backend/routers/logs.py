@@ -21,9 +21,10 @@ async def get_logs(
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
 ):
+    repo_slug = gh.get_active_repo_slug()
     entries = await log_store.get_logs(
         db, source=source, run_id=run_id, level=level, search=search,
-        limit=limit, offset=offset,
+        limit=limit, offset=offset, repo_slug=repo_slug,
     )
     return [
         {
@@ -53,7 +54,8 @@ async def ingest_gha_logs(run_id: int, db: AsyncSession = Depends(get_db)):
             low = line.lower()
             level = "ERROR" if "error" in low else "WARNING" if "warn" in low else "INFO"
             await log_store.save_log(
-                db, "gha", str(run_id), level, line, {"job": job["name"]}
+                db, "gha", str(run_id), level, line, {"job": job["name"]},
+                repo_slug=gh.get_active_repo_slug(),
             )
             ingested += 1
     return {"ingested": ingested, "run_id": run_id}

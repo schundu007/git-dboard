@@ -6,7 +6,7 @@ import {
   AlertCircle, Clock, User,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { getIssues, getIssueStats, getIssueLabels, getIssueMilestones } from '../lib/api'
+import { getIssues, getIssueStats, getIssueLabels, getIssueMilestones, getActiveRepo } from '../lib/api'
 import clsx from 'clsx'
 
 // ── Label badge ───────────────────────────────────────────────────────────────
@@ -186,6 +186,8 @@ export default function IssueHub() {
     staleTime: 60_000,
     refetchInterval: 60_000,
   })
+  const { data: arData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = arData?.active?.slug ?? ''
 
   const { data: labels = [] } = useQuery({
     queryKey: ['issue-labels'],
@@ -225,15 +227,13 @@ export default function IssueHub() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <CircleDot size={18} className="text-accent-green" />
-          <h1 className="text-lg font-semibold">Issues</h1>
           {!statsLoading && stats && (
             <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
               {stats.open_count} open · {stats.closed_count} closed
             </span>
           )}
         </div>
-        <a href="https://github.com/isaac-sim/IsaacLab/issues/new/choose"
+        <a href={`https://github.com/${repoSlug}/issues/new/choose`}
           target="_blank" rel="noreferrer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-green text-black font-medium hover:bg-green-400 transition-colors">
           <AlertCircle size={11} /> New Issue ↗

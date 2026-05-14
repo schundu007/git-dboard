@@ -14,19 +14,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary:   'bg-accent-blue text-white hover:bg-blue-500 shadow-sm active:scale-[0.98]',
-  secondary: 'bg-surface-3 text-gray-200 hover:bg-surface-4 border border-border active:scale-[0.98]',
-  ghost:     'text-gray-400 hover:text-gray-200 hover:bg-surface-2 active:scale-[0.98]',
-  danger:    'bg-accent-red/10 text-accent-red hover:bg-accent-red/20 border border-accent-red/30 active:scale-[0.98]',
-  outline:   'border border-border text-gray-300 hover:border-border-strong hover:bg-surface-2 active:scale-[0.98]',
-  success:   'bg-accent-green/10 text-accent-green hover:bg-accent-green/20 border border-accent-green/30 active:scale-[0.98]',
+  primary:   'bg-nvidia text-[#0f1a00] hover:bg-[#82cf00] ring-1 ring-nvidia/40 shadow-sm active:scale-[0.98]',
+  secondary: 'bg-surface-3 text-neutral-200 hover:bg-surface-4 ring-1 ring-border hover:ring-border-strong active:scale-[0.98]',
+  ghost:     'text-neutral-400 hover:text-neutral-100 hover:bg-surface-2 active:scale-[0.98]',
+  danger:    'bg-red-500/[.08] text-red-400 hover:bg-red-500/[.14] ring-1 ring-red-500/25 active:scale-[0.98]',
+  outline:   'ring-1 ring-border text-neutral-300 hover:ring-border-strong hover:bg-surface-2 active:scale-[0.98]',
+  success:   'bg-emerald-500/[.08] text-emerald-400 hover:bg-emerald-500/[.14] ring-1 ring-emerald-500/25 active:scale-[0.98]',
 }
 
 const sizeStyles: Record<Size, string> = {
-  xs: 'h-6 px-2 text-[11px] gap-1 rounded',
-  sm: 'h-7 px-2.5 text-xs gap-1.5 rounded-md',
-  md: 'h-8 px-3 text-[13px] gap-2 rounded-md',
-  lg: 'h-9 px-4 text-sm gap-2 rounded-lg',
+  xs: 'h-6  px-2    text-[11px] gap-1   rounded',
+  sm: 'h-7  px-2.5  text-[12px] gap-1.5 rounded-md',
+  md: 'h-8  px-3    text-[13px] gap-2   rounded-md',
+  lg: 'h-9  px-4    text-[13px] gap-2   rounded-lg',
 }
 
 export function Button({
@@ -45,6 +45,7 @@ export function Button({
       className={cn(
         'inline-flex items-center justify-center font-medium transition-all duration-150 select-none',
         'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nvidia/60 focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
         variantStyles[variant],
         sizeStyles[size],
         className,
@@ -52,9 +53,9 @@ export function Button({
       disabled={disabled || loading}
       {...props}
     >
-      {loading ? (
-        <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      ) : icon}
+      {loading
+        ? <span className="inline-block w-3 h-3 border-[1.5px] border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+        : icon}
       {children}
       {!loading && iconRight}
     </button>

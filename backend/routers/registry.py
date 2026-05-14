@@ -5,17 +5,23 @@ from fastapi import APIRouter, HTTPException
 from config import settings
 from services import aws_ecr
 from services import github_client as gh
+from services.github_client import get_active_repo_parts
 
 router = APIRouter(prefix="/registry", tags=["registry"])
 
 _PUSH_WORKFLOW = "publish-images.yaml"
-_NGC_IMAGE = "nvcr.io/nvidia/isaac-lab"
-_GHCR_IMAGE = "ghcr.io/isaac-sim/isaaclab"
+
+
+def _registry_images() -> tuple[str, str]:
+    owner, repo = get_active_repo_parts()
+    ngc_name = repo.lower().replace("_", "-")
+    return f"nvcr.io/nvidia/{ngc_name}", f"ghcr.io/{owner.lower()}/{repo.lower()}"
 
 
 @router.get("/push-status")
 async def get_push_status():
     """Return real push status for NGC, GHCR, and HPC derived from publish-images workflow runs."""
+    NGC_IMAGE, GHCR_IMAGE = _registry_images()
     try:
         data = await gh.get_workflow_runs(_PUSH_WORKFLOW, per_page=5)
         runs = data.get("workflow_runs", [])
@@ -52,14 +58,14 @@ async def get_push_status():
 
     return {
         "ngc": {
-            "image": _NGC_IMAGE,
+            "image": NGC_IMAGE,
             "status": ngc_status,
             "run_date": run_date,
             "run_url": run_url,
             "display_title": display_title,
         },
         "ghcr": {
-            "image": _GHCR_IMAGE,
+            "image": GHCR_IMAGE,
             "status": ghcr_status,
             "run_date": run_date,
             "run_url": run_url,

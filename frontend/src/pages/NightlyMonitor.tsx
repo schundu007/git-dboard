@@ -16,14 +16,17 @@ import type { WorkflowRun } from '../lib/types'
 // ── Cell colour ──────────────────────────────────────────────────────────────
 
 function cellStyle(status: string | undefined) {
-  if (!status) return { bg: 'bg-surface-2', text: 'text-gray-700', sym: '—' }
+  if (!status) return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '—' }
   const s = status.toLowerCase()
-  if (s === 'success') return { bg: 'bg-green-950 border border-green-800', text: 'text-accent-green', sym: '✓' }
-  if (s === 'failure') return { bg: 'bg-red-950 border border-red-800', text: 'text-accent-red', sym: '✗' }
+  if (s === 'success')
+    return { bg: 'bg-accent-green/10 border border-accent-green/25', text: 'text-accent-green', sym: '✓' }
+  if (s === 'failure')
+    return { bg: 'bg-accent-red/10 border border-accent-red/25', text: 'text-accent-red', sym: '✗' }
   if (['in_progress', 'queued'].includes(s))
-    return { bg: 'bg-blue-950 border border-blue-800 animate-pulse', text: 'text-accent-blue', sym: '~' }
-  if (s === 'skipped') return { bg: 'bg-gray-800', text: 'text-gray-500', sym: '⊘' }
-  return { bg: 'bg-gray-800', text: 'text-gray-500', sym: '?' }
+    return { bg: 'bg-accent-blue/10 border border-accent-blue/25 animate-pulse', text: 'text-accent-blue', sym: '~' }
+  if (s === 'skipped')
+    return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '⊘' }
+  return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '?' }
 }
 
 // ── Job-level matrix ─────────────────────────────────────────────────────────
@@ -215,31 +218,31 @@ function TrendChart() {
       {!isLoading && trend.length === 0 && <div className="h-[120px] flex items-center justify-center text-gray-600 text-xs">No data in this window.</div>}
       {!isLoading && trend.length > 0 && <ResponsiveContainer width="100%" height={120}>
         <LineChart data={trend}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#6b7280', fontSize: 9 }}
+            tick={{ fill: '#86939e', fontSize: 9 }}
             tickFormatter={(v) => v.slice(5)}
             interval="preserveStartEnd"
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fill: '#6b7280', fontSize: 9 }}
+            tick={{ fill: '#86939e', fontSize: 9 }}
             tickFormatter={(v) => `${v}%`}
             width={32}
           />
           <Tooltip
-            contentStyle={{ background: '#161b27', border: '1px solid #2d3748', borderRadius: 6, fontSize: 11 }}
+            contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 6, fontSize: 11 }}
             formatter={(v: any) => [`${v}%`, 'Pass rate']}
             labelFormatter={(l) => `Date: ${l}`}
           />
           <Line
             type="monotone"
             dataKey="pass_rate"
-            stroke="#22c55e"
+            stroke="#76b900"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: '#22c55e' }}
+            activeDot={{ r: 4, fill: '#76b900' }}
           />
         </LineChart>
       </ResponsiveContainer>}
@@ -386,11 +389,9 @@ export default function NightlyMonitor() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Moon size={18} className="text-accent-yellow" />
-          <h1 className="text-lg font-semibold">Nightly Monitor</h1>
           <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
             daily-compatibility.yml
           </span>

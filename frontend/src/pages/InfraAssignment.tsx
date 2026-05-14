@@ -21,8 +21,8 @@ function RunnerCard({ runner }: { runner: Runner }) {
   const statusClass = !isOnline
     ? 'bg-gray-800 text-gray-500'
     : isBusy
-    ? 'bg-yellow-950 text-yellow-400'
-    : 'bg-green-950 text-accent-green'
+    ? 'bg-amber-500/[.07] text-amber-400 ring-1 ring-amber-500/25'
+    : 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25'
   const dotClass = !isOnline ? 'bg-gray-600' : isBusy ? 'bg-yellow-400' : 'bg-accent-green'
 
   const systemLabels = runner.labels.filter((l) => l.type === 'system').map((l) => l.name)
@@ -47,7 +47,7 @@ function RunnerCard({ runner }: { runner: Runner }) {
       {customLabels.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {customLabels.map((l) => (
-            <span key={l} className="bg-blue-950/60 text-accent-blue px-1.5 py-0.5 rounded text-[9px] font-mono">
+            <span key={l} className="bg-blue-500/[.07] text-blue-400 px-1.5 py-0.5 rounded text-[9px] font-mono">
               {l}
             </span>
           ))}
@@ -79,11 +79,11 @@ function NodeCard({ node }: { node: ClusterNode }) {
   const isDown = s.includes('down') || s.includes('drain')
 
   const stateClass = isDown
-    ? 'text-red-400 bg-red-950'
+    ? 'text-red-400 bg-red-500/[.07] ring-1 ring-red-500/25'
     : isAlloc
-    ? 'text-yellow-400 bg-yellow-950'
+    ? 'text-amber-400 bg-amber-500/[.07] ring-1 ring-amber-500/25'
     : isIdle
-    ? 'text-accent-green bg-green-950'
+    ? 'text-emerald-400 bg-emerald-500/[.07] ring-1 ring-emerald-500/25'
     : 'text-gray-400 bg-gray-800'
 
   const gpuMatch = node.gres?.match(/gpu[^:]*:([^:]+):(\d+)/i)
@@ -134,9 +134,9 @@ function ClusterJobRow({
   const isPending = s === 'PENDING' || s === 'PD' || s === 'Q'
 
   const stateClass = isRunning
-    ? 'text-accent-green bg-green-950'
+    ? 'text-emerald-400 bg-emerald-500/[.07] ring-1 ring-emerald-500/25'
     : isPending
-    ? 'text-yellow-400 bg-yellow-950'
+    ? 'text-amber-400 bg-amber-500/[.07] ring-1 ring-amber-500/25'
     : 'text-gray-400 bg-gray-800'
 
   return (
@@ -172,7 +172,7 @@ function ClusterJobRow({
           {confirming ? (
             <button
               onClick={() => { onCancel(job); setConfirming(false) }}
-              className="px-1.5 py-0.5 rounded text-[9px] bg-red-950 text-red-400 hover:bg-red-900 transition-colors"
+              className="px-1.5 py-0.5 rounded text-[9px] bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25 hover:bg-accent-red/10 transition-colors"
               onBlur={() => setConfirming(false)}
             >
               Confirm
@@ -380,12 +380,8 @@ export default function InfraAssignment() {
         />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Server size={18} className="text-accent-orange" />
-          <h1 className="text-lg font-semibold">Infra</h1>
-        </div>
+      {/* Refresh */}
+      <div className="flex justify-end">
         <button onClick={refresh} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
           <RefreshCw size={13} />
         </button>
@@ -476,7 +472,7 @@ export default function InfraAssignment() {
                     {r.labels?.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {r.labels.filter((l: string) => !['self-hosted', 'linux', 'x64'].includes(l)).map((l: string) => (
-                          <span key={l} className="bg-blue-950/60 text-accent-blue px-1.5 py-0.5 rounded text-[9px] font-mono">{l}</span>
+                          <span key={l} className="bg-blue-500/[.07] text-blue-400 px-1.5 py-0.5 rounded text-[9px] font-mono">{l}</span>
                         ))}
                       </div>
                     )}
@@ -621,7 +617,7 @@ export default function InfraAssignment() {
         </div>
 
         {queueError && (
-          <div className="bg-red-950/20 border border-red-900/30 rounded-lg px-4 py-3 text-sm text-red-400">
+          <div className="bg-red-500/[.05] ring-1 ring-red-500/15 rounded-lg px-4 py-3 text-sm text-red-400">
             Cluster unreachable — check <code className="font-mono text-[11px]">CLUSTER_HOST</code> in .env
           </div>
         )}
@@ -730,7 +726,7 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[12px] font-medium text-white truncate">{run.name}</span>
                     {isSelfHosted && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-950/40 text-yellow-400 border border-yellow-900/30 font-mono flex-shrink-0">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/[.06] text-amber-400 ring-1 ring-amber-500/20 font-mono flex-shrink-0">
                         self-hosted
                       </span>
                     )}
@@ -874,7 +870,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-[11px] font-semibold text-white">Runner Assignment by PR Type</p>
-            <p className="text-[10px] text-gray-500 mt-0.5">Optimal runner selection reduces GPU costs and queue wait time</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">Optimal runner selection reduces CI costs and queue wait time</p>
           </div>
           <div className="divide-y divide-border">
             {CLASS_ORDER.map((cls) => {
@@ -892,7 +888,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
                       <span className={clsx(
                         'text-[9px] font-mono px-2 py-0.5 rounded border',
                         rec.gpu
-                          ? 'bg-yellow-950/30 text-yellow-400 border-yellow-900/30'
+                          ? 'bg-amber-500/[.05] text-amber-400 ring-amber-500/20'
                           : 'bg-green-950/30 text-accent-green border-green-900/30',
                       )}>
                         {rec.runner}

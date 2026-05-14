@@ -127,10 +127,14 @@ async def get_repo_permissions():
 
 
 @router.get("/gate-overview")
-async def get_gate_overview():
-    """Lightweight gate verdict for all open PRs using check runs + labels (no file fetch)."""
-    data = await gh.get_prs(state="open", per_page=50)
+async def get_gate_overview(days: Optional[int] = None):
+    """Lightweight gate verdict for open PRs using check runs + labels (no file fetch)."""
+    data = await gh.get_prs(state="open", per_page=100)
     prs = data if isinstance(data, list) else []
+    if days is not None:
+        from datetime import datetime, timezone, timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        prs = [p for p in prs if datetime.fromisoformat(p["created_at"].replace("Z", "+00:00")) >= cutoff]
 
     async def _eval_one(pr: dict) -> dict | None:
         try:

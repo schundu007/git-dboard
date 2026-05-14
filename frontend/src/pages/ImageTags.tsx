@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Copy, Check, Tag, Server, Clock, ChevronDown } from 'lucide-react'
-import { getTagsMatrix, getTagsLifecycle, getTagsCompute } from '../lib/api'
+import { Copy, Check, Server, Clock, ChevronDown } from 'lucide-react'
+import { getTagsMatrix, getTagsLifecycle, getTagsCompute, getActiveRepo } from '../lib/api'
 
 // ── Copyable tag pill ────────────────────────────────────────────────────────
 
@@ -111,21 +111,29 @@ function MatrixSection() {
 
 // ── Tag calculator ───────────────────────────────────────────────────────────
 
-const SIM_VERSIONS  = ['4.5.0', '5.0.0', '5.1.0']
-const IMAGE_EXTS    = ['base', 'ros2', 'cloudxr', 'ngc-slim']
-
 function TagCalculator() {
+  const { data: matrixData } = useQuery({
+    queryKey: ['tags-matrix'],
+    queryFn: getTagsMatrix,
+    staleTime: Infinity,
+  })
+  const simVersions: string[] = matrixData?.sim_versions ?? ['4.5.0', '5.0.0', '5.1.0']
+  const imageExts: string[]   = matrixData?.image_exts   ?? ['base', 'ros2', 'cloudxr', 'ngc-slim']
+
   const [mode, setMode]               = useState<'nightly' | 'release'>('nightly')
-  const [simVersion, setSimVersion]   = useState('4.5.0')
-  const [imageExt, setImageExt]       = useState('base')
+  const [simVersion, setSimVersion]   = useState('')
+  const [imageExt, setImageExt]       = useState('')
+
+  const effectiveSimVersion = simVersion || simVersions[0] || '4.5.0'
+  const effectiveImageExt   = imageExt   || imageExts[0]   || 'base'
   const [shortSha, setShortSha]       = useState('abc1234')
   const [buildDate, setBuildDate]     = useState('')
   const [releaseVer, setReleaseVer]   = useState('2.3.2')
 
   const params = {
     mode,
-    sim_version: simVersion,
-    image_ext:   imageExt,
+    sim_version: effectiveSimVersion,
+    image_ext:   effectiveImageExt,
     short_sha:   shortSha,
     ...(mode === 'nightly' && buildDate   ? { build_date:       buildDate }   : {}),
     ...(mode === 'release' && releaseVer  ? { release_version:  releaseVer }  : {}),
@@ -164,12 +172,12 @@ function TagCalculator() {
           </div>
         </div>
 
-        {/* Isaac Sim version */}
+        {/* Sim version */}
         <div>
-          <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Isaac Sim</label>
+          <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Sim Version</label>
           <div className="relative">
-            <select value={simVersion} onChange={e => setSimVersion(e.target.value)} className={`${select} w-full appearance-none pr-6`}>
-              {SIM_VERSIONS.map(v => <option key={v} value={v}>{v}</option>)}
+            <select value={effectiveSimVersion} onChange={e => setSimVersion(e.target.value)} className={`${select} w-full appearance-none pr-6`}>
+              {simVersions.map(v => <option key={v} value={v}>{v}</option>)}
             </select>
             <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
           </div>
@@ -179,8 +187,8 @@ function TagCalculator() {
         <div>
           <label className="block text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Extension</label>
           <div className="relative">
-            <select value={imageExt} onChange={e => setImageExt(e.target.value)} className={`${select} w-full appearance-none pr-6`}>
-              {IMAGE_EXTS.map(e => <option key={e} value={e}>{e}</option>)}
+            <select value={effectiveImageExt} onChange={e => setImageExt(e.target.value)} className={`${select} w-full appearance-none pr-6`}>
+              {imageExts.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
             <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
           </div>
@@ -334,16 +342,26 @@ function LifecycleSection() {
 
 // ── OCI labels reference ──────────────────────────────────────────────────────
 
-const OCI_LABELS = [
-  { key: 'org.opencontainers.image.source',   value: 'https://github.com/isaac-sim/IsaacLab' },
-  { key: 'org.opencontainers.image.revision', value: 'full git SHA' },
-  { key: 'org.opencontainers.image.created',  value: 'YYYYMMDD build date' },
-  { key: 'com.nvidia.isaaclab.isaac-sim-version', value: 'e.g. 4.5.0' },
-  { key: 'com.nvidia.isaaclab.image-ext',     value: 'base | ros2 | cloudxr | ngc-slim' },
-  { key: 'com.nvidia.isaaclab.build-type',    value: 'nightly | release' },
-]
+function buildOciLabels(repoSlug: string) {
+  const [owner = '', repo = ''] = repoSlug.split('/')
+  const isIsaacLab = repo.toLowerCase().includes('isaaclab')
+  const ns = isIsaacLab
+    ? 'com.nvidia.isaaclab'
+    : `com.github.${owner.toLowerCase()}.${repo.toLowerCase()}`
+  return [
+    { key: 'org.opencontainers.image.source',   value: `https://github.com/${repoSlug}` },
+    { key: 'org.opencontainers.image.revision',  value: 'full git SHA' },
+    { key: 'org.opencontainers.image.created',   value: 'build timestamp' },
+    { key: `${ns}.build-type`,                   value: 'nightly | release' },
+    ...(isIsaacLab ? [
+      { key: `${ns}.isaac-sim-version`, value: 'e.g. 4.5.0' },
+      { key: `${ns}.image-ext`,         value: 'base | ros2 | cloudxr | ngc-slim' },
+    ] : []),
+  ]
+}
 
-function OciLabels() {
+function OciLabels({ repoSlug }: { repoSlug: string }) {
+  const labels = buildOciLabels(repoSlug)
   return (
     <div>
       <h2 className="text-sm font-semibold text-white mb-3">OCI Labels</h2>
@@ -356,7 +374,7 @@ function OciLabels() {
             </tr>
           </thead>
           <tbody>
-            {OCI_LABELS.map(l => (
+            {labels.map(l => (
               <tr key={l.key} className="border-t border-border/50 hover:bg-surface-2/30">
                 <td className="py-2 px-3">
                   <code className="text-accent-blue font-mono text-[11px]">{l.key}</code>
@@ -384,7 +402,9 @@ const REGISTRY_ROWS = [
   { feature: 'Lifecycle TTL cleanup', ngc: false, ghcr: true  },
 ]
 
-function RegistryComparison() {
+function RegistryComparison({ repoSlug }: { repoSlug: string }) {
+  const owner = repoSlug.split('/')[0] ?? 'isaac-sim'
+  const repo = repoSlug.split('/')[1] ?? 'isaaclab'
   return (
     <div>
       <h2 className="text-sm font-semibold text-white mb-3">Registry Comparison</h2>
@@ -411,12 +431,12 @@ function RegistryComparison() {
       <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">NGC</p>
-          <code className="text-gray-400 font-mono">nvcr.io/nvidia/isaac-lab</code>
+          <code className="text-gray-400 font-mono">nvcr.io/nvidia/{repo.toLowerCase().replace(/_/g, '-')}</code>
           <p className="text-gray-600 mt-0.5">Auth: NGC_API_KEY</p>
         </div>
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">GHCR</p>
-          <code className="text-gray-400 font-mono">ghcr.io/isaac-sim/isaaclab</code>
+          <code className="text-gray-400 font-mono">ghcr.io/{owner.toLowerCase()}/{repo.toLowerCase()}</code>
           <p className="text-gray-600 mt-0.5">Auth: GITHUB_TOKEN / PAT</p>
         </div>
       </div>
@@ -457,52 +477,64 @@ verify-push.py validates all 6 OCI labels`}
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ImageTags() {
-  return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-6 py-5 space-y-6">
+  const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = activeRepoData?.active?.slug ?? ''
+  const repoName = activeRepoData?.active?.name ?? repoSlug
+  const isIsaacLab = repoSlug.toLowerCase().includes('isaaclab')
 
-        {/* Header */}
-        <div className="flex items-center gap-2.5">
-          <Tag size={16} className="text-accent-blue" />
-          <div>
-            <h1 className="text-base font-semibold text-white leading-tight">Image Tags</h1>
-            <p className="text-[11px] text-gray-500">
-              Tag naming, build matrix, lifecycle policy, and OCI label reference for IsaacLab Docker images
+  return (
+    <div className="space-y-5">
+
+        {/* Tag calculator — IsaacLab-specific */}
+        {isIsaacLab ? (
+          <div className="bg-surface-1 border border-border rounded-lg p-4">
+            <TagCalculator />
+          </div>
+        ) : (
+          <div className="bg-surface-1 border border-border rounded-lg p-4">
+            <h2 className="text-sm font-semibold text-white mb-2">Tag Calculator</h2>
+            <p className="text-[12px] text-gray-500">
+              The Isaac Sim tag naming scheme (<code className="font-mono text-gray-400">nightly-{'{date}'}-{'{ext}'}-sim{'{M.m}'}</code>) is
+              specific to the IsaacLab publishing pipeline and does not apply to <span className="text-gray-300">{repoSlug}</span>.
             </p>
           </div>
-        </div>
+        )}
 
-        {/* Tag calculator — top, most interactive */}
-        <div className="bg-surface-1 border border-border rounded-lg p-4">
-          <TagCalculator />
-        </div>
-
-        {/* Build matrix + Registry side-by-side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-surface-1 border border-border rounded-lg p-4">
-            <MatrixSection />
+        {/* Build matrix + Registry side-by-side — IsaacLab-specific */}
+        {isIsaacLab ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-surface-1 border border-border rounded-lg p-4">
+              <MatrixSection />
+            </div>
+            <div className="bg-surface-1 border border-border rounded-lg p-4">
+              <RegistryComparison repoSlug={repoSlug} />
+            </div>
           </div>
+        ) : (
           <div className="bg-surface-1 border border-border rounded-lg p-4">
-            <RegistryComparison />
+            <RegistryComparison repoSlug={repoSlug} />
           </div>
-        </div>
+        )}
 
         {/* Lifecycle + OCI labels side-by-side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-surface-1 border border-border rounded-lg p-4">
-            <LifecycleSection />
-          </div>
-          <div className="bg-surface-1 border border-border rounded-lg p-4">
-            <OciLabels />
+          {isIsaacLab && (
+            <div className="bg-surface-1 border border-border rounded-lg p-4">
+              <LifecycleSection />
+            </div>
+          )}
+          <div className={isIsaacLab ? 'bg-surface-1 border border-border rounded-lg p-4' : 'bg-surface-1 border border-border rounded-lg p-4 lg:col-span-2'}>
+            <OciLabels repoSlug={repoSlug} />
           </div>
         </div>
 
-        {/* Promotion flow */}
-        <div className="bg-surface-1 border border-border rounded-lg p-4">
-          <PromotionFlow />
-        </div>
+        {/* Promotion flow — IsaacLab-specific */}
+        {isIsaacLab && (
+          <div className="bg-surface-1 border border-border rounded-lg p-4">
+            <PromotionFlow />
+          </div>
+        )}
 
-      </div>
     </div>
   )
 }

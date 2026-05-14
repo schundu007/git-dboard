@@ -8,6 +8,95 @@ from config import settings
 
 _BASE = "https://api.github.com"
 
+# ── Active repo override (set by /repos/{id}/activate) ───────────────────────
+_active_owner: Optional[str] = None
+_active_repo_name: Optional[str] = None
+_active_pat: Optional[str] = None
+
+
+def set_active_repo(owner: str, repo: str, pat: Optional[str] = None) -> None:
+    global _active_owner, _active_repo_name, _active_pat
+    _active_owner = owner
+    _active_repo_name = repo
+    _active_pat = pat or None
+    _stats_mem.clear()
+    _clear_workflow_cache()
+
+
+def clear_active_repo() -> None:
+    global _active_owner, _active_repo_name, _active_pat
+    _active_owner = None
+    _active_repo_name = None
+    _active_pat = None
+    _stats_mem.clear()
+    _clear_workflow_cache()
+
+
+def get_active_repo_slug() -> str:
+    owner = _active_owner or settings.GH_OWNER
+    repo = _active_repo_name or settings.GH_REPO
+    return f"{owner}/{repo}"
+
+
+def get_active_repo_parts() -> tuple[str, str]:
+    """Return (owner, repo) for the currently active repository."""
+    return (_active_owner or settings.GH_OWNER, _active_repo_name or settings.GH_REPO)
+
+
+# ── Workflow detection cache ──────────────────────────────────────────────────
+# Keyed by repo slug, invalidated when active repo changes.
+_workflow_names_cache: dict[str, list[str]] = {}
+
+
+def _clear_workflow_cache() -> None:
+    _workflow_names_cache.clear()
+
+
+async def get_repo_workflow_names() -> list[str]:
+    """Return the list of workflow filenames for the active repo (cached per slug)."""
+    slug = get_active_repo_slug()
+    if slug in _workflow_names_cache:
+        return _workflow_names_cache[slug]
+    try:
+        data = await get_workflows()
+        names = [w.get("path", "").split("/")[-1] for w in data.get("workflows", [])]
+    except Exception:
+        names = []
+    _workflow_names_cache[slug] = names
+    return names
+
+
+def _pick(*candidates: str, from_names: list[str]) -> str | None:
+    """Return the first candidate that exists in the repo's workflow list."""
+    for c in candidates:
+        if c in from_names:
+            return c
+    return None
+
+
+async def get_primary_workflows() -> dict[str, str | None]:
+    """Return the best-match workflow filenames for CI, nightly, and publish for the active repo."""
+    names = await get_repo_workflow_names()
+    return {
+        "ci": _pick(
+            "postmerge-ci.yml", "ci.yml", "test.yml", "build.yml",
+            "main.yml", "push.yml", "workflow.yml",
+            from_names=names,
+        ),
+        "nightly": _pick(
+            "nightly.yml", "daily-compatibility.yml", "daily.yml",
+            "schedule.yml", "scheduled.yml", "cron.yml",
+            from_names=names,
+        ),
+        "publish": _pick(
+            "publish-images.yaml", "publish-images.yml", "release.yml",
+            "publish.yml", "docker.yml", "docker-publish.yml",
+            from_names=names,
+        ),
+        "all": names,
+    }
+
+
 # ── Stats cache ───────────────────────────────────────────────────────────────
 # Two-layer cache: memory (fast, 1h TTL) + disk (survives restart, 24h TTL).
 # GitHub Stats API returns 202 while computing; once fetched we persist to disk
@@ -45,8 +134,9 @@ def _disk_get(key: str) -> object:
 async def _get_cached_stat(path: str, retries: int = 3, sleep_s: float = 5.0) -> object:
     """Fetch a GitHub stats endpoint with two-layer cache + 202-retry logic.
     Returns None only when both caches are cold AND GitHub is still computing."""
-    url = f"{_BASE}/repos/{_repo()}{path}"
-    key = path
+    slug = _repo()
+    url = f"{_BASE}/repos/{slug}{path}"
+    key = f"{slug}:{path}"  # repo-scoped key so switching repos never serves stale data
 
     # 1. Memory cache (hot path)
     mem = _stats_mem.get(key)
@@ -57,7 +147,6 @@ async def _get_cached_stat(path: str, retries: int = 3, sleep_s: float = 5.0) ->
     disk = _disk_get(key)
     if disk is not None:
         _stats_mem[key] = (time.monotonic(), disk)  # promote to memory
-        # Still try GitHub in background to refresh, but return disk data now
         return disk
 
     # 3. GitHub API
@@ -75,15 +164,18 @@ async def _get_cached_stat(path: str, retries: int = 3, sleep_s: float = 5.0) ->
 
 
 def _headers() -> dict:
+    token = _active_pat or settings.GH_PAT
     return {
-        "Authorization": f"token {settings.GH_PAT}",
+        "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json",
         "X-GitHub-Api-Version": "2022-11-28",
     }
 
 
 def _repo() -> str:
-    return f"{settings.GH_OWNER}/{settings.GH_REPO}"
+    owner = _active_owner or settings.GH_OWNER
+    repo = _active_repo_name or settings.GH_REPO
+    return f"{owner}/{repo}"
 
 
 async def get_prs(state: str = "open", per_page: int = 30, page: int = 1):

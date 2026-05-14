@@ -65,9 +65,11 @@ async def dora_metrics():
     now = datetime.now(timezone.utc)
     since_30d = (now - timedelta(days=30)).isoformat()
 
+    wf = await gh.get_primary_workflows()
+    ci_wf = wf["ci"]
     deployments_raw, postmerge_runs = await asyncio.gather(
         gh.get_deployments(per_page=100),
-        gh.get_workflow_runs("postmerge-ci.yml", per_page=100),
+        gh.get_workflow_runs(ci_wf, per_page=100) if ci_wf else asyncio.sleep(0),
         return_exceptions=True,
     )
     deployments = deployments_raw if isinstance(deployments_raw, list) else []
@@ -193,7 +195,8 @@ async def dora_metrics():
 @router.get("/ci-triage")
 async def ci_triage():
     """Categorize CI failures: infrastructure vs product/test vs flaky vs timeout."""
-    workflows = ["postmerge-ci.yml", "nightly.yml"]
+    wf = await gh.get_primary_workflows()
+    workflows = [w for w in [wf["ci"], wf["nightly"]] if w]
 
     all_failed: list[tuple] = []
     for wf in workflows:
@@ -280,10 +283,8 @@ async def ci_triage():
 @router.get("/pipeline-perf")
 async def pipeline_performance():
     """Pipeline performance: run durations, p95, slowest workflows, trend."""
-    workflows = [
-        ("postmerge-ci.yml", "Post-Merge CI"),
-        ("nightly.yml", "Nightly Tests"),
-    ]
+    wf_map = await gh.get_primary_workflows()
+    workflows = [(w, w) for w in [wf_map["ci"], wf_map["nightly"]] if w]
 
     result = []
     for wf_file, wf_name in workflows:

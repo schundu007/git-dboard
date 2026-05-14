@@ -155,7 +155,7 @@ function BranchRow({ b }: { b: any }) {
               <Shield size={10} className="text-accent-yellow flex-shrink-0" aria-label="Protected branch" />
             )}
             {b.active && (
-              <span className="text-[9px] bg-green-950 text-accent-green px-1.5 py-0.5 rounded-full">
+              <span className="text-[9px] bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25 px-1.5 py-0.5 rounded-full">
                 active
               </span>
             )}
@@ -258,8 +258,6 @@ export default function BranchMonitor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <GitBranch size={18} className="text-accent-green" />
-          <h1 className="text-lg font-semibold">Branch Monitor</h1>
           {data && (
             <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
               {data.total} branches
@@ -300,7 +298,7 @@ export default function BranchMonitor() {
           className={clsx(
             'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
             activeOnly
-              ? 'bg-green-950 text-accent-green border-green-900'
+              ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25 border-green-900'
               : 'bg-surface-1 text-gray-400 border-border hover:bg-surface-2',
           )}
         >

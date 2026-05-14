@@ -2,26 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS custom properties ─────────────────────────────────────────────────── */
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
   --sidebar-width: 220px;
   --sidebar-collapsed-width: 60px;
   --header-height: 52px;
   --radius: 0.5rem;
 
-  --color-bg:        #080c15;
-  --color-surface-1: #0d1117;
-  --color-surface-2: #161b27;
-  --color-border:    #1e2d45;
-  --color-text:      #e2e8f0;
-  --color-muted:     #64748b;
+  /* Foundation — zinc-950 base (Nebius-inspired, not pure black) */
+  --color-bg:        #09090b;   /* zinc-950 */
+  --color-surface-1: #18181b;   /* zinc-900 */
+  --color-surface-2: #27272a;   /* zinc-800 */
+  --color-border:    #3f3f46;   /* zinc-700 */
+  --color-text:      #fafafa;   /* zinc-50 */
+  --color-muted:     #a1a1aa;   /* zinc-400 */
 
-  --color-blue:   #3b82f6;
-  --color-green:  #22c55e;
-  --color-red:    #ef4444;
-  --color-yellow: #eab308;
-  --color-purple: #a855f7;
-  --color-orange: #f97316;
+  /* Accent */
+  --color-green:  #76b900;   /* NVIDIA green */
+  --color-blue:   #0a66c2;   /* info blue */
+  --color-red:    #b24020;   /* error red */
+  --color-yellow: #d4d4d4;   /* neutral warning */
+  --color-lime:   #E0FF4F;   /* primary brand accent */
+
+  /* Surface/border channel values (r g b) for Tailwind CSS var colors */
+  --sfc:    9   9  11;   /* zinc-950 #09090b */
+  --sfc1:  24  24  27;   /* zinc-900 #18181b */
+  --sfc2:  39  39  42;   /* zinc-800 #27272a */
+  --sfc3:  52  52  56;   /* zinc-700ish */
+  --sfc4:  63  63  70;   /* zinc-600 #3f3f46 */
+  --sfc5:  82  82  91;   /* zinc-500 #52525b */
+  --bdr:   63  63  70;   /* #3f3f46 */
+  --bdr-s: 39  39  42;   /* subtle */
+  --bdr-x: 113 113 122;  /* #71717a */
 }
 
 /* ── Base reset ────────────────────────────────────────────────────────────── */
@@ -31,14 +43,14 @@
 }
 
 html {
-  font-size: 14px;
+  font-size: 16.8px;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--color-bg);
+  background-color: rgb(var(--sfc));
   color: var(--color-text);
-  font-family: 'Inter var', 'Inter', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter var', 'Inter', system-ui, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -50,115 +62,179 @@ code, pre, .font-mono, [data-mono] {
   font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 }
 
-/* Heading defaults for dashboard content */
-h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
-h2 { font-size: 1rem;    font-weight: 600; letter-spacing: -0.01em; }
-h3 { font-size: 0.875rem; font-weight: 600; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+h1 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.025em; line-height: 1.4; }
+h2 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.4; }
+h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 
 /* ── Selection ─────────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(59, 130, 246, 0.3);
-  color: #e2e8f0;
+  background-color: rgba(224, 255, 79, 0.2);
+  color: #ffffff;
 }
 
-/* ── Focus rings ───────────────────────────────────────────────────────────── */
+/* ── Focus ─────────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline: 2px solid rgba(224, 255, 79, 0.6);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* ── Scrollbars ────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+::-webkit-scrollbar         { width: 4px; height: 4px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.08); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+::-webkit-scrollbar-corner  { background: transparent; }
+
+/* ── Data tables ─────────────────────────────────────────────────────────────
+   Apply .data-table to <table> for consistent table treatment.
+   ───────────────────────────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+.data-table thead th {
+  padding: 0.4375rem 0.875rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #909090;
+  border-bottom: 1px solid #2a2a2a;
+  white-space: nowrap;
 }
-::-webkit-scrollbar-thumb {
-  background: #1e2d45;
-  border-radius: 4px;
-  transition: background 0.2s;
+.data-table tbody tr {
+  border-bottom: 1px solid #1a1a1a;
+  transition: background-color 0.1s;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #2a3f60;
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background-color: rgba(255,255,255,0.03); }
+.data-table td {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #c0c0c0;
+  vertical-align: middle;
 }
-::-webkit-scrollbar-corner {
-  background: transparent;
+.data-table td:first-child,
+.data-table th:first-child { padding-left: 1rem; }
+.data-table td:last-child,
+.data-table th:last-child  { padding-right: 1rem; }
+
+/* ── Compact table variant ─────────────────────────────────────────────────── */
+.data-table-xs thead th { padding: 0.3rem 0.625rem; font-size: 0.625rem; }
+.data-table-xs td       { padding: 0.3125rem 0.625rem; font-size: 0.75rem; }
+
+/* ── Section header pattern ────────────────────────────────────────────────── */
+.section-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(224, 255, 79, 0.45);
+}
+
+/* ── Natural section title (no uppercase mechanical look) ─────────────────── */
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #71717a;
+  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.section-title::before {
+  content: '';
+  display: block;
+  width: 2.5px;
+  height: 0.875rem;
+  background: #E0FF4F;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+[data-theme="light"] .section-title { color: #52525b; }
+
+/* ── Stat number ───────────────────────────────────────────────────────────── */
+.stat-value {
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fafafa;
+  font-family: 'Sora', sans-serif;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 /* ── Log lines ─────────────────────────────────────────────────────────────── */
 .log-line {
   font-size: 0.72rem;
-  line-height: 1.6;
+  line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-all;
   font-family: 'JetBrains Mono', monospace;
-  padding: 0 0.25rem;
+  padding: 0.0625rem 0.375rem;
   border-radius: 2px;
 }
-.log-line:hover    { background: rgba(255,255,255,0.03); }
-.log-line.ERROR    { color: #fc8181; }
-.log-line.WARNING  { color: #f6e05e; }
-.log-line.INFO     { color: #94a3b8; }
-.log-line.DEBUG    { color: #64748b; }
+.log-line:hover   { background: rgba(255,255,255,0.03); }
+.log-line.ERROR   { color: #ff1b2d; }    /* Adobe red */
+.log-line.WARNING { color: #d4d4d4; }    /* near-white (neutral warning) */
+.log-line.INFO    { color: #909090; }    /* muted white */
+.log-line.DEBUG   { color: #505050; }    /* very muted */
 
-/* ── DORA rating badges ────────────────────────────────────────────────────── */
-.rating-elite  { @apply text-accent-green  bg-accent-green/10  border border-accent-green/30  rounded-full px-2 py-0.5 text-xs font-semibold; }
-.rating-high   { @apply text-accent-blue   bg-accent-blue/10   border border-accent-blue/30   rounded-full px-2 py-0.5 text-xs font-semibold; }
-.rating-medium { @apply text-accent-yellow bg-accent-yellow/10 border border-accent-yellow/30 rounded-full px-2 py-0.5 text-xs font-semibold; }
-.rating-low    { @apply text-accent-red    bg-accent-red/10    border border-accent-red/30    rounded-full px-2 py-0.5 text-xs font-semibold; }
+/* ── DORA rating badges — 3-color aligned ──────────────────────────────────── */
+.rating-elite  { @apply text-nvidia   bg-nvidia/[.08]          ring-1 ring-nvidia/20    rounded-full px-2 py-0.5 text-[11px] font-medium; }
+.rating-high   { @apply text-[#0a66c2] bg-[#0a66c2]/[.08]     ring-1 ring-[#0a66c2]/20 rounded-full px-2 py-0.5 text-[11px] font-medium; }
+.rating-medium { @apply text-[#d4d4d4] bg-white/[.05]          ring-1 ring-white/10      rounded-full px-2 py-0.5 text-[11px] font-medium; }
+.rating-low    { @apply text-[#b24020] bg-[#b24020]/[.08]      ring-1 ring-[#b24020]/20  rounded-full px-2 py-0.5 text-[11px] font-medium; }
 
-/* ── Shimmer skeleton ──────────────────────────────────────────────────────── */
+/* ── Skeleton shimmer ──────────────────────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #161b27 25%,
-    #1c2333 50%,
-    #161b27 75%
-  );
+  background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
   background-size: 400px 100%;
   animation: shimmer 1.6s linear infinite;
 }
 
 /* ── Command palette ───────────────────────────────────────────────────────── */
 [cmdk-root] {
-  background: #0d1117;
-  border: 1px solid #1e2d45;
-  border-radius: 12px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 24px 48px rgba(0,0,0,0.7);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04);
 }
 
 [cmdk-input] {
   width: 100%;
   font-size: 0.9375rem;
-  font-family: inherit;
-  padding: 1rem 1.25rem;
+  font-family: 'Plus Jakarta Sans', inherit;
+  padding: 0.9375rem 1.25rem;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #1e2d45;
-  color: #e2e8f0;
+  border-bottom: 1px solid #3f3f46;
+  color: #fafafa;
   outline: none;
-  caret-color: #3b82f6;
+  caret-color: #E0FF4F;
 }
-[cmdk-input]::placeholder {
-  color: #475569;
-}
+[cmdk-input]::placeholder { color: #71717a; }
 
 [cmdk-list] {
-  max-height: 380px;
+  max-height: 360px;
   overflow-y: auto;
   padding: 0.375rem;
 }
 
 [cmdk-group-heading] {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #475569;
+  color: rgba(224, 255, 79, 0.45);
   padding: 0.625rem 0.75rem 0.25rem;
 }
 
@@ -167,70 +243,492 @@ h3 { font-size: 0.875rem; font-weight: 600; }
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: #a1a1aa;
   cursor: pointer;
-  transition: all 0.1s;
+  transition: background-color 150ms, color 150ms;
 }
 [cmdk-item]:hover,
 [cmdk-item][aria-selected='true'] {
-  background: rgba(59,130,246,0.1);
-  color: #e2e8f0;
+  background: rgba(224, 255, 79, 0.06);
+  color: #fafafa;
 }
 
 [cmdk-empty] {
   padding: 2rem;
   text-align: center;
-  color: #475569;
+  color: #71717a;
   font-size: 0.8125rem;
 }
 
 [cmdk-separator] {
   height: 1px;
-  background: #1e2d45;
+  background: #3f3f46;
   margin: 0.25rem 0;
 }
 
-/* ── Tooltip content ───────────────────────────────────────────────────────── */
+/* ── Tooltip ───────────────────────────────────────────────────────────────── */
 .tooltip-content {
-  background: #1c2333;
-  border: 1px solid #1e2d45;
-  color: #cbd5e1;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  color: #e4e4e7;
   font-size: 0.75rem;
   padding: 0.3125rem 0.625rem;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  animation: fade-in 0.12s ease-out;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  animation: fade-in 0.1s ease-out;
   white-space: nowrap;
   z-index: 9999;
 }
 
-/* ── Recharts global overrides ─────────────────────────────────────────────── */
+/* ── Recharts overrides ────────────────────────────────────────────────────── */
 .recharts-cartesian-axis-tick-value {
-  fill: #64748b !important;
+  fill: #a1a1aa !important;
   font-size: 11px !important;
   font-family: 'JetBrains Mono', monospace !important;
 }
-.recharts-tooltip-wrapper {
-  outline: none !important;
-}
+.recharts-tooltip-wrapper { outline: none !important; }
 .recharts-default-tooltip {
-  background: #0d1117 !important;
-  border: 1px solid #1e2d45 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+  background: #18181b !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7) !important;
 }
-.recharts-tooltip-label {
-  color: #cbd5e1 !important;
-  font-size: 12px !important;
-}
-.recharts-legend-item-text {
-  color: #64748b !important;
-  font-size: 11px !important;
-}
+.recharts-tooltip-label  { color: #e4e4e7 !important; font-size: 12px !important; }
+.recharts-legend-item-text { color: #a1a1aa !important; font-size: 11px !important; }
 
 /* ── Sidebar transition ────────────────────────────────────────────────────── */
-.sidebar-transition {
-  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+.sidebar-transition { transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Light-mode sidebar — white with clean shadow separator */
+[data-theme="light"] .sidebar-transition {
+  background-color: #ffffff !important;
+  box-shadow: 1px 0 0 rgba(0,0,0,0.06) !important;
+  border-right: none !important;
 }
+
+/* ── Interactive card ──────────────────────────────────────────────────────── */
+.card-interactive {
+  transition: border-color 300ms cubic-bezier(0.4,0,0.2,1), box-shadow 300ms cubic-bezier(0.4,0,0.2,1), background-color 300ms, transform 300ms cubic-bezier(0.4,0,0.2,1);
+}
+.card-interactive:hover {
+  border-color: #52525b;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  transform: translateY(-2px);
+}
+
+/* ── Hover lift — physical micro-interaction for cards ────────────────────── */
+.hover-lift {
+  transition: transform 300ms cubic-bezier(0.4,0,0.2,1), box-shadow 300ms cubic-bezier(0.4,0,0.2,1), border-color 150ms;
+}
+.hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+[data-theme="light"] .hover-lift:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* ── Card entrance animations ─────────────────────────────────────────────── */
+@keyframes card-appear {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-appear   { animation: card-appear 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.card-appear-1 { animation-delay: 0.04s; }
+.card-appear-2 { animation-delay: 0.08s; }
+.card-appear-3 { animation-delay: 0.12s; }
+.card-appear-4 { animation-delay: 0.16s; }
+.card-appear-5 { animation-delay: 0.20s; }
+.card-appear-6 { animation-delay: 0.24s; }
+
+/* ── Emerald → lime (live indicators use emerald-* classes) ─────────────── */
+.bg-emerald-400, .bg-emerald-500 { background-color: #E0FF4F !important; }
+.text-emerald-400, .text-emerald-500 { color: #E0FF4F !important; }
+.ring-emerald-500\/20 { --tw-ring-color: rgba(224,255,79,0.2) !important; }
+.bg-emerald-500\/\[\.07\] { background-color: rgba(224,255,79,0.07) !important; }
+
+/* ── Light theme — warm ivory (sudhakarchundu.org inspired) ──────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+  /* Warm ivory palette — clean, premium, slightly warm */
+  --sfc:   254 253 251;   /* page bg — warm ivory #FEFDFB                     */
+  --sfc1:  255 255 255;   /* cards — pure white                                */
+  --sfc2:  249 248 244;   /* inner panels — #F9F8F4                            */
+  --sfc3:  243 242 236;   /* slightly deeper — #F3F2EC                         */
+  --sfc4:  228 227 220;
+  --sfc5:  216 215 208;
+  --bdr:   232 231 226;   /* warm border                                       */
+  --bdr-s: 243 242 236;   /* very subtle                                       */
+  --bdr-x: 196 194 186;   /* strong/focus border                               */
+}
+
+[data-theme="light"] body {
+  color: #1a1a1a;            /* near-black primary text */
+  background: #FEFDFB;       /* warm ivory page background */
+}
+
+/* Cards — white with shadow depth, subtle border for definition ------------- */
+[data-theme="light"] .bg-surface-1 {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .bg-surface-2 { background-color: #F9F8F4 !important; }
+[data-theme="light"] .bg-surface-3 { background-color: #F3F2EC !important; }
+[data-theme="light"] .bg-surface   { background-color: #F9F8F4 !important; }
+[data-theme="light"] .bg-surface-4 { background-color: #e3e0d8 !important; }
+[data-theme="light"] .bg-surface-5 { background-color: #d8d4cb !important; }
+[data-theme="light"] .bg-surface-1\/90 {
+  background-color: rgba(255,255,255,0.96) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08) !important;  /* header bottom line */
+}
+[data-theme="light"] .bg-surface-2\/80 { background-color: rgba(249,248,244,0.9) !important; }
+
+/* Gray backgrounds for badges/chips/dots ------------------------------------ */
+[data-theme="light"] .bg-gray-600  { background-color: #c9c5be; }
+[data-theme="light"] .bg-gray-700  { background-color: #dbd8d2; }
+[data-theme="light"] .bg-gray-800  { background-color: #ece9e3; }
+[data-theme="light"] .border-gray-600 { border-color: #c9c5be; }
+[data-theme="light"] .border-gray-700 { border-color: #dbd8d2; }
+
+/* Border colors — LinkedIn warm grey ---------------------------------------- */
+[data-theme="light"] .border-border        { border-color: rgba(0,0,0,0.08); }
+[data-theme="light"] .border-border-subtle { border-color: rgba(0,0,0,0.05); }
+[data-theme="light"] .border-border-strong { border-color: rgba(0,0,0,0.15); }
+
+/* Ring colors --------------------------------------------------------------- */
+[data-theme="light"] .ring-border        { --tw-ring-color: rgba(0,0,0,0.08); }
+[data-theme="light"] .ring-border-subtle { --tw-ring-color: rgba(0,0,0,0.05); }
+[data-theme="light"] .ring-border-strong { --tw-ring-color: rgba(0,0,0,0.15); }
+
+/* Primary text → near-black ------------------------------------------------- */
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-neutral-50  { color: #1a1a1a; }
+[data-theme="light"] .text-neutral-100,
+[data-theme="light"] .text-neutral-200 { color: #1a1a1a; }
+[data-theme="light"] .text-neutral-300 { color: #3d3d3d; }
+[data-theme="light"] .text-neutral-400,
+[data-theme="light"] .text-neutral-500 { color: #6b6b6b; }
+
+/* Hover state text overrides */
+[data-theme="light"] .hover\:text-white:hover,
+[data-theme="light"] .hover\:text-neutral-50:hover,
+[data-theme="light"] .hover\:text-neutral-100:hover,
+[data-theme="light"] .hover\:text-neutral-200:hover { color: #1d2226; }
+[data-theme="light"] .hover\:text-neutral-300:hover { color: #38434f; }
+[data-theme="light"] .hover\:text-gray-200:hover,
+[data-theme="light"] .hover\:text-gray-300:hover { color: #38434f; }
+
+/* Gray scale text — LinkedIn secondary text #56687a, tertiary #86939e ------- */
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200,
+[data-theme="light"] .text-gray-300 { color: #38434f; }
+[data-theme="light"] .text-gray-400 { color: #56687a; }
+[data-theme="light"] .text-gray-500 { color: #56687a; }
+[data-theme="light"] .text-gray-600 { color: #86939e; }
+
+/* Accent colors — lime as primary, semantic colors kept ---------------------- */
+[data-theme="light"] .text-accent-green  { color: #4d7c0f; }  /* darker lime-green */
+[data-theme="light"] .text-accent-blue   { color: #0a66c2; }  /* info blue — semantic, kept */
+[data-theme="light"] .text-accent-red    { color: #b24020; }  /* error — kept */
+[data-theme="light"] .text-accent-yellow { color: #915907; }  /* caution — kept */
+[data-theme="light"] .text-accent-orange { color: #b24020; }
+[data-theme="light"] .text-accent-purple { color: #65a30d; }  /* → lime */
+[data-theme="light"] .text-accent-cyan   { color: #4d7c0f; }
+[data-theme="light"] .text-accent-teal   { color: #4d7c0f; }
+[data-theme="light"] .text-accent-indigo { color: #0a66c2; }
+
+/* Semantic status text ------------------------------------------------------ */
+[data-theme="light"] .text-emerald-400 { color: #057642; }
+[data-theme="light"] .text-red-400     { color: #b24020; }
+[data-theme="light"] .text-blue-400    { color: #0a66c2; }
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-yellow-300,
+[data-theme="light"] .text-yellow-400,
+[data-theme="light"] .text-yellow-500  { color: #915907; }
+[data-theme="light"] .text-purple-400  { color: #0a66c2; }
+[data-theme="light"] .text-orange-300,
+[data-theme="light"] .text-orange-400  { color: #b24020; }
+[data-theme="light"] .text-indigo-400  { color: #0a66c2; }
+[data-theme="light"] .text-cyan-400    { color: #057642; }
+[data-theme="light"] .text-teal-400    { color: #057642; }
+[data-theme="light"] .text-rose-400    { color: #b24020; }
+[data-theme="light"] .text-lime-400    { color: #057642; }
+
+/* Section label, stat value ------------------------------------------------- */
+[data-theme="light"] .section-label { color: #65a30d; font-weight: 700; }
+[data-theme="light"] .stat-value    { color: #1a1a1a; }
+[data-theme="light"] .section-title { color: #52525b; }
+
+/* Log lines ----------------------------------------------------------------- */
+[data-theme="light"] .log-line:hover    { background: rgba(0,0,0,0.03); }
+[data-theme="light"] .log-line.ERROR    { color: #cc0016; }
+[data-theme="light"] .log-line.WARNING  { color: #666666; }
+[data-theme="light"] .log-line.INFO     { color: #3f3f46; }
+[data-theme="light"] .log-line.DEBUG    { color: #71717a; }
+
+/* DORA rating badges -------------------------------------------------------- */
+[data-theme="light"] .rating-elite  { color: #4d7c0f;  background-color: rgba(101,163,13,0.10); }
+[data-theme="light"] .rating-high   { color: #0040cc;  background-color: rgba(11,92,255,0.08); }
+[data-theme="light"] .rating-medium { color: #555555;  background-color: rgba(0,0,0,0.04); }
+[data-theme="light"] .rating-low    { color: #cc0016;  background-color: rgba(255,27,45,0.08); }
+
+/* Skeleton ------------------------------------------------------------------ */
+[data-theme="light"] .skeleton {
+  background: linear-gradient(90deg, #F9F8F4 25%, #eeede8 50%, #F9F8F4 75%);
+  background-size: 400px 100%;
+}
+
+/* Command palette ----------------------------------------------------------- */
+[data-theme="light"] [cmdk-root] {
+  background: rgba(255,255,255,0.97);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 32px 64px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
+[data-theme="light"] [cmdk-input] {
+  color: #1a1a1a;
+  border-bottom-color: rgba(0,0,0,0.08);
+  caret-color: #84cc16;
+}
+[data-theme="light"] [cmdk-input]::placeholder { color: #a3a3a3; }
+[data-theme="light"] [cmdk-group-heading] { color: #65a30d; font-weight: 700; }
+[data-theme="light"] [cmdk-item] { color: #52525b; }
+[data-theme="light"] [cmdk-item]:hover,
+[data-theme="light"] [cmdk-item][aria-selected='true'] {
+  background: rgba(101,163,13,0.06);
+  color: #1a1a1a;
+}
+[data-theme="light"] [cmdk-empty]     { color: #71717a; }
+[data-theme="light"] [cmdk-separator] { background: rgba(0,0,0,0.06); }
+
+/* Tooltip ------------------------------------------------------------------- */
+[data-theme="light"] .tooltip-content {
+  background: #ffffff;
+  border-color: #e4e4e7;
+  color: #3f3f46;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+/* Scrollbars ---------------------------------------------------------------- */
+[data-theme="light"] ::-webkit-scrollbar-thumb       { background: #d4d4d8; }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover  { background: #a1a1aa; }
+
+/* Data tables --------------------------------------------------------------- */
+[data-theme="light"] .data-table thead th {
+  color: #71717a;
+  border-bottom-color: #e4e4e7;
+}
+[data-theme="light"] .data-table tbody tr        { border-bottom-color: #f4f4f5; }
+[data-theme="light"] .data-table tbody tr:hover  { background-color: rgba(0,0,0,0.02); }
+[data-theme="light"] .data-table td              { color: #3f3f46; }
+
+/* Interactive card ---------------------------------------------------------- */
+[data-theme="light"] .card-interactive:hover {
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
+  transform: translateY(-2px);
+}
+
+/* Recharts ------------------------------------------------------------------ */
+[data-theme="light"] .recharts-cartesian-axis-tick-value { fill: #71717a !important; }
+[data-theme="light"] .recharts-default-tooltip {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important;
+}
+[data-theme="light"] .recharts-tooltip-label      { color: #1a1a1a !important; }
+[data-theme="light"] .recharts-legend-item-text   { color: #71717a !important; }
+
+/* Focus & selection --------------------------------------------------------- */
+[data-theme="light"] :focus-visible {
+  outline-color: rgba(132,204,22,0.6);   /* lime focus ring */
+}
+[data-theme="light"] *::selection {
+  background-color: rgba(132,204,22,0.18);
+  color: #1a1a1a;
+}
+
+/* Accent backgrounds — keep blue as semantic info ---------------------------- */
+[data-theme="light"] .bg-accent-blue\/10  { background-color: rgba(10,102,194,0.10) !important; }
+[data-theme="light"] .bg-accent-blue\/20  { background-color: rgba(10,102,194,0.20) !important; }
+[data-theme="light"] .border-accent-blue\/20 { border-color: rgba(10,102,194,0.20) !important; }
+[data-theme="light"] .border-accent-blue\/30 { border-color: rgba(10,102,194,0.30) !important; }
+[data-theme="light"] .hover\:bg-accent-blue\/20:hover { background-color: rgba(10,102,194,0.20) !important; }
+
+/* Lime/green variants ------------------------------------------------------- */
+[data-theme="light"] .bg-accent-green\/10 { background-color: rgba(101,163,13,0.10) !important; }
+[data-theme="light"] .border-accent-green\/20 { border-color: rgba(101,163,13,0.20) !important; }
+[data-theme="light"] .border-accent-green\/30 { border-color: rgba(101,163,13,0.30) !important; }
+
+/* LinkedIn negative red variants -------------------------------------------- */
+[data-theme="light"] .bg-accent-red\/10  { background-color: rgba(178,64,32,0.10) !important; }
+[data-theme="light"] .border-accent-red\/20 { border-color: rgba(178,64,32,0.20) !important; }
+[data-theme="light"] .border-accent-red\/30 { border-color: rgba(178,64,32,0.30) !important; }
+
+/* ── LinkedIn design — global all-page overrides ─────────────────────────── */
+
+/* Hard-coded Tailwind dark backgrounds → LinkedIn-appropriate light fills --- */
+[data-theme="light"] .bg-green-950  { background-color: #f0fdf4 !important; }
+[data-theme="light"] .bg-red-950    { background-color: #fff1f2 !important; }
+[data-theme="light"] .bg-blue-950   { background-color: #eff6ff !important; }
+[data-theme="light"] .bg-amber-950  { background-color: #fffbeb !important; }
+[data-theme="light"] .bg-purple-950 { background-color: #faf5ff !important; }
+[data-theme="light"] .bg-gray-800, [data-theme="light"] .bg-gray-900   { background-color: #F9F8F4 !important; }
+[data-theme="light"] .bg-neutral-800, [data-theme="light"] .bg-neutral-900 { background-color: #F9F8F4 !important; }
+[data-theme="light"] .bg-zinc-800, [data-theme="light"] .bg-zinc-900   { background-color: #F9F8F4 !important; }
+[data-theme="light"] .bg-slate-800, [data-theme="light"] .bg-slate-900 { background-color: #F9F8F4 !important; }
+
+/* Dark border overrides */
+[data-theme="light"] .border-green-800  { border-color: rgba(5,118,66,0.25) !important; }
+[data-theme="light"] .border-red-800    { border-color: rgba(178,64,32,0.25) !important; }
+[data-theme="light"] .border-blue-800   { border-color: rgba(10,102,194,0.25) !important; }
+[data-theme="light"] .border-amber-800  { border-color: rgba(145,89,7,0.25) !important; }
+[data-theme="light"] .border-gray-700   { border-color: rgba(0,0,0,0.08) !important; }
+[data-theme="light"] .border-gray-800   { border-color: rgba(0,0,0,0.06) !important; }
+[data-theme="light"] .border-neutral-700, [data-theme="light"] .border-neutral-800 { border-color: rgba(0,0,0,0.08) !important; }
+
+/* Dark background text that needs to be visible on light bg */
+[data-theme="light"] .text-green-300, [data-theme="light"] .text-green-400 { color: #057642 !important; }
+[data-theme="light"] .text-red-300,   [data-theme="light"] .text-red-400   { color: #b24020 !important; }
+[data-theme="light"] .text-blue-300,  [data-theme="light"] .text-blue-400  { color: #0a66c2 !important; }
+[data-theme="light"] .text-amber-300, [data-theme="light"] .text-amber-400 { color: #915907 !important; }
+[data-theme="light"] .text-purple-300, [data-theme="light"] .text-purple-400 { color: #0a66c2 !important; }
+[data-theme="light"] .text-gray-700   { color: #56687a !important; }
+[data-theme="light"] .text-neutral-700, [data-theme="light"] .text-neutral-800 { color: #56687a !important; }
+[data-theme="light"] .text-neutral-900 { color: #1d2226 !important; }
+
+/* ── LinkedIn-style page header (used by all pages) ─────────────────────────
+   Pages do: <h1 class="text-xl font-bold text-white"> which → #1d2226 via
+   text-white override. Add bottom separator when in page header context.     */
+[data-theme="light"] main h1 {
+  color: #1d2226;
+  font-weight: 700;
+}
+[data-theme="light"] main h2 {
+  color: #1d2226;
+  font-weight: 600;
+}
+
+/* ── LinkedIn-style card title row (border-b between title and content) ───── */
+[data-theme="light"] .card-header {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+/* ── Readable rating badges — remove all-caps tracking from ratings ────────  */
+[data-theme="light"] .rating-elite,
+[data-theme="light"] .rating-high,
+[data-theme="light"] .rating-medium,
+[data-theme="light"] .rating-low {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 0.6875rem !important;
+}
+
+/* ── Status badge (StatusBadge component) in light mode ─────────────────────  */
+[data-theme="light"] .bg-surface-1 .text-\[9px\] { font-size: 0.6875rem !important; }
+
+/* ── Link style — lime ───────────────────────────────────────────────────────  */
+[data-theme="light"] main a:not([class]) {
+  color: #65a30d;
+  text-decoration: none;
+}
+[data-theme="light"] main a:not([class]):hover { text-decoration: underline; }
+
+/* ── Inline style overrides — pages that use hardcoded dark hex in style={} ─ */
+/* (Recharts tooltips use inline styles — override via class) */
+
+/* ── Tab pills — lime underline ─────────────────────────────────────────────  */
+[data-theme="light"] .tab-active {
+  background-color: transparent;
+  color: #1a1a1a;
+  font-weight: 600;
+  border-bottom: 2px solid #84cc16;
+  border-radius: 0;
+}
+[data-theme="light"] .tab-inactive {
+  color: #71717a;
+  font-weight: 500;
+}
+[data-theme="light"] .tab-inactive:hover { color: #1a1a1a; background-color: rgba(101,163,13,0.06); }
+
+/* ── Data table ──────────────────────────────────────────────────────────────  */
+[data-theme="light"] .data-table thead th {
+  color: #71717a;
+  border-bottom-color: rgba(0,0,0,0.06);
+  background-color: #F9F8F4;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+[data-theme="light"] .data-table tbody tr        { border-bottom-color: rgba(0,0,0,0.05); }
+[data-theme="light"] .data-table tbody tr:hover  { background-color: rgba(101,163,13,0.04); }
+[data-theme="light"] .data-table td              { color: #1a1a1a; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────────  */
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+
+/* ── Log lines — LinkedIn text hierarchy on light bg ────────────────────────  */
+[data-theme="light"] .log-line { color: #38434f; }
+[data-theme="light"] .log-line:hover    { background: rgba(0,0,0,0.03); }
+[data-theme="light"] .log-line.ERROR    { color: #b24020; }
+[data-theme="light"] .log-line.WARNING  { color: #915907; }
+[data-theme="light"] .log-line.INFO     { color: #56687a; }
+[data-theme="light"] .log-line.DEBUG    { color: #86939e; }
+
+/* ── Section-title accent bar — lime ────────────────────────────────────────  */
+[data-theme="light"] .section-title::before { background: #84cc16; }
+
+/* ── nvidia / lime brand overrides in light ─────────────────────────────────  */
+[data-theme="light"] .text-nvidia { color: #4d7c0f !important; }
+[data-theme="light"] .bg-nvidia { background-color: #84cc16 !important; }
+[data-theme="light"] .bg-nvidia\/10, [data-theme="light"] .bg-nvidia\/15 { background-color: rgba(101,163,13,0.10) !important; }
+[data-theme="light"] .bg-nvidia\/\[\.06\] { background-color: rgba(101,163,13,0.06) !important; }
+[data-theme="light"] .bg-nvidia\/\[\.08\] { background-color: rgba(101,163,13,0.08) !important; }
+[data-theme="light"] .border-nvidia\/20 { border-color: rgba(101,163,13,0.20) !important; }
+[data-theme="light"] .border-nvidia\/25 { border-color: rgba(101,163,13,0.25) !important; }
+[data-theme="light"] .hover\:bg-nvidia\/10:hover { background-color: rgba(101,163,13,0.10) !important; }
+[data-theme="light"] .hover\:bg-nvidia\/25:hover { background-color: rgba(101,163,13,0.25) !important; }
+
+/* ── Remove mechanical all-caps tracking from section labels globally ────────
+   tracking-wider is used purely for visual decoration on small section labels;
+   LinkedIn-style uses natural-case weight instead.
+   Exception: tracking-widest (priority/status badges) is intentional.         */
+[data-theme="light"] .uppercase.tracking-wider {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* ── Replace bg-black/40, bg-black/60 hardcoded dark blocks ─────────────── */
+[data-theme="light"] .bg-black\/40 { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .bg-black\/60 { background-color: rgba(0,0,0,0.05) !important; }
+
+/* ── bg-yellow-950 and fractional variants → warm light fills ─────────────  */
+[data-theme="light"] .bg-yellow-950\/10,
+[data-theme="light"] .bg-yellow-950\/20,
+[data-theme="light"] .bg-yellow-950\/40  { background-color: rgba(161,98,7,0.07) !important; }
+[data-theme="light"] .bg-yellow-950     { background-color: rgba(161,98,7,0.10) !important; }
+
+/* ── bg-red-950 fractional variants ────────────────────────────────────────  */
+[data-theme="light"] .bg-red-950\/10,
+[data-theme="light"] .bg-red-950\/20,
+[data-theme="light"] .bg-red-950\/30,
+[data-theme="light"] .bg-red-950\/40    { background-color: rgba(178,64,32,0.07) !important; }
+
+/* ── Dark border combinations on alert banners ───────────────────────────── */
+[data-theme="light"] .border-red-900\/40  { border-color: rgba(178,64,32,0.25) !important; }
+[data-theme="light"] .border-red-900\/30  { border-color: rgba(178,64,32,0.20) !important; }
+[data-theme="light"] .border-yellow-900\/30 { border-color: rgba(161,98,7,0.25) !important; }
+[data-theme="light"] .border-yellow-800   { border-color: rgba(161,98,7,0.25) !important; }
+
+/* ── text-yellow-300 / text-yellow-400 in light (used in alert banners) ─── */
+[data-theme="light"] .text-yellow-300,
+[data-theme="light"] .text-yellow-400 { color: #7c5a02 !important; }
+[data-theme="light"] .text-yellow-500 { color: #915907 !important; }

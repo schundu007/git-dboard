@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
-type Variant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'muted' | 'outline'
+type Variant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'muted' | 'outline' | 'indigo' | 'nvidia'
 type Size    = 'xs' | 'sm' | 'md'
 
 interface BadgeProps {
@@ -14,30 +14,34 @@ interface BadgeProps {
 }
 
 const variants: Record<Variant, string> = {
-  default:  'bg-surface-3 text-gray-300 border border-border',
-  success:  'bg-accent-green/10 text-accent-green border border-accent-green/25',
-  warning:  'bg-accent-yellow/10 text-accent-yellow border border-accent-yellow/25',
-  danger:   'bg-accent-red/10 text-accent-red border border-accent-red/25',
-  info:     'bg-accent-blue/10 text-accent-blue border border-accent-blue/25',
-  purple:   'bg-accent-purple/10 text-accent-purple border border-accent-purple/25',
-  muted:    'bg-surface-2 text-gray-500 border border-border-subtle',
-  outline:  'text-gray-400 border border-border bg-transparent',
+  default:  'bg-neutral-800/60 text-neutral-300 ring-1 ring-neutral-700/40',
+  success:  'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25',
+  warning:  'bg-amber-500/[.07]   text-amber-400   ring-1 ring-amber-500/25',
+  danger:   'bg-red-500/[.07]     text-red-400     ring-1 ring-red-500/25',
+  info:     'bg-neutral-500/[.07] text-neutral-400  ring-1 ring-neutral-500/25',
+  purple:   'bg-neutral-500/[.07] text-neutral-400  ring-1 ring-neutral-500/25',
+  indigo:   'bg-[#76b900]/[.07]   text-nvidia      ring-1 ring-[#76b900]/25',
+  nvidia:   'bg-[#76b900]/[.07]   text-nvidia      ring-1 ring-[#76b900]/25',
+  muted:    'bg-surface-2 text-neutral-500 ring-1 ring-border-subtle',
+  outline:  'text-neutral-400 ring-1 ring-border bg-transparent',
 }
 
 const dotColors: Record<Variant, string> = {
-  default: 'bg-gray-400',
-  success: 'bg-accent-green',
-  warning: 'bg-accent-yellow',
-  danger:  'bg-accent-red',
-  info:    'bg-accent-blue',
-  purple:  'bg-accent-purple',
-  muted:   'bg-gray-600',
-  outline: 'bg-gray-500',
+  default:  'bg-neutral-400',
+  success:  'bg-emerald-400',
+  warning:  'bg-amber-400',
+  danger:   'bg-red-400',
+  info:     'bg-neutral-400',
+  purple:   'bg-neutral-400',
+  indigo:   'bg-nvidia',
+  nvidia:   'bg-nvidia',
+  muted:    'bg-neutral-600',
+  outline:  'bg-neutral-500',
 }
 
 const sizes: Record<Size, string> = {
   xs: 'text-[10px] px-1.5 py-0.5 gap-1 rounded',
-  sm: 'text-[11px] px-2 py-0.5 gap-1.5 rounded',
+  sm: 'text-[11px] px-2 py-0.5 gap-1.5 rounded-md',
   md: 'text-xs px-2.5 py-1 gap-2 rounded-md',
 }
 
@@ -59,7 +63,14 @@ export function Badge({
       )}
     >
       {dot && (
-        <span className={cn('inline-block rounded-full flex-shrink-0', size === 'xs' ? 'w-1 h-1' : 'w-1.5 h-1.5', dotColors[variant], pulse && 'animate-pulse')} />
+        <span
+          className={cn(
+            'inline-block rounded-full flex-shrink-0',
+            size === 'xs' ? 'w-1 h-1' : 'w-1.5 h-1.5',
+            dotColors[variant],
+            pulse && 'animate-pulse',
+          )}
+        />
       )}
       {children}
     </span>
@@ -67,28 +78,28 @@ export function Badge({
 }
 
 export function StatusDot({ status, size = 6 }: { status: string; size?: number }) {
-  const color = {
-    success:    'bg-accent-green',
-    completed:  'bg-accent-green',
-    passing:    'bg-accent-green',
-    online:     'bg-accent-green',
-    active:     'bg-accent-green',
-    failure:    'bg-accent-red',
-    failed:     'bg-accent-red',
-    error:      'bg-accent-red',
-    offline:    'bg-accent-red',
-    in_progress:'bg-accent-blue animate-pulse',
-    running:    'bg-accent-blue animate-pulse',
-    queued:     'bg-accent-yellow animate-pulse',
-    pending:    'bg-accent-yellow animate-pulse',
-    cancelled:  'bg-gray-500',
-    skipped:    'bg-gray-600',
-    idle:       'bg-gray-500',
-  }[status] ?? 'bg-gray-600'
+  const color: Record<string, string> = {
+    success:     'bg-emerald-400',
+    completed:   'bg-emerald-400',
+    passing:     'bg-emerald-400',
+    online:      'bg-emerald-400',
+    active:      'bg-emerald-400',
+    failure:     'bg-red-400',
+    failed:      'bg-red-400',
+    error:       'bg-red-400',
+    offline:     'bg-red-400',
+    in_progress: 'bg-nvidia animate-pulse',
+    running:     'bg-nvidia animate-pulse',
+    queued:      'bg-neutral-400 animate-pulse',
+    pending:     'bg-neutral-400 animate-pulse',
+    cancelled:   'bg-neutral-500',
+    skipped:     'bg-neutral-600',
+    idle:        'bg-neutral-500',
+  }
 
   return (
     <span
-      className={cn('rounded-full inline-block flex-shrink-0', color)}
+      className={cn('rounded-full inline-block flex-shrink-0', color[status] ?? 'bg-neutral-600')}
       style={{ width: size, height: size }}
     />
   )

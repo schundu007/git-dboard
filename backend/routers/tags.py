@@ -1,9 +1,10 @@
 """
-Tag naming, build matrix, and lifecycle policy — pure computation, no GitHub API calls.
+Tag naming, build matrix, and lifecycle policy.
 """
 from datetime import date as date_cls
 from fastapi import APIRouter, Query
 from typing import Optional
+from services.github_client import get_active_repo_parts
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 
@@ -15,8 +16,12 @@ UNSUPPORTED: set[tuple[str, str]] = {
     ("5.1.0", "ngc-slim"),
 }
 
-NGC_IMAGE  = "nvcr.io/nvidia/isaac-lab"
-GHCR_IMAGE = "ghcr.io/isaac-sim/isaaclab"
+
+def _registry_images() -> tuple[str, str]:
+    """Return (ngc_image, ghcr_image) for the currently active repo."""
+    owner, repo = get_active_repo_parts()
+    ngc_name = repo.lower().replace("_", "-")
+    return f"nvcr.io/nvidia/{ngc_name}", f"ghcr.io/{owner.lower()}/{repo.lower()}"
 
 DOCKERFILE_MAP = {
     "base":     "docker/Dockerfile",
@@ -48,6 +53,7 @@ def compute_tags(
     image_ext: str          = Query("base",    description="base | ros2 | cloudxr | ngc-slim"),
     sim_version: str        = Query("4.5.0",   description="e.g. 4.5.0"),
 ):
+    NGC_IMAGE, GHCR_IMAGE = _registry_images()
     mm          = _mm(sim_version)
     cell_slug   = f"{image_ext}-sim{mm}"
     supported   = (sim_version, image_ext) not in UNSUPPORTED

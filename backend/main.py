@@ -10,24 +10,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from database import init_db, AsyncSessionLocal
-from routers import analytics, automation, builds, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, tags
+from routers import analytics, automation, builds, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, repos, security, tags
 from services import github_client as gh
 from services import log_store
 from services import pr_automation
 
 logger = logging.getLogger("auto_ingest")
 
-CORS_ORIGINS = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+CORS_ORIGINS = [f"http://localhost:{p}" for p in range(5173, 5180)] + ["http://localhost:3000"]
 
-# Workflows to auto-monitor for log ingestion
-AUTO_INGEST_WORKFLOWS = ["postmerge-ci.yml", "nightly.yml"]
 AUTO_INGEST_INTERVAL = 300  # seconds between polls
 
 
 async def _ingest_run(run_id: int) -> int:
     """Ingest all job logs for a single GHA run into the DB. Returns line count."""
+    repo_slug = gh.get_active_repo_slug()
     async with AsyncSessionLocal() as db:
-        if await log_store.run_has_logs(db, str(run_id)):
+        if await log_store.run_has_logs(db, str(run_id), repo_slug=repo_slug):
             return 0
         jobs_data = await gh.get_run_jobs(run_id)
         count = 0
@@ -39,7 +38,7 @@ async def _ingest_run(run_id: int) -> int:
                     continue
                 low = line.lower()
                 level = "ERROR" if "error" in low else "WARNING" if "warn" in low else "INFO"
-                await log_store.save_log(db, "gha", str(run_id), level, line, {"job": job["name"]})
+                await log_store.save_log(db, "gha", str(run_id), level, line, {"job": job["name"]}, repo_slug=repo_slug)
                 count += 1
     return count
 
@@ -74,7 +73,9 @@ async def _auto_ingest_loop():
     await asyncio.sleep(10)  # small delay to let the app fully start
     while True:
         try:
-            for workflow in AUTO_INGEST_WORKFLOWS:
+            wf_map = await gh.get_primary_workflows()
+            workflows = [w for w in [wf_map["ci"], wf_map["nightly"]] if w]
+            for workflow in workflows:
                 data = await gh.get_workflow_runs(workflow, per_page=10)
                 for run in data.get("workflow_runs", []):
                     if run.get("status") != "completed":
@@ -88,9 +89,23 @@ async def _auto_ingest_loop():
         await asyncio.sleep(AUTO_INGEST_INTERVAL)
 
 
+async def _restore_active_repo():
+    """On startup, re-apply any DB-persisted active repo to the github_client override."""
+    from sqlalchemy import select
+    from models import RepoConfig
+    async with AsyncSessionLocal() as db:
+        r = (await db.execute(
+            select(RepoConfig).where(RepoConfig.is_active == True)  # noqa: E712
+        )).scalar_one_or_none()
+        if r:
+            gh.set_active_repo(r.owner, r.repo, r.gh_pat or None)
+            logger.info("Restored active repo: %s/%s", r.owner, r.repo)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await _restore_active_repo()
     ingest_task = asyncio.create_task(_auto_ingest_loop())
     asyncio.create_task(_warm_stats_cache())
     pr_automation.start_scheduler()  # starts paused (enabled=False by default)
@@ -145,9 +160,33 @@ app.include_router(issues.router)
 app.include_router(insights.router)
 app.include_router(health_analysis.router)
 app.include_router(improvement.router)
+app.include_router(repos.router)
+app.include_router(security.router)
 app.include_router(tags.router)
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.0.0"}
+
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """Bust all server-side in-process caches. Called by frontend on repo switch."""
+    from services import github_client as _gh
+    _gh._stats_mem.clear()
+    return {"cleared": True}
+
+
+@app.get("/config")
+async def get_config():
+    return {"owner": settings.GH_OWNER, "repo": settings.GH_REPO}
+
+
+@app.patch("/config")
+async def patch_config(body: dict):
+    if "owner" in body and body["owner"]:
+        settings.GH_OWNER = body["owner"].strip()
+    if "repo" in body and body["repo"]:
+        settings.GH_REPO = body["repo"].strip()
+    return {"owner": settings.GH_OWNER, "repo": settings.GH_REPO}

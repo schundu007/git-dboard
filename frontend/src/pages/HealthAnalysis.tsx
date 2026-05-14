@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ShieldCheck, Zap, GitMerge, Clock, TrendingDown, Server,
-  AlertTriangle, CheckCircle, XCircle, Timer, Cpu, ExternalLink,
-  Activity, RefreshCw, ChevronDown, ChevronRight,
+  AlertTriangle, XCircle, Timer, Cpu, ExternalLink,
+  Activity, RefreshCw, ChevronDown, ChevronRight, Target,
 } from 'lucide-react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip,
@@ -11,24 +11,23 @@ import {
 } from 'recharts'
 import {
   getHealthDora, getHealthCiTriage, getHealthPipelinePerf, getHealthRunnerHealth,
+  getActiveRepo,
 } from '../lib/api'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
-
-type HealthTab = 'dora' | 'triage' | 'perf' | 'runners'
 
 // ── Shared components ─────────────────────────────────────────────────────────
 
 function RatingBadge({ rating }: { rating: string }) {
   const cls = {
-    Elite: 'bg-accent-green/10 text-accent-green border-accent-green/30',
-    High: 'bg-accent-blue/10 text-accent-blue border-accent-blue/30',
-    Medium: 'bg-accent-yellow/10 text-accent-yellow border-accent-yellow/30',
-    Low: 'bg-accent-red/10 text-accent-red border-accent-red/30',
-  }[rating] ?? 'bg-gray-800 text-gray-400 border-gray-700'
+    Elite:  'bg-accent-green/10 text-accent-green border-accent-green/30',
+    High:   'bg-accent-blue/10 text-accent-blue border-accent-blue/30',
+    Medium: 'bg-surface-3 text-gray-500 border-border',
+    Low:    'bg-accent-red/10 text-accent-red border-accent-red/30',
+  }[rating] ?? 'bg-surface-3 text-gray-500 border-border'
 
   return (
-    <span className={clsx('text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded border', cls)}>
+    <span className={clsx('text-[11px] font-semibold px-2.5 py-0.5 rounded-full border', cls)}>
       {rating}
     </span>
   )
@@ -47,7 +46,7 @@ function StatCard({
           <div className={clsx('p-1.5 rounded-lg', `bg-${color}/10`)}>
             <Icon size={13} className={`text-${color}`} />
           </div>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">{label}</p>
+          <p className="text-xs text-gray-500 font-semibold">{label}</p>
         </div>
         {rating && <RatingBadge rating={rating} />}
       </div>
@@ -80,20 +79,17 @@ function DoraTab() {
   const cfr = data.change_failure_rate
 
   const tooltipStyle = {
-    contentStyle: { background: '#111827', border: '1px solid #1e2d45', fontSize: 11 },
-    itemStyle: { color: '#d1d5db' },
+    contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 },
+    itemStyle: { color: '#1d2226' },
   }
 
   return (
     <div className="space-y-5">
-      {/* Intro */}
+      {/* Sub-header */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-white">DORA Metrics — Last {data.period_days} Days</p>
-          <p className="text-[11px] text-gray-500 mt-0.5">
-            Industry benchmark for software delivery performance (Google DevOps Research)
-          </p>
-        </div>
+        <p className="text-[11px] text-gray-500">
+          Industry benchmark · last {data.period_days} days (Google DevOps Research)
+        </p>
         <button onClick={() => refetch()}
           className={clsx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] bg-surface-2 text-gray-400 hover:text-gray-200 border border-border transition-colors', isFetching && 'animate-pulse')}>
           <RefreshCw size={11} className={isFetching ? 'animate-spin' : ''} />
@@ -150,11 +146,11 @@ function DoraTab() {
           </p>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={df.chart} barSize={10}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e2d45" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 9 }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={20} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} />
+              <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={20} allowDecimals={false} />
               <Tooltip {...tooltipStyle} formatter={(v: any) => [v, 'Deployments']} />
-              <Bar dataKey="deploys" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="deploys" fill="#0b5cff" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -166,13 +162,13 @@ function DoraTab() {
           </p>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={cfr.trend} barSize={8}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e2d45" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 9 }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={20} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} />
+              <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={20} allowDecimals={false} />
               <Tooltip {...tooltipStyle} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="passed" name="Passed" stackId="a" fill="#22c55e" />
-              <Bar dataKey="failed" name="Failed" stackId="a" fill="#ef4444" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="passed" name="Passed" stackId="a" fill="#76b900" />
+              <Bar dataKey="failed" name="Failed" stackId="a" fill="#ff1b2d" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -326,12 +322,7 @@ function TriageTab() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold text-white">CI Failure Triage</p>
-        <p className="text-[11px] text-gray-500 mt-0.5">
-          Distinguish infrastructure issues from product bugs — NVIDIA JD requirement
-        </p>
-      </div>
+      <p className="text-[11px] text-gray-500">Distinguish infrastructure issues from product bugs</p>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
@@ -396,16 +387,13 @@ function PerfTab() {
 
   const workflows: any[] = data.workflows ?? []
   const tooltipStyle = {
-    contentStyle: { background: '#111827', border: '1px solid #1e2d45', fontSize: 11 },
-    itemStyle: { color: '#d1d5db' },
+    contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 },
+    itemStyle: { color: '#1d2226' },
   }
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold text-white">Pipeline Performance</p>
-        <p className="text-[11px] text-gray-500 mt-0.5">Duration trends and P95 latency per workflow</p>
-      </div>
+      <p className="text-[11px] text-gray-500">Duration trends and P95 latency per workflow</p>
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -435,20 +423,20 @@ function PerfTab() {
             {wf.trend?.length > 0 && (
               <ResponsiveContainer width="100%" height={120}>
                 <LineChart data={wf.trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2d45" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 8 }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={28}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 8 }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={28}
                     tickFormatter={(v) => `${v}m`} domain={['auto', 'auto']} />
                   <Tooltip {...tooltipStyle}
                     formatter={(v: any) => [`${v}m`, 'Duration']}
                     labelFormatter={(l) => `Date: ${l}`}
                   />
                   <Line
-                    type="monotone" dataKey="minutes" stroke="#3b82f6" strokeWidth={1.5}
+                    type="monotone" dataKey="minutes" stroke="#0b5cff" strokeWidth={1.5}
                     dot={(props: any) => {
                       const fail = props.payload?.conclusion === 'failure'
                       return <circle key={props.key} cx={props.cx} cy={props.cy} r={fail ? 4 : 3}
-                        fill={fail ? '#ef4444' : '#3b82f6'} stroke="none" />
+                        fill={fail ? '#ff1b2d' : '#0b5cff'} stroke="none" />
                     }}
                   />
                 </LineChart>
@@ -522,12 +510,7 @@ function RunnersTab() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-sm font-semibold text-white">GPU & Runner Health</p>
-        <p className="text-[11px] text-gray-500 mt-0.5">
-          Self-hosted GPU runner capacity and utilization · auto-refreshes every 60s
-        </p>
-      </div>
+      <p className="text-[11px] text-gray-500">Self-hosted GPU runner capacity and utilization · auto-refreshes every 60s</p>
 
       {/* Summary grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -587,7 +570,7 @@ function RunnersTab() {
                     {g.online}/{g.total} up
                   </span>
                   <span className="text-[10px] font-mono w-16 text-right"
-                    style={{ color: g.busy > 0 ? '#eab308' : '#22c55e' }}>
+                    style={{ color: g.busy > 0 ? '#56687a' : '#057642' }}>
                     {g.busy} busy
                   </span>
                 </div>
@@ -639,6 +622,219 @@ function RunnersTab() {
   )
 }
 
+// ── SLO Tracker ───────────────────────────────────────────────────────────────
+
+interface SloDefinition {
+  id: string
+  label: string
+  target: number
+  unit: string
+  good: 'gte' | 'lte'
+  description: string
+}
+
+const SLO_DEFINITIONS: SloDefinition[] = [
+  { id: 'deploy-freq',  label: 'Deploy Frequency',    target: 1,  unit: '/week', good: 'gte', description: 'At least 1 deploy per week' },
+  { id: 'lead-time',   label: 'Lead Time',             target: 24, unit: 'hrs',  good: 'lte', description: 'Merge-to-deploy under 24 hours' },
+  { id: 'mttr',        label: 'MTTR',                  target: 8,  unit: 'hrs',  good: 'lte', description: 'Recover from incidents within 8 hours' },
+  { id: 'change-fail', label: 'Change Failure Rate',   target: 10, unit: '%',    good: 'lte', description: 'Less than 10% of changes fail in production' },
+  { id: 'nightly-pass',label: 'Nightly Pass Rate',     target: 90, unit: '%',    good: 'gte', description: 'Nightly builds pass at least 90% of the time' },
+  { id: 'build-pass',  label: 'Build Pass Rate',       target: 85, unit: '%',    good: 'gte', description: 'CI build success rate above 85%' },
+]
+
+interface SloStatus {
+  status: 'MET' | 'BREACHED' | 'PENDING'
+  current: number | null
+  budgetConsumed: number | null  // 0-100
+}
+
+function computeSloStatus(def: SloDefinition, current: number | null): SloStatus {
+  if (current === null) return { status: 'PENDING', current: null, budgetConsumed: null }
+
+  const met = def.good === 'gte' ? current >= def.target : current <= def.target
+  const status: 'MET' | 'BREACHED' = met ? 'MET' : 'BREACHED'
+
+  // Error budget: for percentage metrics (unit % or /week)
+  // Budget total = allowable deviation from target
+  let budgetConsumed: number | null = null
+  if (def.unit === '%') {
+    const totalBudget = def.good === 'gte'
+      ? (100 - def.target)   // e.g. 10% can fail for 90% target
+      : def.target            // e.g. 10% allowed failures for lte 10%
+
+    if (totalBudget > 0) {
+      if (def.good === 'gte') {
+        // budget consumed = how much of the allowed failure budget has been used
+        const deviation = Math.max(0, def.target - current)
+        budgetConsumed = Math.min(100, Math.round((deviation / totalBudget) * 100))
+      } else {
+        // budget consumed = current/target * 100
+        budgetConsumed = Math.min(100, Math.round((current / totalBudget) * 100))
+      }
+    }
+  } else if (def.unit === '/week') {
+    // for deploy frequency: if target is 1/week, budget consumed = how far below target
+    if (def.good === 'gte' && current < def.target) {
+      budgetConsumed = Math.min(100, Math.round(((def.target - current) / def.target) * 100))
+    } else {
+      budgetConsumed = 0
+    }
+  } else if (def.unit === 'hrs') {
+    // for lead time / mttr: budget consumed based on how far over target
+    if (def.good === 'lte') {
+      if (current <= def.target) {
+        budgetConsumed = Math.round((current / def.target) * 50) // 50% max when at target
+      } else {
+        const overage = current - def.target
+        budgetConsumed = Math.min(100, 50 + Math.round((overage / def.target) * 50))
+      }
+    }
+  }
+
+  return { status, current, budgetConsumed }
+}
+
+function SloCard({ def, sloData }: { def: SloDefinition; sloData: SloStatus }) {
+  const { status, current, budgetConsumed } = sloData
+
+  const statusCls = {
+    MET:      'bg-accent-green/10 text-accent-green border-accent-green/30',
+    BREACHED: 'bg-accent-red/10 text-accent-red border-accent-red/30',
+    PENDING:  'bg-surface-3 text-gray-500 border-border',
+  }[status]
+
+  const budgetColor =
+    budgetConsumed == null ? 'bg-gray-600'
+    : budgetConsumed > 80  ? 'bg-accent-red'
+    : budgetConsumed > 50  ? 'bg-accent-yellow'
+    : 'bg-accent-green'
+
+  const currentDisplay =
+    current == null ? '—'
+    : def.unit === '%' ? `${current}%`
+    : def.unit === '/week' ? `${current}/wk`
+    : `${current}h`
+
+  return (
+    <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold text-white">{def.label}</p>
+          <p className="text-[9px] text-gray-600 mt-0.5">{def.description}</p>
+        </div>
+        <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider flex-shrink-0', statusCls)}>
+          {status}
+        </span>
+      </div>
+
+      {/* Target vs Current */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-surface-2 rounded-lg p-2 text-center">
+          <p className="text-[9px] text-gray-600 uppercase tracking-wider">Target</p>
+          <p className="text-sm font-bold font-mono text-gray-300">
+            {def.good === 'gte' ? '≥' : '≤'}{def.target}{def.unit}
+          </p>
+        </div>
+        <div className="bg-surface-2 rounded-lg p-2 text-center">
+          <p className="text-[9px] text-gray-600 uppercase tracking-wider">Current</p>
+          <p className={clsx(
+            'text-sm font-bold font-mono',
+            status === 'MET' ? 'text-accent-green' : status === 'BREACHED' ? 'text-accent-red' : 'text-gray-500'
+          )}>{currentDisplay}</p>
+        </div>
+      </div>
+
+      {/* Error budget bar */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] text-gray-600">30-day error budget</span>
+          <span className={clsx('text-[9px] font-mono font-semibold',
+            budgetConsumed == null ? 'text-gray-600'
+            : budgetConsumed > 80 ? 'text-accent-red'
+            : budgetConsumed > 50 ? 'text-accent-yellow'
+            : 'text-accent-green'
+          )}>
+            {budgetConsumed == null ? '—' : `${budgetConsumed}%`}
+          </span>
+        </div>
+        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+          <div
+            className={clsx('h-full rounded-full transition-all duration-700', budgetColor)}
+            style={{ width: `${budgetConsumed ?? 0}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SloTracker() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['health-dora'],
+    queryFn: getHealthDora,
+    staleTime: 120_000,
+    refetchInterval: 300_000,
+  })
+
+  if (isLoading) return <Loading label="Loading SLO data…" />
+
+  // Derive metric values from DORA data
+  const df = data?.deployment_frequency
+  const lt = data?.lead_time
+  const mttr = data?.mttr
+  const cfr = data?.change_failure_rate
+
+  const metricValues: Record<string, number | null> = {
+    'deploy-freq':  df?.per_week   != null ? df.per_week : null,
+    'lead-time':    lt?.avg_hours  != null ? lt.avg_hours : null,
+    'mttr':         mttr?.avg_hours != null ? mttr.avg_hours : null,
+    'change-fail':  cfr?.pct       != null ? cfr.pct : null,
+    'nightly-pass': null,   // not directly in DORA; would need nightly trend data
+    'build-pass':   cfr?.pct != null ? Math.round(100 - cfr.pct) : null,
+  }
+
+  const sloStatuses = SLO_DEFINITIONS.map((def) => ({
+    def,
+    sloData: computeSloStatus(def, metricValues[def.id] ?? null),
+  }))
+
+  const metCount = sloStatuses.filter((s) => s.sloData.status === 'MET').length
+  const totalCount = SLO_DEFINITIONS.length
+
+  const summaryColor =
+    metCount === totalCount ? 'text-accent-green'
+    : metCount >= totalCount * 0.7 ? 'text-accent-yellow'
+    : 'text-accent-red'
+
+  return (
+    <div className="space-y-5">
+      {/* Summary header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] text-gray-500">30-day SLO summary:</p>
+          <span className={clsx('text-sm font-bold font-mono', summaryColor)}>
+            {metCount}/{totalCount} SLOs Met
+          </span>
+        </div>
+        <p className="text-[10px] text-gray-600">SLO targets based on industry standards (DORA research)</p>
+      </div>
+
+      {/* SLO grid */}
+      {!data ? (
+        <div className="text-center py-8 text-gray-600 text-sm">
+          No DORA data available — SLOs cannot be evaluated.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {sloStatuses.map(({ def, sloData }) => (
+            <SloCard key={def.id} def={def} sloData={sloData} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Loading ───────────────────────────────────────────────────────────────────
 
 function Loading({ label }: { label: string }) {
@@ -650,66 +846,67 @@ function Loading({ label }: { label: string }) {
   )
 }
 
+// ── Section divider ───────────────────────────────────────────────────────────
+
+function SectionDivider({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle: string }) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <div className="flex items-center gap-2.5">
+        <div className="w-1 h-5 rounded-full bg-[#E0FF4F] [data-theme=light]:bg-[#84cc16]" />
+        <Icon size={14} className="text-gray-400" />
+        <p className="text-sm font-semibold text-white">{title}</p>
+      </div>
+      <div className="flex-1 h-px bg-border" />
+      <p className="text-[11px] text-gray-500 hidden sm:block">{subtitle}</p>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const TABS: { key: HealthTab; icon: any; label: string; desc: string }[] = [
-  { key: 'dora', icon: Activity, label: 'DORA Metrics', desc: 'Deploy frequency, lead time, MTTR, CFR' },
-  { key: 'triage', icon: AlertTriangle, label: 'CI Triage', desc: 'Infra vs product vs flaky failures' },
-  { key: 'perf', icon: Timer, label: 'Pipeline Perf', desc: 'Duration trends & P95 latency' },
-  { key: 'runners', icon: Cpu, label: 'Runner Health', desc: 'GPU runner utilization & status' },
-]
-
 export default function HealthAnalysis() {
-  const [tab, setTab] = useState<HealthTab>('dora')
+  const { data: arData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = arData?.active?.slug ?? ''
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-xl bg-accent-blue/10 border border-accent-blue/20 flex-shrink-0">
-          <ShieldCheck size={18} className="text-accent-blue" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold text-white">Health Analysis</h1>
-          <p className="text-[11px] text-gray-500 mt-0.5">
-            DORA metrics · CI failure triage · pipeline performance · GPU runner observability
-          </p>
-        </div>
-        <a href="https://github.com/isaac-sim/IsaacLab/actions" target="_blank" rel="noreferrer"
-          className="ml-auto flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-accent-blue transition-colors">
+    <div className="space-y-8">
+      {/* Actions row */}
+      <div className="flex justify-end">
+        <a href={`https://github.com/${repoSlug}/actions`} target="_blank" rel="noreferrer"
+          className="flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-accent-blue transition-colors">
           <ExternalLink size={10} /> GitHub Actions
         </a>
       </div>
 
-      {/* Tab bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        {TABS.map(({ key, icon: Icon, label, desc }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={clsx(
-              'flex flex-col items-start gap-1 px-4 py-3 rounded-xl border text-left transition-all',
-              tab === key
-                ? 'bg-accent-blue/10 border-accent-blue/30 text-white'
-                : 'bg-surface-1 border-border text-gray-400 hover:bg-surface-2 hover:border-gray-600'
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <Icon size={13} className={tab === key ? 'text-accent-blue' : 'text-gray-500'} />
-              <span className="text-[12px] font-semibold">{label}</span>
-            </div>
-            <span className="text-[10px] text-gray-600 leading-tight">{desc}</span>
-          </button>
-        ))}
-      </div>
+      {/* DORA Metrics */}
+      <section className="space-y-5">
+        <SectionDivider icon={Activity} title="DORA Metrics" subtitle="Deploy frequency, lead time, MTTR, change failure rate" />
+        <DoraTab />
+      </section>
 
-      {/* Content */}
-      <div>
-        {tab === 'dora' && <DoraTab />}
-        {tab === 'triage' && <TriageTab />}
-        {tab === 'perf' && <PerfTab />}
-        {tab === 'runners' && <RunnersTab />}
-      </div>
+      {/* CI Triage */}
+      <section className="space-y-5">
+        <SectionDivider icon={AlertTriangle} title="CI Triage" subtitle="Infra vs product vs flaky failures" />
+        <TriageTab />
+      </section>
+
+      {/* Pipeline Performance */}
+      <section className="space-y-5">
+        <SectionDivider icon={Timer} title="Pipeline Performance" subtitle="Duration trends & P95 latency per workflow" />
+        <PerfTab />
+      </section>
+
+      {/* Runner Health */}
+      <section className="space-y-5">
+        <SectionDivider icon={Cpu} title="Runner Health" subtitle="GPU runner utilization & live status" />
+        <RunnersTab />
+      </section>
+
+      {/* SLO Tracker */}
+      <section className="space-y-5">
+        <SectionDivider icon={Target} title="SLO Tracker" subtitle="Service Level Objectives · 30-day error budgets" />
+        <SloTracker />
+      </section>
     </div>
   )
 }

@@ -24,20 +24,24 @@ def _fmt_dur(secs):
 
 @router.get("/summary")
 async def get_summary():
-    prs_raw, builds_raw, nightly_raw, runners_raw, repo_raw, build_all_raw = await asyncio.gather(
+    wf = await gh.get_primary_workflows()
+    ci_wf = wf["ci"]
+    nightly_wf = wf["nightly"]
+
+    tasks = [
         _safe(gh.get_prs(state="open", per_page=100)),
-        _safe(gh.get_workflow_runs("postmerge-ci.yml", per_page=20)),
-        # build.yml is the active per-PR/push CI (daily-compatibility.yml is disabled)
-        _safe(gh.get_workflow_runs("build.yml", per_page=15)),
+        _safe(gh.get_workflow_runs(ci_wf, per_page=20)) if ci_wf else asyncio.sleep(0),
+        _safe(gh.get_workflow_runs(nightly_wf, per_page=15)) if nightly_wf else asyncio.sleep(0),
         _safe(gh.get_runners()),
         _safe(gh.get_repo_info()),
-        _safe(gh.get_workflow_runs("build.yml", per_page=30)),
-    )
+        _safe(gh.get_workflow_runs(ci_wf, per_page=30)) if ci_wf else asyncio.sleep(0),
+    ]
+    prs_raw, builds_raw, nightly_raw, runners_raw, repo_raw, build_all_raw = await asyncio.gather(*tasks)
 
     prs: list = prs_raw if isinstance(prs_raw, list) else []
-    builds: list = (builds_raw or {}).get("workflow_runs", [])
-    build_all: list = (build_all_raw or {}).get("workflow_runs", [])
-    nightly: list = (nightly_raw or {}).get("workflow_runs", [])
+    builds: list = (builds_raw or {}).get("workflow_runs", []) if isinstance(builds_raw, dict) else []
+    build_all: list = (build_all_raw or {}).get("workflow_runs", []) if isinstance(build_all_raw, dict) else []
+    nightly: list = (nightly_raw or {}).get("workflow_runs", []) if isinstance(nightly_raw, dict) else []
     runners: list = (runners_raw or {}).get("runners", [])
 
     # ── Nightly: consecutive failures + failed jobs from latest run ──────────
@@ -104,7 +108,6 @@ async def get_summary():
         if len(recent_failures) >= 8:
             break
 
-    # Use build.yml (most active CI) for success-rate; fall back to postmerge-ci.yml
     ci_runs_for_rate = build_all[:10] if build_all else builds[:10]
     succeeded_10 = sum(1 for b in ci_runs_for_rate if b.get("conclusion") == "success")
     build_success_rate = round(succeeded_10 / min(10, len(ci_runs_for_rate)) * 100) if ci_runs_for_rate else 0

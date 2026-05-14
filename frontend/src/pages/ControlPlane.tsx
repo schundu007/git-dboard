@@ -2,9 +2,10 @@ import { type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { NavLink } from 'react-router-dom'
 import {
-  ArrowRight, CheckCircle, XCircle, Circle, Minus, AlertTriangle,
+  CheckCircle, XCircle, Circle, Minus, AlertTriangle,
   ExternalLink, ChevronRight, GitBranch, Cpu, Package,
   Server, Boxes, Clock, RefreshCw, ShieldCheck, GitPullRequest,
+  Activity, TrendingUp, TrendingDown,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
@@ -13,8 +14,170 @@ import {
   getAllRuns, getRunners,
   getNightlyImageMatrix,
   getRegistryPushStatus, getActiveRunners,
-  getPRGateOverview,
+  getPRGateOverview, getActiveRepo,
 } from '../lib/api'
+import BusinessReport from '../components/BusinessReport'
+import { useCountUp } from '../hooks/useCountUp'
+
+// ── Engineering Health Score ──────────────────────────────────────────────────
+
+interface HealthScoreProps {
+  builds?: any
+  nightly?: any
+  prs?: any
+}
+
+function HealthScore({ builds, nightly, prs }: HealthScoreProps) {
+  // CI Pass Rate (0-100)
+  const ciPassRate: number = builds?.success_rate_last10 ?? 0
+
+  // Nightly Health (0-100 based on consecutive_failures)
+  const consecutiveFailures: number = nightly?.consecutive_failures ?? 0
+  const nightlyHealth: number =
+    consecutiveFailures === 0 ? 100
+    : consecutiveFailures === 1 ? 80
+    : consecutiveFailures === 2 ? 50
+    : 0
+
+  // PR Pipeline (ready / max(open, 1)) * 100
+  const openPRs: number = prs?.open ?? 0
+  const readyPRs: number = prs?.ready ?? 0
+  const prPipeline: number = Math.round((readyPRs / Math.max(openPRs, 1)) * 100)
+
+  // Weighted score
+  const score = Math.round(
+    ciPassRate * 0.40 + nightlyHealth * 0.35 + prPipeline * 0.25
+  )
+
+  // Label and colors
+  const { label, ringColor, textColor } = score >= 80
+    ? { label: 'Elite',    ringColor: 'text-[#E0FF4F]', textColor: 'text-[#E0FF4F]' }
+    : score >= 65
+    ? { label: 'Healthy',  ringColor: 'text-accent-green', textColor: 'text-accent-green' }
+    : score >= 45
+    ? { label: 'At Risk',  ringColor: 'text-accent-yellow', textColor: 'text-accent-yellow' }
+    : { label: 'Critical', ringColor: 'text-accent-red', textColor: 'text-accent-red' }
+
+  // SVG ring params
+  const RADIUS = 30
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+  const arcLength = (score / 100) * CIRCUMFERENCE
+  const ringStroke = score >= 80 ? '#E0FF4F' : score >= 65 ? '#76b900' : score >= 45 ? '#f59e0b' : '#ff1b2d'
+
+  // vs last period: use week_score if available
+  const prevScore: number | null = builds?.success_rate_last_week ?? null
+  const prevNightlyHealth: number | null = null // not available in current data
+  const weeklyDelta: number | null =
+    prevScore != null
+      ? Math.round(prevScore * 0.40 + (prevNightlyHealth ?? nightlyHealth) * 0.35 + prPipeline * 0.25) - score
+      : null
+
+  const components = [
+    { label: 'CI Pass Rate',        value: ciPassRate,  weight: '40%' },
+    { label: 'Nightly Health',      value: nightlyHealth, weight: '35%' },
+    { label: 'PR Pipeline Health',  value: prPipeline,  weight: '25%' },
+  ]
+
+  const loading = !builds && !nightly && !prs
+
+  if (loading) {
+    return (
+      <div className="bg-surface-1 border border-border rounded-xl p-4 flex items-center justify-center py-8">
+        <RefreshCw size={14} className="animate-spin text-gray-500 mr-2" />
+        <span className="text-sm text-gray-500">Computing health score…</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-surface-1 border border-border rounded-xl p-4 card-appear">
+      <div className="flex items-center gap-3 mb-4">
+        <Activity size={14} className="text-gray-400" />
+        <h2 className="text-sm font-semibold text-white">Engineering Health Score</h2>
+        <span className="text-[10px] text-gray-500 ml-auto">CI · Nightly · PRs</span>
+      </div>
+
+      <div className="flex items-center gap-6">
+        {/* Score ring */}
+        <div className="flex-shrink-0 relative">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            {/* Background track */}
+            <circle
+              cx="40" cy="40" r={RADIUS}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="6"
+              className="text-surface-3"
+            />
+            {/* Score arc */}
+            <circle
+              cx="40" cy="40" r={RADIUS}
+              fill="none"
+              stroke={ringStroke}
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${arcLength} ${CIRCUMFERENCE}`}
+              transform="rotate(-90 40 40)"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className={clsx('text-xl font-bold font-mono leading-none', textColor)}>{score}</span>
+            <span className={clsx('text-[9px] font-semibold mt-0.5', textColor)}>{label}</span>
+          </div>
+        </div>
+
+        {/* Component bars */}
+        <div className="flex-1 space-y-2.5">
+          {components.map((c) => {
+            const barColor =
+              c.value >= 80 ? 'bg-accent-green'
+              : c.value >= 60 ? 'bg-accent-yellow'
+              : 'bg-accent-red'
+            const textC =
+              c.value >= 80 ? 'text-accent-green'
+              : c.value >= 60 ? 'text-accent-yellow'
+              : 'text-accent-red'
+            return (
+              <div key={c.label}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-gray-400">{c.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-gray-600">{c.weight}</span>
+                    <span className={clsx('text-[10px] font-mono font-semibold', textC)}>{c.value}%</span>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
+                  <div
+                    className={clsx('h-full rounded-full transition-all duration-700', barColor)}
+                    style={{ width: `${Math.min(100, c.value)}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* vs last period */}
+        <div className="flex-shrink-0 text-right">
+          <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">vs last week</p>
+          {weeklyDelta == null ? (
+            <span className="text-[13px] text-gray-600 font-mono">—</span>
+          ) : weeklyDelta > 0 ? (
+            <span className="flex items-center gap-1 text-accent-green text-[13px] font-bold font-mono">
+              <TrendingUp size={11} /> +{weeklyDelta}
+            </span>
+          ) : weeklyDelta < 0 ? (
+            <span className="flex items-center gap-1 text-accent-red text-[13px] font-bold font-mono">
+              <TrendingDown size={11} /> {weeklyDelta}
+            </span>
+          ) : (
+            <span className="text-[13px] text-gray-500 font-mono">±0</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ── Pipeline stage types ──────────────────────────────────────────────────────
 
@@ -141,6 +304,154 @@ function RegistryRow({
   )
 }
 
+// ── Stat cards — each with distinct visual identity ───────────────────────────
+
+function StatCards({
+  openPRs, prsTodayCount,
+  activeBuilds, queued,
+  nightlyOk, nightlyTime, latestNightly,
+  rBusy, rOnline, rTotal,
+}: {
+  openPRs: number; prsTodayCount: number
+  activeBuilds: number; queued: number
+  nightlyOk: boolean; nightlyTime: string; latestNightly: any
+  rBusy: number; rOnline: number; rTotal: number
+}) {
+  const prCount    = useCountUp(openPRs)
+  const buildCount = useCountUp(activeBuilds)
+  const busyCount  = useCountUp(rBusy)
+  const onlineCount = useCountUp(rOnline || rTotal)
+
+  const gpuPct = rOnline > 0 ? Math.round((rBusy / rOnline) * 100) : 0
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
+      {/* Open PRs — blue identity */}
+      <div className="bg-surface-1 border border-border rounded-xl p-4 hover-lift relative overflow-hidden card-appear card-appear-1">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-accent-blue/70 via-accent-blue/30 to-transparent rounded-t-xl" />
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] text-gray-400 font-medium">Open PRs</p>
+            <p className="text-[2.1rem] font-bold tabular-nums leading-none mt-1.5">{prCount}</p>
+            <p className="text-[11px] mt-1.5 font-medium">
+              {prsTodayCount > 0
+                ? <span className="text-accent-green">+{prsTodayCount} opened today</span>
+                : <span className="text-gray-500">none opened today</span>
+              }
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <GitPullRequest size={16} className="text-accent-blue" />
+          </div>
+        </div>
+      </div>
+
+      {/* Active Builds — green/amber by activity */}
+      <div className={clsx(
+        'bg-surface-1 border border-border rounded-xl p-4 hover-lift relative overflow-hidden card-appear card-appear-2',
+      )}>
+        <div className={clsx(
+          'absolute inset-x-0 top-0 h-[2px] rounded-t-xl',
+          activeBuilds > 0
+            ? 'bg-gradient-to-r from-accent-green/70 via-accent-green/30 to-transparent'
+            : 'bg-gradient-to-r from-gray-400/30 to-transparent',
+        )} />
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] text-gray-400 font-medium">Active Builds</p>
+            <p className="text-[2.1rem] font-bold tabular-nums leading-none mt-1.5">{buildCount}</p>
+            <p className="text-[11px] mt-1.5 font-medium">
+              {queued > 0
+                ? <span className="text-accent-yellow">{queued} queued</span>
+                : activeBuilds > 0
+                  ? <span className="text-accent-green">all running</span>
+                  : <span className="text-gray-500">idle</span>
+              }
+            </p>
+          </div>
+          <div className={clsx(
+            'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5',
+            activeBuilds > 0 ? 'bg-accent-green/10' : 'bg-surface-2',
+          )}>
+            {activeBuilds > 0
+              ? <RefreshCw size={16} className="text-accent-green animate-spin" style={{ animationDuration: '2s' }} />
+              : <Activity size={16} className="text-gray-500" />
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Nightly Build — pass/fail with natural language */}
+      <div className="bg-surface-1 border border-border rounded-xl p-4 hover-lift relative overflow-hidden card-appear card-appear-3">
+        <div className={clsx(
+          'absolute inset-x-0 top-0 h-[2px] rounded-t-xl',
+          !latestNightly ? 'bg-gradient-to-r from-gray-500/30 to-transparent'
+            : nightlyOk ? 'bg-gradient-to-r from-accent-green/70 via-accent-green/30 to-transparent'
+            : 'bg-gradient-to-r from-accent-red/70 via-accent-red/30 to-transparent',
+        )} />
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[11px] text-gray-400 font-medium">Nightly Build</p>
+            <p className={clsx(
+              'text-[2.1rem] font-bold leading-none mt-1.5',
+              !latestNightly ? 'text-gray-500'
+                : nightlyOk ? 'text-accent-green'
+                : 'text-accent-red',
+            )}>
+              {!latestNightly ? '–' : nightlyOk ? 'Pass' : 'Fail'}
+            </p>
+            <p className="text-[11px] text-gray-500 mt-1.5 truncate">
+              {latestNightly ? nightlyTime : 'No runs'}
+            </p>
+          </div>
+          <div className={clsx(
+            'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5',
+            !latestNightly ? 'bg-surface-2'
+              : nightlyOk ? 'bg-accent-green/10'
+              : 'bg-accent-red/10',
+          )}>
+            {!latestNightly
+              ? <Circle size={16} className="text-gray-500" />
+              : nightlyOk
+                ? <CheckCircle size={16} className="text-accent-green" />
+                : <XCircle size={16} className="text-accent-red" />
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* GPU Runners — with utilization bar */}
+      <div className="bg-surface-1 border border-border rounded-xl p-4 hover-lift relative overflow-hidden card-appear card-appear-4">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-nvidia/60 via-nvidia/25 to-transparent rounded-t-xl" />
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-gray-400 font-medium">GPU Runners</p>
+            <p className="text-[2.1rem] font-bold tabular-nums leading-none mt-1.5">
+              {busyCount}
+              <span className="text-base text-gray-500 font-medium">/{onlineCount || '–'}</span>
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1 h-1 bg-surface-3 rounded-full overflow-hidden">
+                <div
+                  className={clsx('h-full rounded-full transition-all duration-700',
+                    gpuPct >= 80 ? 'bg-accent-red' : gpuPct >= 50 ? 'bg-nvidia' : 'bg-nvidia/60')}
+                  style={{ width: `${gpuPct}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-gray-500 tabular-nums w-8 text-right">{gpuPct}%</span>
+            </div>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-nvidia/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Cpu size={16} className="text-nvidia" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ControlPlane() {
@@ -151,7 +462,8 @@ export default function ControlPlane() {
   const { data: runnersData } = useQuery({ queryKey: ['runners-ctrl'], queryFn: getRunners, staleTime: 30_000, refetchInterval: 60_000 })
   const { data: pushStatus } = useQuery({ queryKey: ['registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 120_000, refetchInterval: 300_000 })
   const { data: activeRunnersData } = useQuery({ queryKey: ['active-runners'], queryFn: getActiveRunners, staleTime: 120_000, refetchInterval: 300_000 })
-  const { data: gateOverview } = useQuery({ queryKey: ['pr-gate-overview'], queryFn: getPRGateOverview, staleTime: 60_000, refetchInterval: 90_000 })
+  const { data: gateOverview } = useQuery({ queryKey: ['pr-gate-overview', null], queryFn: () => getPRGateOverview(), staleTime: 60_000, refetchInterval: 90_000 })
+  const { data: activeRepo } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -185,132 +497,68 @@ export default function ControlPlane() {
   return (
     <div className="space-y-5">
 
-      {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">IsaacLab Dashboard</h1>
-          <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500">
-            <GitBranch size={11} />
-            <span className="font-mono">isaac-sim/IsaacLab</span>
-            <span>·</span>
-            <span>main</span>
-            {imageMatrix?.run_date && (
-              <>
-                <span>·</span>
-                <span className="font-mono text-gray-400">nightly {imageMatrix.run_date}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {rOnline.length > 0 && (
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-accent-green bg-accent-green/10 border border-accent-green/30 px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
-              {rOnline.length} runners active
-            </span>
-          )}
-          {(activeRuns.length + queuedRuns.length) > 0 && (
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-accent-orange bg-accent-orange/10 border border-accent-orange/30 px-2.5 py-1 rounded-full">
-              <RefreshCw size={10} className="animate-spin" />
-              {activeRuns.length + queuedRuns.length} builds active
-            </span>
-          )}
-        </div>
-      </div>
+      <BusinessReport />
+
+      {/* ── Engineering Health Score ──────────────────────────────────────────── */}
+      <HealthScore
+        builds={summary?.builds}
+        nightly={summary?.nightly}
+        prs={summary?.prs}
+      />
 
       {/* ── Pipeline flow ─────────────────────────────────────────────────────── */}
-      <div className="bg-surface-1 border border-border rounded-xl p-5">
-        <div className="flex items-center justify-center gap-1 overflow-x-auto pb-2">
+      <div className="bg-surface-1 border border-border rounded-xl p-5 card-appear">
+        <div className="flex items-stretch gap-0 overflow-x-auto pb-1">
           {PIPELINE_STAGES.map((stage, i) => (
-            <div key={stage.id} className="flex items-center gap-1 flex-shrink-0">
-              <div className={clsx('border rounded-lg px-3 py-2 text-center min-w-[90px]', stage.color)}>
+            <div key={stage.id} className="flex items-center flex-shrink-0">
+              <div className={clsx(
+                'border rounded-xl px-3.5 py-2.5 text-center min-w-[96px] relative',
+                stage.color,
+              )}>
                 <p className={clsx('text-[11px] font-semibold', stage.textColor)}>{stage.label}</p>
-                <p className="text-[9px] text-gray-500 mt-0.5">{stage.sub}</p>
+                <p className="text-[9px] text-gray-500 mt-0.5 leading-snug">{stage.sub}</p>
               </div>
               {i < PIPELINE_STAGES.length - 1 && (
-                <ArrowRight size={14} className="text-gray-600 flex-shrink-0" />
+                <div className="flex items-center flex-shrink-0 px-0.5">
+                  <svg width="24" height="12" viewBox="0 0 24 12" fill="none" className="overflow-visible">
+                    <line x1="0" y1="6" x2="18" y2="6" stroke="currentColor" strokeWidth="1.5" className="text-gray-400" strokeDasharray="3 2" />
+                    <polyline points="14,3 18,6 14,9" stroke="currentColor" strokeWidth="1.5" fill="none" className="text-gray-500" strokeLinejoin="round" />
+                  </svg>
+                </div>
               )}
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-          <div className="flex items-center gap-4 text-[10px] text-gray-600">
-            <span className="flex items-center gap-1">
-              <ChevronRight size={10} className="text-accent-blue" />
+          <div className="flex items-center gap-4 text-[10px] text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-blue inline-block" />
               Pre-merge gate
             </span>
-            <span className="flex items-center gap-1">
-              <ChevronRight size={10} className="text-accent-green" />
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-green inline-block" />
               Nightly + release
             </span>
           </div>
-          <p className="text-[10px] text-gray-600">
-            Nightly · UTC 02:00 · Isaac Sim 4.5 / 5.0 / 5.1 matrix · base · ros2 · cloudxr
+          <p className="text-[10px] text-gray-500 font-mono">
+            {activeRepo?.active?.slug ?? ''}
           </p>
         </div>
       </div>
 
       {/* ── Stat cards ────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Open PRs */}
-        <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Open PRs</p>
-          <p className="text-3xl font-bold text-white font-mono mt-1">{openPRs}</p>
-          {prsTodayCount > 0 && (
-            <p className="text-[11px] text-accent-green mt-1">+{prsTodayCount} today</p>
-          )}
-        </div>
-
-        {/* Active builds */}
-        <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Active Builds</p>
-          <p className="text-3xl font-bold text-white font-mono mt-1">{activeRuns.length}</p>
-          {queuedRuns.length > 0 && (
-            <p className="text-[11px] text-accent-yellow mt-1">{queuedRuns.length} queued</p>
-          )}
-        </div>
-
-        {/* Nightly build */}
-        <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Nightly Build</p>
-          <div className="flex items-center gap-2 mt-1">
-            {latestNightly ? (
-              nightlyOk
-                ? <CheckCircle size={20} className="text-accent-green" />
-                : <XCircle size={20} className="text-accent-red" />
-            ) : (
-              <Circle size={20} className="text-gray-600" />
-            )}
-            <p className="text-3xl font-bold text-white font-mono">
-              {latestNightly ? (nightlyOk ? '✓' : '✗') : '–'}
-            </p>
-          </div>
-          <p className="text-[11px] text-gray-500 mt-1">
-            {latestNightly
-              ? `${nightlyOk ? 'Passed' : 'Failed'} ${nightlyTime}`
-              : 'No runs found'}
-          </p>
-        </div>
-
-        {/* GPU runners */}
-        <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
-            <span className="flex items-center gap-1"><Cpu size={10} /> GPU Runners</span>
-          </p>
-          <p className="text-3xl font-bold text-white font-mono mt-1">
-            {rBusy.length}<span className="text-lg text-gray-500">/{rOnline.length || rTotal || '–'}</span>
-          </p>
-          <p className="text-[11px] text-gray-500 mt-1">
-            {rOnline.length - rBusy.length} available
-          </p>
-        </div>
-      </div>
+      <StatCards
+        openPRs={openPRs} prsTodayCount={prsTodayCount}
+        activeBuilds={activeRuns.length} queued={queuedRuns.length}
+        nightlyOk={nightlyOk} nightlyTime={nightlyTime} latestNightly={latestNightly}
+        rBusy={rBusy.length} rOnline={rOnline.length} rTotal={rTotal}
+      />
 
       {/* ── Main grid ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* PR Automation */}
-        <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
+        <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3 card-appear card-appear-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldCheck size={14} className="text-accent-blue" />
@@ -350,10 +598,10 @@ export default function ControlPlane() {
                   <p className="flex-1 text-[10px] text-gray-300 truncate">{p.title}</p>
                   <span className={clsx(
                     'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase flex-shrink-0',
-                    p.classification === 'docs' && 'bg-blue-950 text-blue-400',
-                    p.classification === 'source' && 'bg-green-950 text-accent-green',
-                    p.classification === 'tests' && 'bg-purple-950 text-purple-400',
-                    p.classification === 'ci' && 'bg-yellow-950 text-yellow-400',
+                    p.classification === 'docs' && 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25',
+                    p.classification === 'source' && 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25',
+                    p.classification === 'tests' && 'bg-purple-500/[.07] text-purple-400 ring-1 ring-purple-500/25',
+                    p.classification === 'ci' && 'bg-amber-500/[.07] text-amber-400 ring-1 ring-amber-500/25',
                     p.classification === 'mixed' && 'bg-surface-3 text-gray-400',
                   )}>
                     {p.classification}
@@ -481,7 +729,7 @@ export default function ControlPlane() {
               icon={<Boxes size={14} className="text-accent-green" />}
               iconBg="bg-accent-green/10 border-accent-green/20"
               name="NVIDIA NGC"
-              sub="nvcr.io/nvidia/isaac-lab"
+              sub={`nvcr.io/nvidia/${(activeRepo?.active?.repo ?? 'isaac-lab').toLowerCase().replace(/_/g, '-')}`}
               status={pushStatus?.ngc?.status}
               url={pushStatus?.ngc?.run_url}
               title={pushStatus?.ngc?.display_title}
@@ -492,7 +740,7 @@ export default function ControlPlane() {
               icon={<Package size={14} className="text-accent-blue" />}
               iconBg="bg-accent-blue/10 border-accent-blue/20"
               name="GHCR"
-              sub="ghcr.io/isaac-sim/isaaclab"
+              sub={`ghcr.io/${(activeRepo?.active?.owner ?? 'isaac-sim').toLowerCase()}/${(activeRepo?.active?.repo ?? 'isaaclab').toLowerCase()}`}
               status={pushStatus?.ghcr?.status}
               url={pushStatus?.ghcr?.run_url}
               title={pushStatus?.ghcr?.display_title}
@@ -623,6 +871,7 @@ export default function ControlPlane() {
           </div>
         </div>
       )}
+
     </div>
   )
 }

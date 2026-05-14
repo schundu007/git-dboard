@@ -73,7 +73,13 @@ async def get_active_runners():
     """Return runner names extracted from recent job executions across key workflows.
     Used when the PAT lacks manage_runners:repo scope — shows at least which
     runners have recently been active."""
-    workflows = ["publish-images.yaml", "daily-compatibility.yml", "postmerge-ci.yml"]
+    # Fetch actual workflow files from the active repo dynamically
+    try:
+        wf_data = await gh.get_workflows()
+        all_workflows = [w.get("path", "").split("/")[-1] for w in wf_data.get("workflows", [])]
+        workflows = all_workflows[:6] if all_workflows else []
+    except Exception:
+        workflows = []
     seen: dict[str, dict] = {}
 
     async def fetch_run_jobs(workflow: str):

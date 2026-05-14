@@ -8,11 +8,11 @@ import {
 import {
   TrendingUp, Users, GitCommit, Clock, AlertTriangle,
   ExternalLink, RefreshCw, BarChart2, Calendar, Trophy,
-  GitMerge, Zap, Star,
+  GitMerge, Zap, Star, DollarSign, Lightbulb,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
-  getOverviewSummary, getUserMetrics,
+  getOverviewSummary, getUserMetrics, getActiveRepo, getBuildPerformance,
 } from '../lib/api'
 import clsx from 'clsx'
 
@@ -61,8 +61,8 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
 }
 
 const TOOLTIP_STYLE = {
-  contentStyle: { background: '#161b27', border: '1px solid #2d3748', borderRadius: 6, fontSize: 11 },
-  labelStyle: { color: '#9ca3af' },
+  contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 6, fontSize: 11 },
+  labelStyle: { color: '#56687a' },
 }
 
 // ── Stat row ──────────────────────────────────────────────────────────────────
@@ -111,20 +111,20 @@ function CommitActivityChart() {
       ) : (
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={series} barSize={8}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" />
             <XAxis
               dataKey="date"
-              tick={{ fill: '#6b7280', fontSize: 9 }}
+              tick={{ fill: '#86939e', fontSize: 9 }}
               tickFormatter={(v: string) => v.slice(5)}
               interval={Math.floor(series.length / 8)}
             />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} allowDecimals={false} width={20} />
+            <YAxis tick={{ fill: '#86939e', fontSize: 9 }} allowDecimals={false} width={20} />
             <Tooltip {...TOOLTIP_STYLE} formatter={(v: any) => [v, 'commits']} />
             <Bar dataKey="commits" radius={[2, 2, 0, 0]}>
               {series.map((entry: any, i: number) => (
                 <Cell
                   key={i}
-                  fill={entry.commits === 0 ? '#1c2333' : entry.commits === maxVal ? '#3b82f6' : '#2563eb88'}
+                  fill={entry.commits === 0 ? '#27272a' : entry.commits === maxVal ? '#0b5cff' : '#0b5cff88'}
                 />
               ))}
             </Bar>
@@ -180,20 +180,20 @@ function BuildTrendChart() {
           <AreaChart data={series}>
             <defs>
               <linearGradient id="successGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                <stop offset="5%" stopColor="#84cc16" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#84cc16" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="failGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                <stop offset="5%" stopColor="#ff1b2d" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#ff1b2d" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-            <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} />
-            <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={20} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" />
+            <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} />
+            <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={20} />
             <Tooltip {...TOOLTIP_STYLE} />
-            <Area type="monotone" dataKey="success" stroke="#22c55e" fill="url(#successGrad)" strokeWidth={2} name="success" />
-            <Area type="monotone" dataKey="failure" stroke="#ef4444" fill="url(#failGrad)" strokeWidth={2} name="failure" />
+            <Area type="monotone" dataKey="success" stroke="#84cc16" fill="url(#successGrad)" strokeWidth={2} name="success" />
+            <Area type="monotone" dataKey="failure" stroke="#ff1b2d" fill="url(#failGrad)" strokeWidth={2} name="failure" />
           </AreaChart>
         </ResponsiveContainer>
       )}
@@ -241,9 +241,9 @@ function FailureRateChart() {
         <>
           <ResponsiveContainer width="100%" height={Math.max(jobs.length * 36, 120)}>
             <BarChart data={chartData} layout="vertical" barSize={14}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={(v) => `${v}%`} />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#9ca3af', fontSize: 9 }} width={160} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" horizontal={false} />
+              <XAxis type="number" domain={[0, 100]} tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v) => `${v}%`} />
+              <YAxis type="category" dataKey="name" tick={{ fill: '#86939e', fontSize: 9 }} width={160} />
               <Tooltip
                 {...TOOLTIP_STYLE}
                 formatter={(v: any, _: any, props: any) => [
@@ -256,9 +256,9 @@ function FailureRateChart() {
                   <Cell
                     key={i}
                     fill={
-                      entry.failure_rate >= 50 ? '#ef4444' :
-                      entry.failure_rate >= 20 ? '#f97316' :
-                      entry.failure_rate > 0  ? '#eab308' : '#22c55e'
+                      entry.failure_rate >= 50 ? '#ff1b2d' :
+                      entry.failure_rate >= 20 ? '#ff1b2d' :
+                      entry.failure_rate > 0  ? '#a1a1aa' : '#84cc16'
                     }
                   />
                 ))}
@@ -311,7 +311,7 @@ function PRVelocityCard() {
     { name: '>3d', value: dist.gt_3d },
   ] : []
 
-  const PIE_COLORS = ['#22c55e', '#3b82f6', '#eab308', '#f97316', '#ef4444']
+  const PIE_COLORS = ['#84cc16', '#0b5cff', '#a1a1aa', '#ff1b2d', '#ff1b2d']
 
   return (
     <Card>
@@ -360,10 +360,10 @@ function PRVelocityCard() {
               <p className="text-[10px] text-gray-500 mb-1">Weekly: opened vs merged</p>
               <ResponsiveContainer width="100%" height={80}>
                 <BarChart data={weeklyTrend} barSize={6} barGap={2}>
-                  <XAxis dataKey="week" tick={{ fill: '#6b7280', fontSize: 8 }} tickFormatter={(v: string) => v.slice(5)} />
+                  <XAxis dataKey="week" tick={{ fill: '#86939e', fontSize: 8 }} tickFormatter={(v: string) => v.slice(5)} />
                   <Tooltip {...TOOLTIP_STYLE} />
-                  <Bar dataKey="opened" fill="#3b82f6" name="opened" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="merged" fill="#22c55e" name="merged" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="opened" fill="#0b5cff" name="opened" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="merged" fill="#84cc16" name="merged" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -686,9 +686,9 @@ function UserMetricsCard() {
               </div>
               <ResponsiveContainer width="100%" height={140}>
                 <RadarChart data={radarData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
-                  <PolarGrid stroke="#2d3748" />
-                  <PolarAngleAxis dataKey="metric" tick={{ fill: '#6b7280', fontSize: 8 }} />
-                  <Radar dataKey="value" stroke="#eab308" fill="#eab308" fillOpacity={0.25} />
+                  <PolarGrid stroke="#e5e4e2" />
+                  <PolarAngleAxis dataKey="metric" tick={{ fill: '#86939e', fontSize: 8 }} />
+                  <Radar dataKey="value" stroke="#86939e" fill="rgba(224,255,79,0.12)" fillOpacity={1} />
                 </RadarChart>
               </ResponsiveContainer>
               <div className="space-y-1 mt-2 text-[10px]">
@@ -711,6 +711,178 @@ function UserMetricsCard() {
   )
 }
 
+// ── Pipeline Cost Analytics ───────────────────────────────────────────────────
+
+// GitHub-hosted runner rates (USD per minute)
+const RUNNER_RATES: Record<string, number> = {
+  ubuntu:       0.008,
+  macos:        0.080,
+  windows:      0.016,
+  'self-hosted': 0,
+}
+
+const COST_TIPS = [
+  { icon: '🖥️', tip: 'Use self-hosted runners for GPU/long jobs — they run at no per-minute cost' },
+  { icon: '📦', tip: 'Cache dependencies (actions/cache) to reduce build time significantly' },
+  { icon: '✅', tip: 'Skip re-running fully-passing jobs with path filters and concurrency groups' },
+  { icon: '⚡', tip: 'Use matrix strategy to parallelize tests instead of sequential job chains' },
+]
+
+interface WorkflowCostRow {
+  workflow: string
+  file: string
+  avgDurationMin: number
+  runsPerDay: number
+  monthlyCostGH: number
+}
+
+function PipelineCostAnalytics() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['build-perf-cost'],
+    queryFn: () => getBuildPerformance(30),
+    staleTime: 300_000,
+  })
+
+  const workflows: any[] = data?.workflows ?? []
+
+  const rows: WorkflowCostRow[] = workflows.map((wf) => {
+    const avgDurationMin: number = wf.avg_min ?? 0
+    const sampleCount: number = wf.sample_count ?? 0
+    const runsPerDay = Math.round((sampleCount / 30) * 10) / 10  // 1 decimal
+    const dailyCost = avgDurationMin * runsPerDay * RUNNER_RATES.ubuntu
+    const monthlyCostGH = Math.round(dailyCost * 30 * 100) / 100
+    return {
+      workflow: wf.workflow ?? wf.file,
+      file: wf.file,
+      avgDurationMin,
+      runsPerDay,
+      monthlyCostGH,
+    }
+  }).sort((a, b) => b.monthlyCostGH - a.monthlyCostGH)
+
+  const totalMonthlyGH = rows.reduce((sum, r) => sum + r.monthlyCostGH, 0)
+  const topWorkflow = rows[0]
+
+  if (isLoading) {
+    return (
+      <Card>
+        <SectionTitle icon={DollarSign} title="Pipeline Cost Estimate" color="text-accent-yellow" />
+        <div className="flex items-center justify-center py-8 gap-2 text-gray-500 text-sm">
+          <RefreshCw size={13} className="animate-spin" />
+          Computing cost estimates…
+        </div>
+      </Card>
+    )
+  }
+
+  if (workflows.length === 0) {
+    return (
+      <Card>
+        <SectionTitle icon={DollarSign} title="Pipeline Cost Estimate" color="text-accent-yellow" />
+        <p className="text-gray-600 text-sm text-center py-6">No workflow performance data available.</p>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Headline cost card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-1">
+          <SectionTitle icon={DollarSign} title="Monthly Cost Estimate" color="text-accent-yellow" />
+          <p className="text-3xl font-bold font-mono text-accent-yellow mt-1">
+            ${totalMonthlyGH.toFixed(2)}
+            <span className="text-sm font-normal text-gray-500 ml-1">/mo estimated</span>
+          </p>
+          <div className="mt-3 space-y-1.5 text-[11px]">
+            <div className="flex justify-between">
+              <span className="text-gray-500">GitHub-hosted (Linux)</span>
+              <span className="text-white font-mono">${totalMonthlyGH.toFixed(2)}/mo</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Self-hosted runners</span>
+              <span className="text-accent-green font-mono font-semibold">$0.00/mo</span>
+            </div>
+            {topWorkflow && (
+              <div className="pt-1 border-t border-border flex justify-between">
+                <span className="text-gray-600 truncate max-w-[160px]">Costliest: {topWorkflow.workflow}</span>
+                <span className="text-accent-red font-mono font-semibold">${topWorkflow.monthlyCostGH.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+          <p className="text-[9px] text-gray-700 mt-3">
+            Assumes ubuntu-latest @ $0.008/min · actual costs vary by runner type and billing plan
+          </p>
+        </Card>
+
+        {/* Per-workflow cost table */}
+        <Card className="lg:col-span-2">
+          <SectionTitle icon={BarChart2} title="Per-Workflow Cost Breakdown" color="text-accent-blue" />
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left pb-2 text-gray-500 font-medium">Workflow</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium">Avg Duration</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium">Runs/Day</th>
+                  <th className="text-right pb-2 text-gray-500 font-medium">Est. Cost/Mo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row, i) => (
+                  <tr
+                    key={row.file}
+                    className={clsx('transition-colors', i === 0 ? 'bg-accent-red/5' : 'hover:bg-surface-2')}
+                  >
+                    <td className="py-2 pr-4">
+                      <p className={clsx('font-medium truncate max-w-[180px]', i === 0 ? 'text-white' : 'text-gray-300')}>
+                        {row.workflow}
+                      </p>
+                      <p className="text-[9px] text-gray-600 font-mono">{row.file}</p>
+                    </td>
+                    <td className="py-2 text-right font-mono text-gray-300">
+                      {row.avgDurationMin}m
+                    </td>
+                    <td className="py-2 text-right font-mono text-gray-400">
+                      {row.runsPerDay}
+                    </td>
+                    <td className="py-2 text-right">
+                      <span className={clsx(
+                        'font-mono font-semibold',
+                        i === 0 ? 'text-accent-red' : row.monthlyCostGH > 5 ? 'text-accent-yellow' : 'text-gray-400'
+                      )}>
+                        ${row.monthlyCostGH.toFixed(2)}
+                      </span>
+                      {i === 0 && (
+                        <span className="ml-1 text-[9px] text-accent-red border border-accent-red/30 rounded px-1">
+                          highest
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      {/* Cost-saving tips */}
+      <Card>
+        <SectionTitle icon={Lightbulb} title="Cost-Saving Tips" color="text-accent-green" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {COST_TIPS.map((tip, i) => (
+            <div key={i} className="flex items-start gap-2.5 p-3 bg-surface-2 rounded-lg border border-border">
+              <span className="text-base flex-shrink-0">{tip.icon}</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">{tip.tip}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
@@ -719,6 +891,8 @@ export default function Analytics() {
     queryFn: () => req('/overview/summary'),
     staleTime: 60_000,
   })
+  const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = activeRepoData?.active?.slug ?? ''
   const { data: ca } = useCommitActivity(30)
   const { data: bt } = useBuildTrends(30)
   const { data: pv } = usePRVelocity()
@@ -758,7 +932,7 @@ export default function Analytics() {
           <BarChart2 size={18} className="text-accent-blue" />
           <h1 className="text-lg font-semibold">Analytics & Insights</h1>
           <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
-            isaac-sim/IsaacLab
+            {repoSlug}
           </span>
         </div>
       </div>
@@ -793,6 +967,15 @@ export default function Analytics() {
 
       {/* Error patterns */}
       <ErrorPatternsCard />
+
+      {/* Pipeline Cost Analytics */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <DollarSign size={13} className="text-accent-yellow" />
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pipeline Cost Estimate</h2>
+        </div>
+        <PipelineCostAnalytics />
+      </div>
     </div>
   )
 }

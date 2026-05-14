@@ -5,7 +5,7 @@ import {
   Play, XCircle, CheckCircle2, Clock, Zap, Copy, Check,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { getLogs, ingestLogs, purgeLogs, getBuildRuns } from '../lib/api'
+import { getLogs, ingestLogs, purgeLogs, getAllRuns } from '../lib/api'
 import type { LogEntry } from '../lib/types'
 import clsx from 'clsx'
 
@@ -19,13 +19,13 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; ms: number }[] = [
 ]
 
 const LEVEL_BG: Record<string, string> = {
-  ERROR: 'border-l-2 border-red-700 bg-red-950/20',
-  WARNING: 'border-l-2 border-yellow-700 bg-yellow-950/10',
+  ERROR: 'border-l-2 border-accent-red/40 bg-accent-red/[.04]',
+  WARNING: 'border-l-2 border-amber-500/40 bg-amber-500/[.04]',
   INFO: '',
 }
 const LEVEL_BADGE: Record<string, string> = {
-  ERROR: 'bg-red-950 text-red-400',
-  WARNING: 'bg-yellow-950 text-yellow-400',
+  ERROR: 'bg-accent-red/10 text-accent-red ring-1 ring-accent-red/25',
+  WARNING: 'bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/25',
   INFO: 'bg-surface-3 text-gray-500',
 }
 
@@ -168,7 +168,7 @@ function RunIngestCard({ run, onIngested }: { run: any; onIngested: (id: number)
   return (
     <div className={clsx(
       'flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors',
-      isFailed ? 'border-red-900/30 bg-red-950/10' : 'border-border bg-surface-2',
+      isFailed ? 'border-accent-red/25 bg-accent-red/[.04]' : 'border-border bg-surface-2',
     )}>
       {statusIcon}
       <div className="flex-1 min-w-0">
@@ -185,7 +185,7 @@ function RunIngestCard({ run, onIngested }: { run: any; onIngested: (id: number)
         className={clsx(
           'flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-medium transition-colors flex-shrink-0',
           isSuccess
-            ? 'bg-green-950 text-accent-green'
+            ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25'
             : 'bg-accent-blue/20 text-accent-blue hover:bg-accent-blue/30 disabled:opacity-40',
         )}
       >
@@ -198,7 +198,7 @@ function RunIngestCard({ run, onIngested }: { run: any; onIngested: (id: number)
 function EmptyState({ onIngested }: { onIngested: (id: number) => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['build-runs-for-logs'],
-    queryFn: () => getBuildRuns('postmerge-ci.yml', 1),
+    queryFn: () => getAllRuns({ per_page: 8, page: 1 }),
     staleTime: 60_000,
   })
   const runs: any[] = (data?.workflow_runs ?? []).slice(0, 8)
@@ -348,12 +348,10 @@ export default function LogMonitor() {
   const showJobCol = selectedJob === ''
 
   return (
-    <div className="flex flex-col gap-4" style={{ minHeight: 'calc(100vh - 6rem)' }}>
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <ScrollText size={18} className="text-accent-green" />
-          <h1 className="text-lg font-semibold">Log Monitor</h1>
           <span className="flex items-center gap-1 text-[9px] text-gray-600 bg-surface-2 px-2 py-0.5 rounded-full" title="Auto-ingests completed GHA runs every 5 minutes">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
             auto
@@ -364,12 +362,12 @@ export default function LogMonitor() {
             </span>
           )}
           {errorCount > 0 && (
-            <span className="text-[10px] text-red-400 bg-red-950 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] text-accent-red bg-accent-red/10 px-2 py-0.5 rounded-full">
               {errorCount} errors
             </span>
           )}
           {warnCount > 0 && (
-            <span className="text-[10px] text-yellow-400 bg-yellow-950 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">
               {warnCount} warnings
             </span>
           )}
@@ -496,10 +494,10 @@ export default function LogMonitor() {
           />
         </div>
       ) : (
-        <div className="flex gap-3 flex-1" style={{ minHeight: 0, height: 'calc(100vh - 16rem)' }}>
+        <div className="flex gap-3 flex-1" style={{ minHeight: '500px' }}>
           {/* Job sidebar */}
           <div className="w-52 flex-shrink-0 bg-surface-1 border border-border rounded-xl p-2 overflow-y-auto space-y-0.5">
-            <p className="text-[9px] text-gray-500 uppercase tracking-wider px-2 py-1.5 font-semibold">
+            <p className="text-xs text-gray-500 font-semibold px-2 py-1.5">
               {selectedRunId ? `Run ${selectedRunId}` : 'All Runs'} · Jobs
             </p>
 
@@ -538,12 +536,12 @@ export default function LogMonitor() {
               </span>
               <span className="text-[10px] text-gray-600">{entries.length} lines</span>
               {errorCount > 0 && (
-                <span className="text-[9px] text-red-400 bg-red-950/40 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] text-accent-red bg-accent-red/10 px-1.5 py-0.5 rounded">
                   {errorCount} errors
                 </span>
               )}
               {warnCount > 0 && (
-                <span className="text-[9px] text-yellow-400 bg-yellow-950/40 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
                   {warnCount} warnings
                 </span>
               )}

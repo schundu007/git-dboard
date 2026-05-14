@@ -117,12 +117,17 @@ async def list_workflows():
 
 @router.get("/runs")
 async def list_runs(
-    workflow: str = "postmerge-ci.yml",
+    workflow: Optional[str] = None,
     per_page: int = 25,
     page: int = 1,
     branch: Optional[str] = None,
     status: Optional[str] = None,  # success | failure | in_progress | cancelled
 ):
+    if not workflow:
+        wf = await gh.get_primary_workflows()
+        workflow = wf["ci"] or ""
+    if not workflow:
+        return {"total_count": 0, "workflow_runs": []}
     data = await gh.get_workflow_runs(workflow, per_page=per_page, page=page, branch=branch)
     runs = data.get("workflow_runs", [])
     if status:
@@ -265,7 +270,12 @@ async def get_failure_summary(run_id: int):
 # ── Actions ───────────────────────────────────────────────────────────────────
 
 @router.post("/trigger")
-async def trigger_build(ref: str = "main", workflow: str = "postmerge-ci.yml"):
+async def trigger_build(ref: str = "main", workflow: Optional[str] = None):
+    if not workflow:
+        wf = await gh.get_primary_workflows()
+        workflow = wf["ci"] or ""
+    if not workflow:
+        raise HTTPException(status_code=404, detail="No CI workflow found for this repo")
     try:
         await gh.trigger_workflow(workflow, ref=ref)
         label = WORKFLOW_LABELS.get(workflow, workflow)
@@ -304,13 +314,18 @@ async def cancel_run(run_id: int):
 # ── Pipeline statistics ───────────────────────────────────────────────────────
 
 @router.get("/stats")
-async def pipeline_stats(workflow: str = "postmerge-ci.yml", limit: int = 50, days: Optional[int] = None):
+async def pipeline_stats(workflow: Optional[str] = None, limit: int = 50, days: Optional[int] = None):
     """
     Aggregate statistics for a workflow:
     success rate, avg/p50/p90 duration, failure rate by day,
     most common failure jobs.
     If `days` is provided, filter runs to the last N calendar days.
     """
+    if not workflow:
+        wf = await gh.get_primary_workflows()
+        workflow = wf["ci"] or ""
+    if not workflow:
+        return {"total_count": 0, "runs": [], "success_rate": 0, "avg_duration_sec": 0}
     per_page = min(limit, 100) if days is None else 100
     data = await gh.get_workflow_runs(workflow, per_page=per_page)
     runs = data.get("workflow_runs", [])

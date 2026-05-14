@@ -3,16 +3,19 @@ import * as RadixTooltip from '@radix-ui/react-tooltip'
 import { Toaster } from 'sonner'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import RightSidebar from './RightSidebar'
 import CommandPalette from './CommandPalette'
 import { SidebarProvider } from '../contexts/SidebarContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const { theme } = useTheme()
 
   return (
     <SidebarProvider>
       <RadixTooltip.Provider delayDuration={200} skipDelayDuration={100}>
-        <div className="flex h-screen overflow-hidden bg-surface">
+        <div className="flex h-screen overflow-hidden bg-surface" style={{ width: '80vw', margin: '0 auto' }}>
           <Sidebar />
 
           {/* Main column */}
@@ -22,21 +25,20 @@ export default function Layout({ children }: { children: ReactNode }) {
               {children}
             </main>
           </div>
+
+          <RightSidebar />
         </div>
 
         {/* Global overlays */}
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         <Toaster
           position="bottom-right"
-          theme="dark"
+          theme={theme}
           toastOptions={{
-            style: {
-              background: '#0d1117',
-              border: '1px solid #1e2d45',
-              color: '#e2e8f0',
-              fontSize: '13px',
-              borderRadius: '10px',
-            },
+            style:
+              theme === 'dark'
+                ? { background: '#111113', border: '1px solid #27272a', color: '#fafafa', fontSize: '13px', borderRadius: '8px' }
+                : { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', color: '#1d2226', fontSize: '13px', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' },
           }}
         />
       </RadixTooltip.Provider>

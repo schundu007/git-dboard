@@ -9,7 +9,7 @@ import {
   ChevronUp, Terminal, RotateCcw, Package,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { getOverviewSummary, getFailureSummary } from '../lib/api'
+import { getOverviewSummary, getFailureSummary, getActiveRepo } from '../lib/api'
 import StatusBadge from '../components/StatusBadge'
 import clsx from 'clsx'
 
@@ -92,7 +92,7 @@ function PRPanel({ prs }: { prs: any }) {
         <div className="flex items-center gap-2">
           <GitPullRequest size={14} className="text-accent-blue" />
           <span className="text-xs font-semibold text-gray-300">Open PRs</span>
-          <span className="text-[10px] bg-blue-950 text-accent-blue px-1.5 py-0.5 rounded-full">{prs.open}</span>
+          <span className="text-[10px] bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25 px-1.5 py-0.5 rounded-full">{prs.open}</span>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-gray-500">
           <span className="text-accent-green">{prs.ready} ready</span>
@@ -382,7 +382,7 @@ function RunnersPanel({ runners }: { runners: any }) {
           <span className={clsx(
             'text-[10px] px-1.5 py-0.5 rounded-full',
             accessDenied ? 'bg-surface-2 text-gray-500' :
-            runners.online > 0 ? 'bg-green-950 text-accent-green' : 'bg-red-950 text-accent-red',
+            runners.online > 0 ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25',
           )}>
             {accessDenied ? 'scope limited' : `${runners.online}/${runners.total} online`}
           </span>
@@ -414,8 +414,8 @@ function RunnersPanel({ runners }: { runners: any }) {
               </div>
               <span className={clsx(
                 'text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0',
-                r.busy ? 'bg-blue-950 text-accent-blue' :
-                r.status === 'online' ? 'bg-green-950 text-accent-green' : 'bg-surface-3 text-gray-500',
+                r.busy ? 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25' :
+                r.status === 'online' ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-surface-3 text-gray-500',
               )}>
                 {r.busy ? 'busy' : r.status}
               </span>
@@ -491,7 +491,7 @@ function ActivityFeed({ items }: { items: any[] }) {
           <div key={i} className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0">
             <span className={clsx(
               'text-[9px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0',
-              item.type === 'build' ? 'bg-purple-950 text-accent-purple' : 'bg-blue-950 text-accent-blue'
+              item.type === 'build' ? 'bg-purple-950 text-accent-purple' : 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25'
             )}>
               {item.type}
             </span>
@@ -528,6 +528,8 @@ export default function Overview() {
     queryFn: getOverviewSummary,
     refetchInterval: 60_000,
   })
+  const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = activeRepoData?.active?.slug ?? ''
 
   const prs = data?.prs
   const builds = data?.builds
@@ -545,7 +547,7 @@ export default function Overview() {
           <Zap size={18} className="text-accent-blue" />
           <h1 className="text-lg font-semibold">Control Plane</h1>
           <span className="text-[10px] text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
-            isaac-sim/IsaacLab
+            {repoSlug}
           </span>
         </div>
         <button
@@ -565,7 +567,7 @@ export default function Overview() {
         <>
           {/* Alert banners */}
           {isCritical && (
-            <div className="flex items-center gap-3 bg-red-950/50 border border-red-800 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-3 bg-red-500/[.06] ring-1 ring-red-500/20 rounded-xl px-4 py-3">
               <AlertTriangle size={14} className="text-accent-red flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-accent-red">
@@ -627,10 +629,10 @@ export default function Overview() {
             </div>
             <div className="flex flex-wrap gap-2">
               {[
-                { label: 'PR Hub', path: '/prs', color: 'text-accent-blue border-blue-800 hover:bg-blue-950' },
+                { label: 'PR Hub', path: '/prs', color: 'text-blue-400 ring-1 ring-blue-500/25 hover:bg-blue-500/[.07]' },
                 { label: 'Builds', path: '/builds', color: 'text-accent-purple border-purple-800 hover:bg-purple-950' },
-                { label: 'Nightly', path: '/nightly', color: 'text-accent-yellow border-yellow-800 hover:bg-yellow-950' },
-                { label: 'Analytics', path: '/analytics', color: 'text-accent-green border-green-800 hover:bg-green-950' },
+                { label: 'Nightly', path: '/nightly', color: 'text-amber-400 ring-1 ring-amber-500/25 hover:bg-amber-500/[.07]' },
+                { label: 'Analytics', path: '/analytics', color: 'text-emerald-400 ring-1 ring-emerald-500/25 hover:bg-emerald-500/[.07]' },
                 { label: 'Logs', path: '/logs', color: 'text-gray-400 border-gray-700 hover:bg-surface-2' },
                 { label: 'Infra', path: '/infra', color: 'text-accent-orange border-orange-800 hover:bg-orange-950' },
                 { label: 'Registry', path: '/registry', color: 'text-accent-purple border-purple-800 hover:bg-purple-950' },

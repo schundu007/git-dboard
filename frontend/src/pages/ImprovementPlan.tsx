@@ -7,7 +7,8 @@ import {
   Bug, Lightbulb, ExternalLink, BarChart2,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { getImprovementPlan, getIssuesAnalysis } from '../lib/api'
+import { getImprovementPlan, getIssuesAnalysis, getActiveRepo } from '../lib/api'
+import BusinessReport from '../components/BusinessReport'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -73,9 +74,11 @@ function Pill({ label, color }: { label: string; color: string }) {
 }
 
 function IssueLink({ number }: { number: number }) {
+  const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const slug = data?.active?.slug ?? ''
   return (
     <a
-      href={`https://github.com/isaac-sim/IsaacLab/issues/${number}`}
+      href={`https://github.com/${slug}/issues/${number}`}
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-0.5 text-[10px] font-mono text-accent-blue hover:underline"
@@ -86,9 +89,11 @@ function IssueLink({ number }: { number: number }) {
 }
 
 function PRLink({ number }: { number: number }) {
+  const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const slug = data?.active?.slug ?? ''
   return (
     <a
-      href={`https://github.com/isaac-sim/IsaacLab/pull/${number}`}
+      href={`https://github.com/${slug}/pull/${number}`}
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-0.5 text-[10px] font-mono text-accent-green hover:underline"
@@ -255,6 +260,8 @@ function PlanItemCard({ item }: { item: any }) {
 const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low']
 
 function IssueRow({ issue, type }: { issue: any; type: 'bug' | 'feature' }) {
+  const { data: arData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const slug = arData?.active?.slug ?? ''
   const sev = type === 'bug' ? issue.severity : issue.demand
   const meta = SEVERITY_META[sev ?? 'medium']
   const demandMeta = DEMAND_COLOR[sev ?? 'medium']
@@ -263,7 +270,7 @@ function IssueRow({ issue, type }: { issue: any; type: 'bug' | 'feature' }) {
     <tr className="border-b border-border/30 hover:bg-surface-2/40 text-xs transition-colors group">
       <td className="px-3 py-2">
         <a
-          href={`https://github.com/isaac-sim/IsaacLab/issues/${issue.number}`}
+          href={`https://github.com/${slug}/issues/${issue.number}`}
           target="_blank"
           rel="noreferrer"
           className="font-mono text-accent-blue hover:underline flex items-center gap-1"
@@ -306,6 +313,8 @@ function IssuesAnalysisTab() {
     queryFn: getIssuesAnalysis,
     staleTime: 10 * 60_000,
   })
+  const { data: arData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const slug = arData?.active?.slug ?? ''
 
   const [activeSection, setActiveSection] = useState<'infra' | 'bugs' | 'features'>('infra')
 
@@ -337,7 +346,7 @@ function IssuesAnalysisTab() {
               <p className="text-sm font-semibold text-white">{total} Open Issues</p>
               <p className="text-[10px] text-gray-500 mt-0.5">{data.source} · {data.fetched_at}</p>
             </div>
-            <a href="https://github.com/isaac-sim/IsaacLab/issues" target="_blank" rel="noreferrer"
+            <a href={`https://github.com/${slug}/issues`} target="_blank" rel="noreferrer"
               className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline">
               GitHub <ExternalLink size={9} />
             </a>
@@ -367,7 +376,7 @@ function IssuesAnalysisTab() {
               <p className="text-sm font-semibold text-white">{data.total_open_prs} Open PRs</p>
               <p className="text-[10px] text-gray-500 mt-0.5">Active development breakdown</p>
             </div>
-            <a href="https://github.com/isaac-sim/IsaacLab/pulls" target="_blank" rel="noreferrer"
+            <a href={`https://github.com/${slug}/pulls`} target="_blank" rel="noreferrer"
               className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline">
               GitHub <ExternalLink size={9} />
             </a>
@@ -415,7 +424,7 @@ function IssuesAnalysisTab() {
                   {(cluster.key_prs ?? []).map((n: number) => (
                     <a
                       key={n}
-                      href={`https://github.com/isaac-sim/IsaacLab/pull/${n}`}
+                      href={`https://github.com/${slug}/pull/${n}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[9px] font-mono text-accent-green hover:underline"
@@ -761,15 +770,14 @@ export default function ImprovementPlan() {
   const items: any[] = data?.items ?? []
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="space-y-5">
+      <BusinessReport />
+
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-white">CI/CD Improvement Plan</h1>
-          <p className="text-[11px] text-gray-500 mt-0.5">
-            Derived from live pipeline metrics + deep analysis of {summary?.context?.total_open_issues ?? 150} open GitHub issues
-          </p>
-        </div>
+        <p className="text-[11px] text-gray-500">
+          Derived from live pipeline metrics + deep analysis of {summary?.context?.total_open_issues ?? 150} open GitHub issues
+        </p>
         <div className="flex items-center gap-2">
           <span className={clsx(
             'text-[9px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded border',
@@ -812,6 +820,7 @@ export default function ImprovementPlan() {
 
       {!isLoading && mainTab === 'plan' && <PlanTab items={items} summary={summary} />}
       {!isLoading && mainTab === 'issues' && <IssuesAnalysisTab />}
+
     </div>
   )
 }

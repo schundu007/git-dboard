@@ -16,9 +16,6 @@ from services import log_store
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
-_POSTMERGE = "postmerge-ci.yml"
-_BUILD = "build.yml"
-_NIGHTLY = "daily-compatibility.yml"
 _SKIP_JOBS = {"setup-versions", "notify-compatibility-status", "combine-compat-results"}
 
 
@@ -137,11 +134,12 @@ async def get_contributors():
 
 @router.get("/build-trends")
 async def get_build_trends(days: int = 30):
-    """
-    Daily build success/failure counts for postmerge-ci.yml.
-    Returns per-day breakdown + rolling 7-day success rate.
-    """
-    runs_data = await gh.get_workflow_runs(_POSTMERGE, per_page=100)
+    """Daily build success/failure counts for the active repo's primary CI workflow."""
+    wf = await gh.get_primary_workflows()
+    ci_wf = wf["ci"]
+    if not ci_wf:
+        return {"series": [], "summary": {"total_runs": 0, "succeeded": 0, "failed": 0, "success_rate": None}}
+    runs_data = await gh.get_workflow_runs(ci_wf, per_page=100)
     runs = runs_data.get("workflow_runs", [])
 
     by_day: dict[str, dict] = {}
@@ -189,11 +187,12 @@ async def get_build_trends(days: int = 30):
 
 @router.get("/failure-analysis")
 async def get_failure_analysis(runs: int = 30):
-    """
-    Per-job failure rate across the last N nightly runs.
-    Returns ranked job list with failure %, consecutive failures, and trend.
-    """
-    data = await gh.get_workflow_runs(_NIGHTLY, per_page=min(runs * 2, 100))
+    """Per-job failure rate across the last N nightly/CI runs for the active repo."""
+    wf = await gh.get_primary_workflows()
+    nightly_wf = wf["nightly"] or wf["ci"]
+    if not nightly_wf:
+        return {"jobs": [], "runs_analysed": 0}
+    data = await gh.get_workflow_runs(nightly_wf, per_page=min(runs * 2, 100))
     workflow_runs = data.get("workflow_runs", [])[:runs]
 
     async def fetch_jobs(run: dict):
@@ -378,7 +377,7 @@ async def get_user_metrics(days: int = 30):
     commits_raw, closed_prs, build_runs, open_prs = await asyncio.gather(
         gh.get_commits(per_page=100, since=since),
         gh.get_closed_prs(per_page=100),
-        gh.get_workflow_runs("postmerge-ci.yml", per_page=100),
+        gh.get_workflow_runs((await gh.get_primary_workflows())["ci"] or "ci.yml", per_page=100),
         gh.get_prs(state="open", per_page=100),
     )
 
@@ -462,7 +461,7 @@ async def get_branch_overview(limit: int = 15):
     branches_raw, open_prs_raw, build_runs_raw, merged_prs_raw = await asyncio.gather(
         gh.get_branches(per_page=50),
         gh.get_prs(state="open", per_page=100),
-        gh.get_workflow_runs("build.yml", per_page=100),
+        gh.get_workflow_runs((await gh.get_primary_workflows())["ci"] or "ci.yml", per_page=100),
         gh.get_closed_prs(per_page=100),
     )
 

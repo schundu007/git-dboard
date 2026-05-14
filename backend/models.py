@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Boolean
 from sqlalchemy.sql import func
 from database import Base
 
@@ -39,3 +39,15 @@ class NightlyRun(Base):
     failed = Column(Integer, default=0)
     duration_seconds = Column(Integer)
     artifact_url = Column(String(500))
+
+
+class RepoConfig(Base):
+    __tablename__ = "repo_configs"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200))
+    owner = Column(String(100))
+    repo = Column(String(200))
+    gh_pat = Column(String(500), default="")   # blank = inherit from env
+    is_active = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+    capabilities = Column(JSON, default={})

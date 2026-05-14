@@ -67,7 +67,7 @@ function StatCard({
   return (
     <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
+        <p className="text-xs text-gray-500 font-medium">{label}</p>
         {Icon && <Icon size={13} className="text-gray-600" />}
       </div>
       <p className={clsx('text-2xl font-semibold tabular-nums', color)}>{value ?? '—'}</p>
@@ -102,31 +102,31 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
           label="Success Rate"
           value={data.success_rate != null ? `${data.success_rate}%` : null}
           sub={`${data.success ?? 0} / ${data.total ?? 0} runs`}
-          color={data.success_rate >= 80 ? 'text-accent-green' : data.success_rate >= 60 ? 'text-accent-yellow' : 'text-accent-red'}
+          color={data.success_rate >= 80 ? 'text-nvidia' : data.success_rate >= 60 ? 'text-neutral-300' : 'text-accent-red'}
           icon={CheckCircle2}
         />
         <StatCard
           label="Failure Rate"
           value={data.failure_rate != null ? `${data.failure_rate}%` : null}
           sub={`${data.failure ?? 0} failures`}
-          color={data.failure_rate < 10 ? 'text-accent-green' : data.failure_rate < 30 ? 'text-accent-yellow' : 'text-accent-red'}
+          color={data.failure_rate < 10 ? 'text-nvidia' : data.failure_rate < 30 ? 'text-neutral-300' : 'text-accent-red'}
           icon={XCircle}
         />
-        <StatCard label="Avg Duration" value={d.avg_label ?? '—'} sub={`p50: ${d.p50_label ?? '—'}`} color="text-accent-blue" icon={Clock} />
-        <StatCard label="p90 Duration" value={d.p90_label ?? '—'} sub={`${data.runs_analysed ?? 0} runs analysed`} color="text-accent-purple" icon={TrendingUp} />
+        <StatCard label="Avg Duration" value={d.avg_label ?? '—'} sub={`p50: ${d.p50_label ?? '—'}`} color="text-neutral-300" icon={Clock} />
+        <StatCard label="p90 Duration" value={d.p90_label ?? '—'} sub={`${data.runs_analysed ?? 0} runs analysed`} color="text-neutral-300" icon={TrendingUp} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {byDay.length > 0 && (
           <div className="md:col-span-2 bg-surface-1 border border-border rounded-lg p-3">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-3">Daily Runs — last 14 days</p>
+            <p className="text-xs text-gray-500 font-medium mb-3">Daily Runs — last 14 days</p>
             <ResponsiveContainer width="100%" height={120}>
               <BarChart data={byDay} barSize={10}>
-                <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 9 }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fill: '#6b7280', fontSize: 9 }} width={20} />
-                <Tooltip contentStyle={{ background: '#1e1e2e', border: '1px solid #2a2a3d', fontSize: 11 }} itemStyle={{ color: '#d1d5db' }} labelStyle={{ color: '#9ca3af', marginBottom: 4 }} />
-                <Bar dataKey="success" name="Success" stackId="a" fill="#22c55e" />
-                <Bar dataKey="failure" name="Failure" stackId="a" fill="#ef4444" radius={[2, 2, 0, 0]} />
+                <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v) => v.slice(5)} />
+                <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={20} />
+                <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 }} itemStyle={{ color: '#1d2226' }} labelStyle={{ color: '#56687a', marginBottom: 4 }} />
+                <Bar dataKey="success" name="Success" stackId="a" fill="#76b900" />
+                <Bar dataKey="failure" name="Failure" stackId="a" fill="#ff1b2d" radius={[2, 2, 0, 0]} />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
               </BarChart>
             </ResponsiveContainer>
@@ -134,7 +134,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
         )}
         {topActors.length > 0 && (
           <div className="bg-surface-1 border border-border rounded-lg p-3">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+            <p className="text-xs text-gray-500 font-medium mb-3 flex items-center gap-1">
               <Users size={10} /> Top Triggerers
             </p>
             <div className="space-y-2">
@@ -147,7 +147,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
                       <span className="text-gray-500">{a.count} ({pct}%)</span>
                     </div>
                     <div className="h-1 rounded-full bg-surface-3 overflow-hidden">
-                      <div className="h-full rounded-full bg-accent-blue transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-nvidia transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )
@@ -158,7 +158,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
       </div>
 
       {(data.in_progress ?? 0) > 0 && (
-        <div className="flex items-center gap-2 text-xs text-accent-blue bg-blue-950/30 border border-blue-900/40 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-xs text-nvidia bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25 border border-[#76b900]/20 rounded-lg px-3 py-2">
           <Zap size={12} className="animate-pulse" />
           {data.in_progress} run{data.in_progress > 1 ? 's' : ''} currently in progress
         </div>
@@ -189,7 +189,7 @@ function FailureDetail({ runId }: { runId: number }) {
         {open ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
       </button>
       {open && (
-        <div className="mt-2 bg-black/40 rounded border border-red-900/40 p-2.5 space-y-2.5">
+        <div className="mt-2 bg-accent-red/[.03] rounded border border-accent-red/20 p-2.5 space-y-2.5">
           {isLoading && <p className="text-[10px] text-gray-600">Fetching logs…</p>}
           {data?.summaries?.map((s: any, i: number) => (
             <div key={i} className="space-y-1">
@@ -198,19 +198,19 @@ function FailureDetail({ runId }: { runId: number }) {
                 {s.runner && <span className="text-gray-600 font-normal ml-1">on {s.runner}</span>}
               </p>
               {s.failed_steps?.map((step: any) => (
-                <p key={step.number} className="text-[10px] text-orange-400 pl-3 flex items-center gap-1">
+                <p key={step.number} className="text-[10px] text-red-400 pl-3 flex items-center gap-1">
                   <AlertTriangle size={8} /> Step {step.number}: {step.name}
                 </p>
               ))}
               {s.error_lines?.length > 0 && (
-                <div className="bg-black/60 rounded p-1.5 font-mono max-h-32 overflow-y-auto">
+                <div className="bg-surface-2 rounded p-1.5 font-mono max-h-32 overflow-y-auto border border-border">
                   {s.error_lines.map((line: string, li: number) => (
                     <p key={li} className={clsx(
                       'text-[9px] leading-4 break-all',
                       line.toLowerCase().includes('error') || line.includes('##[error]')
                         ? 'text-accent-red'
                         : line.toLowerCase().includes('traceback') || line.toLowerCase().includes('exception')
-                        ? 'text-orange-400'
+                        ? 'text-red-400'
                         : 'text-gray-400',
                     )}>{line}</p>
                   ))}
@@ -281,7 +281,7 @@ function ArtifactsPanel({ runId }: { runId: number }) {
             {a.expired && <span className="text-accent-red text-[9px]">EXPIRED</span>}
           </div>
           {!a.expired && a.url && (
-            <a href={a.url} target="_blank" rel="noreferrer" className="text-accent-blue hover:underline text-[10px]">Download ↗</a>
+            <a href={a.url} target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-neutral-200 hover:underline text-[10px]">Download ↗</a>
           )}
         </div>
       ))}
@@ -312,7 +312,7 @@ function LogPanel({ runId, onClose }: { runId: number; onClose: () => void }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <span className="text-sm font-medium">Live Logs — run #{runId}</span>
           <div className="flex items-center gap-3">
-            {done ? <span className="text-xs text-accent-green">Stream complete</span> : <span className="text-xs text-accent-blue animate-pulse">Streaming…</span>}
+            {done ? <span className="text-xs text-nvidia">Stream complete</span> : <span className="text-xs text-nvidia animate-pulse">Streaming…</span>}
             <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
           </div>
         </div>
@@ -361,7 +361,7 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
               <span className="text-[10px] text-gray-600 font-mono">#{run.run_number}</span>
               {showWorkflow && (run as any).workflow_label && (
-                <span className="text-[10px] bg-purple-950 text-accent-purple px-1.5 py-0.5 rounded">
+                <span className="text-[10px] bg-surface-3 text-gray-400 px-1.5 py-0.5 rounded">
                   {(run as any).workflow_label}
                 </span>
               )}
@@ -372,15 +372,15 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
                 </span>
               )}
               {isInProgress && (
-                <span className="flex items-center gap-1 text-[10px] text-accent-blue">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse" />
+                <span className="flex items-center gap-1 text-[10px] text-nvidia">
+                  <span className="w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
                   {run.status === 'queued' ? 'Queued' : 'Running'}
                 </span>
               )}
             </div>
             <p className="text-sm text-white truncate font-medium">{run.display_title || run.head_branch}</p>
             <div className="flex flex-wrap items-center gap-2.5 mt-1 text-[10px] text-gray-500">
-              <span className="text-accent-blue font-mono">{run.head_branch}</span>
+              <span className="text-gray-500 font-mono">{run.head_branch}</span>
               <span className="font-mono">{run.head_sha?.slice(0, 7)}</span>
               <span className="flex items-center gap-0.5">
                 <Calendar size={9} />
@@ -398,14 +398,14 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {isInProgress && (
               <button onClick={() => cancel()} disabled={cancelling}
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-red-950 text-accent-red hover:bg-red-900 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25 hover:bg-accent-red/10 disabled:opacity-50 transition-colors">
                 <StopCircle size={10} />
                 {cancelling ? '…' : 'Cancel'}
               </button>
             )}
             {isFailed && (
               <button onClick={() => rerunFailed()} disabled={rerunningFailed}
-                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-yellow-950 text-yellow-400 hover:bg-yellow-900 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25 hover:bg-surface-3 disabled:opacity-50 transition-colors">
                 <AlertTriangle size={9} />
                 {rerunningFailed ? '…' : 'Retry Failed'}
               </button>
@@ -419,7 +419,7 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
               Logs
             </button>
             <a href={run.html_url} target="_blank" rel="noreferrer">
-              <ExternalLink size={12} className="text-gray-500 hover:text-accent-blue" />
+              <ExternalLink size={12} className="text-gray-500 hover:text-neutral-300" />
             </a>
             <button onClick={() => setExpanded((v) => !v)}
               className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-surface-2 transition-colors">
@@ -463,10 +463,10 @@ function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
   if (!live.length) return null
 
   return (
-    <div className="bg-blue-950/30 border border-blue-900/40 rounded-xl p-4">
+    <div className="bg-[#76b900]/[.05] border border-[#76b900]/20 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="w-2 h-2 rounded-full bg-accent-blue animate-pulse" />
-        <p className="text-xs font-semibold text-accent-blue">{live.length} run{live.length !== 1 ? 's' : ''} in progress</p>
+        <span className="w-2 h-2 rounded-full bg-nvidia animate-pulse" />
+        <p className="text-xs font-semibold text-nvidia">{live.length} run{live.length !== 1 ? 's' : ''} in progress</p>
       </div>
       <div className="space-y-2">
         {live.map((r) => {
@@ -477,10 +477,10 @@ function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white truncate">{r.display_title || r.head_branch}</p>
                 <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
-                  <span className="bg-purple-950 text-accent-purple px-1.5 py-0.5 rounded text-[9px]">
+                  <span className="bg-surface-3 text-gray-400 px-1.5 py-0.5 rounded text-[9px]">
                     {(r as any).workflow_label || r.name}
                   </span>
-                  <span className="text-accent-blue font-mono">{r.head_branch}</span>
+                  <span className="text-gray-500 font-mono">{r.head_branch}</span>
                   {actor && (
                     <span className="flex items-center gap-1">
                       <img src={actor.avatar_url} className="w-3 h-3 rounded-full" alt="" />
@@ -495,7 +495,7 @@ function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
                   <CancelMiniButton runId={r.id} onSuccess={() => qc.invalidateQueries({ queryKey: ['all-runs'] })} />
                 )}
                 <a href={r.html_url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={11} className="text-gray-500 hover:text-accent-blue" />
+                  <ExternalLink size={11} className="text-gray-500 hover:text-neutral-300" />
                 </a>
               </div>
             </div>
@@ -510,7 +510,7 @@ function CancelMiniButton({ runId, onSuccess }: { runId: number; onSuccess: () =
   const { mutate, isPending } = useMutation({ mutationFn: () => cancelBuild(runId), onSuccess })
   return (
     <button onClick={() => mutate()} disabled={isPending}
-      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-red-950 text-accent-red hover:bg-red-900 disabled:opacity-50">
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25 hover:bg-accent-red/10 disabled:opacity-50">
       <StopCircle size={8} /> {isPending ? '…' : 'Cancel'}
     </button>
   )
@@ -553,7 +553,7 @@ function AllWorkflowsPanel() {
       <div className="bg-surface-1 border border-border rounded-xl p-3">
         <div className="flex items-center gap-2 mb-2">
           <Filter size={11} className="text-gray-500" />
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider">Filters</span>
+          <span className="text-xs text-gray-500 font-medium">Filters</span>
           {isFetching && <span className="text-[9px] text-gray-600 animate-pulse ml-auto">Refreshing…</span>}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -572,11 +572,11 @@ function AllWorkflowsPanel() {
             <GitBranch size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={branch} onChange={(e) => { setBranch(e.target.value); setPage(1) }}
               placeholder="branch"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
           </div>
           {/* Event */}
           <select value={event} onChange={(e) => { setEvent(e.target.value); setPage(1) }}
-            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-accent-blue">
+            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-[10px] text-gray-300 focus:outline-none focus:border-neutral-500">
             <option value="">Event: all</option>
             {GH_EVENTS.map((ev) => <option key={ev} value={ev}>{ev}</option>)}
           </select>
@@ -585,7 +585,7 @@ function AllWorkflowsPanel() {
             <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={actor} onChange={(e) => { setActor(e.target.value); setPage(1) }}
               placeholder="actor / author"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-36 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-36 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
           </div>
           {/* Clear */}
           {(branch || event || actor || statusFilter !== 'all') && (
@@ -640,8 +640,8 @@ function staleness(lastAccessedAt: string | null): { label: string; color: strin
   if (!lastAccessedAt) return { label: 'unknown', color: 'text-gray-600' }
   const days = Math.floor((Date.now() - new Date(lastAccessedAt).getTime()) / 86_400_000)
   if (days <= 3) return { label: `${days}d ago`, color: 'text-accent-green' }
-  if (days <= 7) return { label: `${days}d ago`, color: 'text-accent-yellow' }
-  if (days <= 30) return { label: `${days}d ago`, color: 'text-orange-400' }
+  if (days <= 7) return { label: `${days}d ago`, color: 'text-neutral-400' }
+  if (days <= 30) return { label: `${days}d ago`, color: 'text-neutral-500' }
   return { label: `${days}d ago`, color: 'text-accent-red' }
 }
 
@@ -691,13 +691,13 @@ function CachesPanel() {
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard label="Total Caches" value={data.total_count} icon={HardDrive} />
-          <StatCard label="Total Size" value={data.total_size_label} color="text-accent-blue" icon={HardDrive}
+          <StatCard label="Total Size" value={data.total_size_label} color="text-neutral-300" icon={HardDrive}
             sub={`${usedPct.toFixed(1)}% of ${GH_CACHE_LIMIT_GB}GB limit`} />
           <StatCard label="Stale (>7d)" value={staleCount}
-            color={staleCount > 5 ? 'text-accent-red' : staleCount > 0 ? 'text-accent-yellow' : 'text-accent-green'}
+            color={staleCount > 5 ? 'text-accent-red' : staleCount > 0 ? 'text-neutral-400' : 'text-nvidia'}
             icon={Clock} sub="last accessed >7 days ago" />
           <div className="bg-surface-1 border border-border rounded-lg p-3">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">Key Prefixes</p>
+            <p className="text-xs text-gray-500 font-medium mb-1.5">Key Prefixes</p>
             <div className="space-y-0.5">
               {topPrefixes.map(([prefix, count]) => (
                 <div key={prefix} className="flex justify-between text-[10px]">
@@ -715,13 +715,13 @@ function CachesPanel() {
         <div className="bg-surface-1 border border-border rounded-xl p-3">
           <div className="flex items-center justify-between mb-1.5 text-[10px]">
             <span className="text-gray-400">GitHub Actions Cache Storage</span>
-            <span className={clsx(usedPct > 80 ? 'text-accent-red' : usedPct > 60 ? 'text-accent-yellow' : 'text-accent-green')}>
+            <span className={clsx(usedPct > 80 ? 'text-accent-red' : usedPct > 60 ? 'text-neutral-300' : 'text-nvidia')}>
               {data.total_size_label} / {GH_CACHE_LIMIT_GB}GB
             </span>
           </div>
           <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
             <div
-              className={clsx('h-full rounded-full transition-all', usedPct > 80 ? 'bg-accent-red' : usedPct > 60 ? 'bg-accent-yellow' : 'bg-accent-blue')}
+              className={clsx('h-full rounded-full transition-all', usedPct > 80 ? 'bg-accent-red' : 'bg-nvidia')}
               style={{ width: `${usedPct}%` }}
             />
           </div>
@@ -732,7 +732,7 @@ function CachesPanel() {
       {/* By-branch breakdown */}
       {data?.by_ref?.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl p-3">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Storage by Branch</p>
+          <p className="text-xs text-gray-500 font-medium mb-2">Storage by Branch</p>
           <div className="space-y-1.5">
             {(data.by_ref ?? []).map((r: any) => {
               const pct = Math.round((r.size_bytes / Math.max(usedBytes, 1)) * 100)
@@ -743,7 +743,7 @@ function CachesPanel() {
                     <span className="text-gray-500 flex-shrink-0">{r.count} entries · {r.size_label} ({pct}%)</span>
                   </div>
                   <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                    <div className="h-full bg-accent-blue rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-nvidia rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               )
@@ -757,12 +757,12 @@ function CachesPanel() {
         <div className="relative">
           <GitBranch size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={refFilter} onChange={(e) => setRefFilter(e.target.value)} placeholder="filter by branch"
-            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
         </div>
         <div className="relative">
           <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={keyFilter} onChange={(e) => setKeyFilter(e.target.value)} placeholder="filter by key"
-            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-52 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-52 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
         </div>
         <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-0.5 ml-auto">
           {(['size', 'age', 'ref'] as const).map((s) => (
@@ -783,19 +783,19 @@ function CachesPanel() {
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-px bg-border">
             {['Cache Key', 'Branch', 'Size', 'Last Accessed', ''].map((h) => (
-              <div key={h} className="bg-surface-2 px-3 py-2 text-[9px] text-gray-500 uppercase tracking-wider">{h}</div>
+              <div key={h} className="bg-surface-2 px-3 py-2 text-xs text-gray-500 font-medium">{h}</div>
             ))}
             {caches.map((c: any) => {
               const s = staleness(c.last_accessed_at)
               return (
                 <>
                   <div key={`${c.id}-key`} className="bg-surface-1 px-3 py-2.5 font-mono text-[10px] text-gray-200 truncate" title={c.key}>{c.key}</div>
-                  <div key={`${c.id}-ref`} className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-blue font-mono">{c.ref || '—'}</div>
+                  <div key={`${c.id}-ref`} className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-500 font-mono">{c.ref || '—'}</div>
                   <div key={`${c.id}-size`} className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-300 text-right">{c.size_label}</div>
                   <div key={`${c.id}-acc`} className={clsx('bg-surface-1 px-3 py-2.5 text-[10px]', s.color)}>{s.label}</div>
                   <div key={`${c.id}-del`} className="bg-surface-1 px-3 py-2.5 flex items-center justify-center">
                     <button onClick={() => del(c.id)} disabled={deleting && deletingId === c.id}
-                      className="p-1 rounded text-gray-600 hover:text-accent-red hover:bg-red-950/30 transition-colors disabled:opacity-50">
+                      className="p-1 rounded text-gray-600 hover:text-accent-red hover:bg-accent-red/10 transition-colors disabled:opacity-50">
                       <Trash2 size={11} />
                     </button>
                   </div>
@@ -812,21 +812,21 @@ function CachesPanel() {
 // ── Shared deployment helpers ─────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = {
-  success: 'text-accent-green bg-green-950',
-  active: 'text-accent-green bg-green-950',
-  failure: 'text-accent-red bg-red-950',
-  error: 'text-accent-red bg-red-950',
+  success: 'text-emerald-400 bg-emerald-500/[.07] ring-1 ring-emerald-500/25',
+  active: 'text-emerald-400 bg-emerald-500/[.07] ring-1 ring-emerald-500/25',
+  failure: 'text-red-400 bg-red-500/[.07] ring-1 ring-red-500/25',
+  error: 'text-red-400 bg-red-500/[.07] ring-1 ring-red-500/25',
   inactive: 'text-gray-400 bg-surface-3',
-  pending: 'text-accent-yellow bg-yellow-950',
-  in_progress: 'text-accent-blue bg-blue-950',
+  pending: 'text-neutral-400 bg-neutral-500/[.07] ring-1 ring-neutral-500/25',
+  in_progress: 'text-nvidia bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25',
   queued: 'text-gray-400 bg-surface-3',
 }
 
 function statusDot(status: string) {
   if (status === 'success' || status === 'active') return 'bg-accent-green'
   if (status === 'failure' || status === 'error') return 'bg-accent-red'
-  if (status === 'in_progress') return 'bg-accent-blue animate-pulse'
-  if (status === 'pending') return 'bg-accent-yellow'
+  if (status === 'in_progress') return 'bg-nvidia animate-pulse'
+  if (status === 'pending') return 'bg-neutral-400'
   return 'bg-gray-600'
 }
 
@@ -882,7 +882,7 @@ function DeploymentsPanel() {
     <div className="flex gap-4" style={{ minHeight: '60vh' }}>
       {/* Environment sidebar */}
       <div className="w-56 flex-shrink-0 bg-surface-1 border border-border rounded-xl p-2 space-y-0.5 overflow-y-auto">
-        <p className="text-[9px] text-gray-500 uppercase tracking-wider px-2 py-1.5 font-semibold">Environments</p>
+        <p className="text-xs text-gray-500 font-semibold px-2 py-1.5">Environments</p>
 
         {/* All */}
         <button
@@ -914,7 +914,7 @@ function DeploymentsPanel() {
                   {name}
                 </span>
                 {isPinned && (
-                  <span className="text-[8px] text-accent-blue flex-shrink-0">★</span>
+                  <span className="text-[8px] text-nvidia flex-shrink-0">★</span>
                 )}
               </div>
               {s?.lastAt && (
@@ -979,7 +979,7 @@ function DeploymentsPanel() {
                       <span className="text-xs font-medium text-white">{d.environment}</span>
                     )}
                     <span className="text-[10px] text-gray-600 bg-surface-2 px-1.5 py-0.5 rounded">{d.task}</span>
-                    <span className="font-mono text-[10px] text-accent-blue">{d.ref}</span>
+                    <span className="font-mono text-[10px] text-gray-500">{d.ref}</span>
                     <span className="font-mono text-[10px] text-gray-600">{d.sha}</span>
                   </div>
                   {d.description && (
@@ -1003,7 +1003,7 @@ function DeploymentsPanel() {
                   )}
                   {d.log_url && (
                     <a href={d.log_url} target="_blank" rel="noreferrer">
-                      <ExternalLink size={11} className="text-gray-500 hover:text-accent-blue" />
+                      <ExternalLink size={11} className="text-gray-500 hover:text-neutral-300" />
                     </a>
                   )}
                 </div>
@@ -1056,7 +1056,7 @@ function UsagePanel() {
                 value={`${data.total_actual_min}m`}
                 sub="across last 30 runs each"
                 icon={Timer}
-                color="text-accent-blue"
+                color="text-neutral-300"
               />
               <StatCard
                 label="Workflows tracked"
@@ -1069,7 +1069,7 @@ function UsagePanel() {
                 value={workflows[0] ? `${workflows[0].avg_min}m` : '—'}
                 sub={workflows[0]?.name ?? ''}
                 icon={Clock}
-                color="text-accent-orange"
+                color="text-neutral-300"
               />
               <StatCard
                 label="GitHub billable"
@@ -1081,10 +1081,10 @@ function UsagePanel() {
             </>
           ) : (
             <>
-              <StatCard label="Total Billable" value={`${data.total_min}m`} icon={Timer} color="text-accent-blue" />
-              <StatCard label="Ubuntu" value={`${data.total_ubuntu_min}m`} icon={Timer} color="text-accent-green" sub="Linux runners" />
-              <StatCard label="macOS" value={`${data.total_macos_min}m`} icon={Timer} color="text-accent-yellow" sub="macOS runners" />
-              <StatCard label="Wall-Clock Total" value={`${data.total_actual_min}m`} icon={Clock} color="text-accent-purple" sub="from recent runs" />
+              <StatCard label="Total Billable" value={`${data.total_min}m`} icon={Timer} color="text-neutral-300" />
+              <StatCard label="Ubuntu" value={`${data.total_ubuntu_min}m`} icon={Timer} color="text-nvidia" sub="Linux runners" />
+              <StatCard label="macOS" value={`${data.total_macos_min}m`} icon={Timer} color="text-neutral-300" sub="macOS runners" />
+              <StatCard label="Wall-Clock Total" value={`${data.total_actual_min}m`} icon={Clock} color="text-neutral-300" sub="from recent runs" />
             </>
           )}
         </div>
@@ -1096,28 +1096,28 @@ function UsagePanel() {
       {/* Chart */}
       {workflows.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-4">
+          <p className="text-xs text-gray-500 font-medium mb-4">
             {chartLabel} by Workflow
           </p>
           <ResponsiveContainer width="100%" height={Math.max(180, workflows.length * 28)}>
             <BarChart data={workflows} layout="vertical" barSize={10} margin={{ left: 0, right: 60 }}>
-              <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 9 }} unit="m" />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#d1d5db', fontSize: 9 }} width={180} />
+              <XAxis type="number" tick={{ fill: '#86939e', fontSize: 9 }} unit="m" />
+              <YAxis type="category" dataKey="name" tick={{ fill: '#1d2226', fontSize: 9 }} width={180} />
               <Tooltip
-                contentStyle={{ background: '#1e1e2e', border: '1px solid #2a2a3d', fontSize: 11 }}
+                contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 }}
                 formatter={(v: any, name: string) => [`${v}m`, name]}
               />
               {selfHosted ? (
                 <>
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="actual_min" name="Wall-clock (min)" fill="#3b82f6" radius={[0, 2, 2, 0]} />
+                  <Bar dataKey="actual_min" name="Wall-clock (min)" fill="#76b900" radius={[0, 2, 2, 0]} />
                 </>
               ) : (
                 <>
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="ubuntu_min" name="Ubuntu" stackId="a" fill="#22c55e" />
-                  <Bar dataKey="macos_min" name="macOS" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="windows_min" name="Windows" stackId="a" fill="#3b82f6" radius={[0, 2, 2, 0]} />
+                  <Bar dataKey="ubuntu_min" name="Ubuntu" stackId="a" fill="#76b900" />
+                  <Bar dataKey="macos_min" name="macOS" stackId="a" fill="#bab9b6" />
+                  <Bar dataKey="windows_min" name="Windows" stackId="a" fill="#a19f9a" radius={[0, 2, 2, 0]} />
                 </>
               )}
             </BarChart>
@@ -1135,24 +1135,24 @@ function UsagePanel() {
               ? ['Workflow', 'Runs (last 30)', 'Avg per run', 'Total wall-clock']
               : ['Workflow', 'Ubuntu', 'macOS', 'Windows', 'Billable', 'Wall-clock']
             ).map((h) => (
-              <div key={h} className="bg-surface-2 px-3 py-2 text-[9px] text-gray-500 uppercase tracking-wider">{h}</div>
+              <div key={h} className="bg-surface-2 px-3 py-2 text-xs text-gray-500 font-medium">{h}</div>
             ))}
             {workflows.map((w: any) => (
               selfHosted ? (
                 <div key={w.id} className="contents">
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-200 truncate">{w.name}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-400 text-right tabular-nums">{w.run_count}</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-blue text-right tabular-nums">{w.avg_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right tabular-nums">{w.avg_min}m</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-white font-semibold text-right tabular-nums">{w.actual_min}m</div>
                 </div>
               ) : (
                 <div key={w.id} className="contents">
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-200 truncate">{w.name}</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-green text-right">{w.ubuntu_min}m</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-yellow text-right">{w.macos_min}m</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-blue text-right">{w.windows_min}m</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-white font-semibold text-right">{w.total_min}m</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-purple text-right">{w.actual_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.ubuntu_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.macos_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.windows_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-200 font-semibold text-right">{w.total_min}m</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.actual_min}m</div>
                 </div>
               )
             ))}
@@ -1201,7 +1201,7 @@ function PerformanceMetricsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TrendingUp size={13} className="text-accent-purple" />
+          <TrendingUp size={13} className="text-neutral-500" />
           <span className="text-xs font-medium text-gray-300">Cross-Workflow Performance</span>
         </div>
         <div className="flex items-center gap-1">
@@ -1223,21 +1223,21 @@ function PerformanceMetricsPanel() {
             label="Best Success Rate"
             value={best?.success_rate != null ? `${best.success_rate}%` : '—'}
             sub={best?.workflow}
-            color={best?.success_rate >= 80 ? 'text-accent-green' : 'text-accent-yellow'}
+            color={best?.success_rate >= 80 ? 'text-nvidia' : 'text-neutral-300'}
             icon={CheckCircle2}
           />
           <StatCard
             label="Fastest Avg Duration"
             value={fastest?.avg_label ?? '—'}
             sub={fastest?.workflow}
-            color="text-accent-blue"
+            color="text-neutral-300"
             icon={Clock}
           />
           <StatCard
             label="Most Active"
             value={heaviest?.total ?? '—'}
             sub={`${heaviest?.workflow ?? ''} · ${days}d`}
-            color="text-accent-purple"
+            color="text-neutral-300"
             icon={Activity}
           />
           <StatCard
@@ -1255,21 +1255,21 @@ function PerformanceMetricsPanel() {
       {/* Duration comparison chart */}
       {chartData.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-4">
+          <p className="text-xs text-gray-500 font-medium mb-4">
             Avg Run Duration by Workflow (minutes) — {days}d window
           </p>
           <ResponsiveContainer width="100%" height={Math.max(200, chartData.length * 34)}>
             <BarChart data={chartData} layout="vertical" barSize={7} margin={{ left: 0, right: 60 }}>
-              <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 9 }} unit="m" />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#d1d5db', fontSize: 9 }} width={155} />
+              <XAxis type="number" tick={{ fill: '#86939e', fontSize: 9 }} unit="m" />
+              <YAxis type="category" dataKey="name" tick={{ fill: '#1d2226', fontSize: 9 }} width={155} />
               <Tooltip
-                contentStyle={{ background: '#1e1e2e', border: '1px solid #2a2a3d', fontSize: 11 }}
+                contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 }}
                 formatter={(v: any, name: string) => [`${v}m`, name]}
               />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="avg" name="Avg" fill="#3b82f6" />
-              <Bar dataKey="p50" name="p50 (median)" fill="#a855f7" />
-              <Bar dataKey="p90" name="p90" fill="#f59e0b" radius={[0, 2, 2, 0]} />
+              <Bar dataKey="avg" name="Avg" fill="#76b900" />
+              <Bar dataKey="p50" name="p50 (median)" fill="#bab9b6" />
+              <Bar dataKey="p90" name="p90" fill="#a19f9a" radius={[0, 2, 2, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -1279,7 +1279,7 @@ function PerformanceMetricsPanel() {
       {sorted.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Per-Workflow Details</p>
+            <p className="text-xs text-gray-500 font-medium">Per-Workflow Details</p>
             <div className="flex items-center gap-0.5 bg-surface-2 rounded-lg p-0.5">
               {([['failure_rate', 'Job Failures'], ['avg', 'Duration'], ['total', 'Runs']] as const).map(([key, label]) => (
                 <button key={key} onClick={() => setSortBy(key as any)}
@@ -1292,7 +1292,7 @@ function PerformanceMetricsPanel() {
           </div>
           <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto] gap-px bg-border">
             {['Workflow', 'Runs', 'Failures %', 'Avg', 'p50', 'p90', 'Success'].map((h) => (
-              <div key={h} className="bg-surface-2 px-3 py-2 text-[9px] text-gray-500 uppercase tracking-wider">{h}</div>
+              <div key={h} className="bg-surface-2 px-3 py-2 text-xs text-gray-500 font-medium">{h}</div>
             ))}
             {sorted.map((w) => {
               const failurePct = w.total ? +((w.failure / w.total) * 100).toFixed(0) : 0
@@ -1301,14 +1301,14 @@ function PerformanceMetricsPanel() {
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-200 truncate">{w.workflow}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-400 text-right">{w.total}</div>
                   <div className={clsx('bg-surface-1 px-3 py-2.5 text-[10px] font-semibold text-right',
-                    failurePct >= 30 ? 'text-accent-red' : failurePct >= 10 ? 'text-accent-yellow' : 'text-accent-green')}>
+                    failurePct >= 30 ? 'text-accent-red' : failurePct >= 10 ? 'text-neutral-400' : 'text-nvidia')}>
                     {failurePct}%
                   </div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-blue text-right">{w.avg_label ?? '—'}</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-purple text-right">{w.p50_label ?? '—'}</div>
-                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-accent-yellow text-right">{w.p90_label ?? '—'}</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.avg_label ?? '—'}</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p50_label ?? '—'}</div>
+                  <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p90_label ?? '—'}</div>
                   <div className={clsx('bg-surface-1 px-3 py-2.5 text-[10px] font-semibold text-right',
-                    w.success_rate == null ? 'text-gray-600' : w.success_rate >= 80 ? 'text-accent-green' : w.success_rate >= 60 ? 'text-accent-yellow' : 'text-accent-red')}>
+                    w.success_rate == null ? 'text-gray-600' : w.success_rate >= 80 ? 'text-nvidia' : w.success_rate >= 60 ? 'text-neutral-400' : 'text-accent-red')}>
                     {w.success_rate != null ? `${w.success_rate}%` : '—'}
                   </div>
                 </div>
@@ -1347,8 +1347,8 @@ function WorkflowListPanel() {
       {data && (
         <div className="grid grid-cols-3 gap-3">
           <StatCard label="Total Workflows" value={data.total} icon={Activity} />
-          <StatCard label="Active" value={activeCount} color="text-accent-green" icon={CheckCircle2} />
-          <StatCard label="Pinned" value={pinnedCount} color="text-accent-blue" icon={TrendingUp} sub="tracked in pipeline tabs" />
+          <StatCard label="Active" value={activeCount} color="text-nvidia" icon={CheckCircle2} />
+          <StatCard label="Pinned" value={pinnedCount} color="text-neutral-300" icon={TrendingUp} sub="tracked in pipeline tabs" />
         </div>
       )}
 
@@ -1356,7 +1356,7 @@ function WorkflowListPanel() {
         <div className="relative flex-1 max-w-xs">
           <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workflows…"
-            className="w-full bg-surface-2 border border-border rounded-md pl-6 pr-2 py-1 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+            className="w-full bg-surface-2 border border-border rounded-md pl-6 pr-2 py-1 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
         </div>
         <label className="flex items-center gap-1.5 text-[10px] text-gray-500 cursor-pointer select-none">
           <input type="checkbox" checked={showDisabled} onChange={(e) => setShowDisabled(e.target.checked)} className="w-3 h-3" />
@@ -1372,21 +1372,21 @@ function WorkflowListPanel() {
         {filtered.map((w) => (
           <div key={w.id} className={clsx(
             'bg-surface-1 border rounded-xl px-4 py-3 flex items-start gap-3 transition-colors',
-            w.pinned ? 'border-blue-900/40 hover:border-blue-700/50' : 'border-border hover:border-gray-600',
+            w.pinned ? 'border-[#76b900]/20 hover:border-[#76b900]/40' : 'border-border hover:border-gray-600',
             w.state !== 'active' && 'opacity-60',
           )}>
             <div className={clsx('w-2 h-2 rounded-full flex-shrink-0 mt-1.5',
-              w.state === 'active' ? 'bg-accent-green' : 'bg-gray-600')} />
+              w.state === 'active' ? 'bg-nvidia' : 'bg-gray-600')} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 {w.pinned && (
-                  <span className="text-[9px] bg-blue-950 text-accent-blue px-1.5 py-0.5 rounded flex-shrink-0">Pinned</span>
+                  <span className="text-[9px] bg-surface-3 text-gray-400 ring-1 ring-border px-1.5 py-0.5 rounded flex-shrink-0">Pinned</span>
                 )}
                 <span className="text-xs font-medium text-white truncate">{w.name}</span>
               </div>
               <p className="text-[9px] font-mono text-gray-600">{w.filename}</p>
               <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-600 flex-wrap">
-                {w.last_branch && <span className="text-accent-blue font-mono">{w.last_branch}</span>}
+                {w.last_branch && <span className="text-gray-500 font-mono">{w.last_branch}</span>}
                 {w.last_run_at && (
                   <span>{formatDistanceToNow(new Date(w.last_run_at), { addSuffix: true })}</span>
                 )}
@@ -1399,7 +1399,7 @@ function WorkflowListPanel() {
               {w.last_status && <StatusBadge status={w.last_status} />}
               {w.html_url && (
                 <a href={w.html_url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={11} className="text-gray-600 hover:text-accent-blue" />
+                  <ExternalLink size={11} className="text-gray-600 hover:text-neutral-300" />
                 </a>
               )}
             </div>
@@ -1442,7 +1442,7 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
         <div className="flex items-center justify-between">
           <button onClick={() => setShowStats(!showStats)}
             className="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
-            <BarChart3 size={14} className="text-accent-blue" />
+            <BarChart3 size={14} className="text-neutral-500" />
             Pipeline Statistics
             {showStats ? <ChevronUp size={13} className="text-gray-500" /> : <ChevronDown size={13} className="text-gray-500" />}
           </button>
@@ -1474,7 +1474,7 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-500">Branch:</span>
           <input value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="filter by branch"
-            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-xs w-40 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-xs w-40 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
           {branch && <button onClick={() => setBranch('')} className="text-gray-600 hover:text-gray-400 text-xs">✕</button>}
         </div>
         <span className="text-xs text-gray-600 ml-auto">{runs.length} runs</span>
@@ -1506,7 +1506,7 @@ export default function BuildPipeline() {
   const activeWorkflow = PINNED.find((p) => p.filename === workflow)
 
   const { mutate: trigger, isPending: triggering } = useMutation({
-    mutationFn: () => triggerBuild(ref, workflow === 'all' ? 'postmerge-ci.yml' : workflow),
+    mutationFn: () => triggerBuild(ref, workflow === 'all' ? '' : workflow),
     onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 3000),
   })
 
@@ -1529,17 +1529,15 @@ export default function BuildPipeline() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Container size={18} className="text-accent-purple" />
-          <h1 className="text-lg font-semibold">Build Pipeline</h1>
         </div>
         <div className="flex items-center gap-2">
           {mode === 'runs' && workflow !== 'all' && workflow !== 'list' && (
             <>
               <input value={ref} onChange={(e) => setRef(e.target.value)}
-                className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs w-28 text-white focus:outline-none focus:border-accent-blue"
+                className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs w-28 text-white focus:outline-none focus:border-neutral-500"
                 placeholder="branch / ref" />
               <button onClick={() => trigger()} disabled={triggering}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-blue text-white hover:bg-blue-500 disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-nvidia text-black hover:bg-[#5a8c00] disabled:opacity-50 transition-colors">
                 <Play size={11} />
                 {triggering ? 'Queuing…' : 'Trigger'}
               </button>
@@ -1556,16 +1554,16 @@ export default function BuildPipeline() {
       <div className="border-b border-border pb-3 space-y-2">
         {/* Runs row */}
         <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-[9px] text-gray-600 uppercase tracking-wider w-20 flex-shrink-0">Workflows</span>
+          <span className="text-xs text-gray-500 font-medium w-20 flex-shrink-0">Workflows</span>
           <button onClick={() => selectTab('all')}
             className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              activeTab === 'all' ? 'bg-accent-blue text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+              activeTab === 'all' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
             All
           </button>
           {PINNED.map((w) => (
             <button key={w.filename} onClick={() => selectTab(w.filename)}
               className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                activeTab === w.filename ? 'bg-accent-blue text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+                activeTab === w.filename ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
               {w.label}
             </button>
           ))}
@@ -1578,7 +1576,7 @@ export default function BuildPipeline() {
 
         {/* Management row */}
         <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-[9px] text-gray-600 uppercase tracking-wider w-20 flex-shrink-0">Management</span>
+          <span className="text-xs text-gray-500 font-medium w-20 flex-shrink-0">Management</span>
           {[
             { key: 'caches',      icon: HardDrive, label: 'Caches' },
             { key: 'deployments', icon: Rocket,    label: 'Deployments' },
@@ -1587,7 +1585,7 @@ export default function BuildPipeline() {
           ].map(({ key, icon: Icon, label }) => (
             <button key={key} onClick={() => selectTab(key)}
               className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                activeTab === key ? 'bg-accent-blue text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+                activeTab === key ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
               <Icon size={11} /> {label}
             </button>
           ))}

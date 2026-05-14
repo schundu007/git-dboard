@@ -12,7 +12,7 @@ import {
   getRepoPermissions, getPRStats, triggerPRCI,
   getPRGate, getPRGateOverview,
   getAutomationStatus, triggerAutomationRun, updateAutomationConfig,
-  getRunnerRecommendations,
+  getRunnerRecommendations, getActiveRepo,
 } from '../lib/api'
 import StatusBadge from '../components/StatusBadge'
 import type { PR } from '../lib/types'
@@ -21,16 +21,16 @@ import clsx from 'clsx'
 // ── Classification chip ───────────────────────────────────────────────────────
 
 const CLASS_STYLE: Record<string, string> = {
-  docs:   'bg-blue-950 text-blue-400',
-  tests:  'bg-purple-950 text-purple-400',
-  source: 'bg-green-950 text-accent-green',
-  ci:     'bg-yellow-950 text-yellow-400',
+  docs:   'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+  tests:  'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+  source: 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+  ci:     'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
   mixed:  'bg-surface-3 text-gray-400',
 }
 
 function ClassChip({ cls }: { cls: string }) {
   return (
-    <span className={clsx('text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide', CLASS_STYLE[cls] ?? CLASS_STYLE.mixed)}>
+    <span className={clsx('text-[10px] px-1.5 py-0.5 rounded font-semibold', CLASS_STYLE[cls] ?? CLASS_STYLE.mixed)}>
       {cls}
     </span>
   )
@@ -40,20 +40,20 @@ function ClassChip({ cls }: { cls: string }) {
 
 function GateChip({ verdict }: { verdict: string }) {
   if (verdict === 'success')
-    return <span className="flex items-center gap-1 text-[9px] text-accent-green font-semibold"><CheckCircle2 size={9} />Gate pass</span>
+    return <span className="flex items-center gap-1 text-[10px] text-accent-green font-semibold"><CheckCircle2 size={10} />Gate pass</span>
   if (verdict === 'failure')
-    return <span className="flex items-center gap-1 text-[9px] text-accent-red font-semibold"><XCircle size={9} />Gate fail</span>
+    return <span className="flex items-center gap-1 text-[10px] text-accent-red font-semibold"><XCircle size={10} />Gate fail</span>
   if (verdict === 'skipped')
-    return <span className="flex items-center gap-1 text-[9px] text-gray-400 font-semibold"><ShieldCheck size={9} />Skipped</span>
-  return <span className="flex items-center gap-1 text-[9px] text-accent-yellow font-semibold"><Clock size={9} />Gate pending</span>
+    return <span className="flex items-center gap-1 text-[10px] text-gray-500 font-semibold"><ShieldCheck size={10} />Skipped</span>
+  return <span className="flex items-center gap-1 text-[10px] text-gray-500 font-semibold"><Clock size={10} />Gate pending</span>
 }
 
 // ── Gate overview bar ─────────────────────────────────────────────────────────
 
-function GateOverviewBar() {
+function GateOverviewBar({ days }: { days?: number }) {
   const { data } = useQuery({
-    queryKey: ['pr-gate-overview'],
-    queryFn: getPRGateOverview,
+    queryKey: ['pr-gate-overview', days ?? null],
+    queryFn: () => getPRGateOverview(days),
     staleTime: 60_000,
     refetchInterval: 90_000,
   })
@@ -66,9 +66,9 @@ function GateOverviewBar() {
       <ShieldCheck size={12} className="text-gray-500 flex-shrink-0" />
       <span className="text-gray-500">Gate overview</span>
       <div className="flex items-center gap-3 ml-1">
-        {success > 0 && <span className="flex items-center gap-1 text-accent-green"><CheckCircle2 size={9} />{success} passing</span>}
+        {success > 0 && <span className="flex items-center gap-1 text-nvidia"><CheckCircle2 size={9} />{success} passing</span>}
         {failure > 0 && <span className="flex items-center gap-1 text-accent-red"><XCircle size={9} />{failure} failing</span>}
-        {pending > 0 && <span className="flex items-center gap-1 text-accent-yellow"><Clock size={9} />{pending} pending</span>}
+        {pending > 0 && <span className="flex items-center gap-1 text-neutral-400"><Clock size={9} />{pending} pending</span>}
         {skipped > 0 && <span className="flex items-center gap-1 text-gray-400">{skipped} skipped</span>}
       </div>
       <span className="ml-auto text-gray-600">{total} PRs evaluated</span>
@@ -81,7 +81,7 @@ function GateOverviewBar() {
 const CAT_ICON: Record<string, string> = { success: '✓', failure: '✗', pending: '●', missing: '○' }
 const CAT_COLOR: Record<string, string> = {
   success: 'text-accent-green', failure: 'text-accent-red',
-  pending: 'text-accent-yellow', missing: 'text-gray-600',
+  pending: 'text-neutral-400', missing: 'text-gray-600',
 }
 
 function GatePanel({ prNumber }: { prNumber: number }) {
@@ -101,10 +101,10 @@ function GatePanel({ prNumber }: { prNumber: number }) {
     <div>
       <div className="flex items-center gap-2 mb-2">
         <ShieldCheck size={11} className="text-gray-400" />
-        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Gate Analysis</p>
+        <p className="text-xs font-semibold text-gray-500">Gate Analysis</p>
         <ClassChip cls={classification} />
         <GateChip verdict={verdict} />
-        {auto_merge && <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-950 text-purple-400 font-semibold">AUTO-MERGE</span>}
+        {auto_merge && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25 font-semibold">AUTO-MERGE</span>}
         {skip_tests && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-gray-400">skip-tests</span>}
       </div>
 
@@ -144,11 +144,11 @@ function GatePanel({ prNumber }: { prNumber: number }) {
 // ── Size badge ────────────────────────────────────────────────────────────────
 
 function sizeBadge(total: number): { label: string; cls: string } {
-  if (total < 10) return { label: 'XS', cls: 'bg-gray-800 text-gray-400' }
-  if (total < 100) return { label: 'S', cls: 'bg-blue-950 text-blue-400' }
-  if (total < 500) return { label: 'M', cls: 'bg-yellow-950 text-yellow-400' }
-  if (total < 1000) return { label: 'L', cls: 'bg-orange-950 text-orange-400' }
-  return { label: 'XL', cls: 'bg-red-950 text-red-400' }
+  if (total < 10) return { label: 'XS', cls: 'bg-surface-3 text-gray-500' }
+  if (total < 100) return { label: 'S', cls: 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25' }
+  if (total < 500) return { label: 'M', cls: 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25' }
+  if (total < 1000) return { label: 'L', cls: 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25' }
+  return { label: 'XL', cls: 'bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25' }
 }
 
 function SizeBadge({ additions, deletions }: { additions: number; deletions: number }) {
@@ -164,15 +164,15 @@ function SizeBadge({ additions, deletions }: { additions: number; deletions: num
 
 // ── Permission banner ─────────────────────────────────────────────────────────
 
-function PermissionBanner({ canPush }: { canPush: boolean }) {
+function PermissionBanner({ canPush, repoSlug }: { canPush: boolean; repoSlug: string }) {
   if (canPush) return null
   return (
-    <div className="flex items-center gap-2 bg-yellow-950/40 border border-yellow-800 rounded-lg px-3 py-2 text-xs">
-      <Lock size={11} className="text-accent-yellow flex-shrink-0" />
-      <span className="text-gray-300">
-        Read-only on <span className="text-white font-medium">isaac-sim/IsaacLab</span> —
+    <div className="flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs">
+      <Lock size={11} className="text-neutral-500 flex-shrink-0" />
+      <span className="text-gray-500">
+        Read-only on <span className="font-medium text-gray-700">{repoSlug}</span> —
         merges and reviews must be performed on{' '}
-        <a href="https://github.com/isaac-sim/IsaacLab" target="_blank" rel="noreferrer" className="text-accent-blue hover:underline">
+        <a href={`https://github.com/${repoSlug}`} target="_blank" rel="noreferrer" className="text-accent-blue hover:underline">
           GitHub ↗
         </a>
         . CI triggers and check viewing are available here.
@@ -187,9 +187,9 @@ function StatsBar({ stats }: { stats: any }) {
   if (!stats) return null
   const items = [
     { label: 'Open', value: stats.open, color: 'text-white' },
-    { label: 'Ready', value: stats.ready, color: 'text-accent-green' },
+    { label: 'Ready', value: stats.ready, color: 'text-nvidia' },
     { label: 'Draft', value: stats.draft, color: 'text-gray-400' },
-    { label: 'Review Req.', value: stats.review_requested, color: 'text-accent-yellow' },
+    { label: 'Review Req.', value: stats.review_requested, color: 'text-neutral-300' },
     { label: 'Conflicts', value: stats.has_conflicts, color: 'text-accent-red' },
   ]
   return (
@@ -289,8 +289,8 @@ function ExpandedPanel({ pr }: { pr: PR }) {
           {fullPR.mergeable_state && fullPR.mergeable_state !== 'unknown' && (
             <span className={clsx(
               'text-[10px] px-2 py-0.5 rounded',
-              fullPR.mergeable_state === 'clean' && 'bg-green-950 text-accent-green',
-              fullPR.mergeable_state === 'dirty' && 'bg-red-950 text-accent-red',
+              fullPR.mergeable_state === 'clean' && 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25',
+              fullPR.mergeable_state === 'dirty' && 'bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25',
               !['clean','dirty'].includes(fullPR.mergeable_state) && 'bg-surface-2 text-gray-400',
             )}>
               {fullPR.mergeable_state}
@@ -308,7 +308,7 @@ function ExpandedPanel({ pr }: { pr: PR }) {
           <div className="flex items-center gap-4 mb-2 text-[10px]">
             {checks.passed > 0 && <span className="flex items-center gap-1 text-accent-green"><CheckCircle2 size={10} />{checks.passed} passed</span>}
             {checks.failed > 0 && <span className="flex items-center gap-1 text-accent-red"><XCircle size={10} />{checks.failed} failed</span>}
-            {checks.pending > 0 && <span className="flex items-center gap-1 text-accent-blue"><Clock size={10} />{checks.pending} pending</span>}
+            {checks.pending > 0 && <span className="flex items-center gap-1 text-neutral-400"><Clock size={10} />{checks.pending} pending</span>}
           </div>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {(checks.runs ?? []).map((c: any) => (
@@ -317,7 +317,7 @@ function ExpandedPanel({ pr }: { pr: PR }) {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <StatusBadge status={c.conclusion ?? c.status} />
                   <a href={c.html_url} target="_blank" rel="noreferrer">
-                    <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                    <ExternalLink size={10} className="text-gray-600 hover:text-neutral-300" />
                   </a>
                 </div>
               </div>
@@ -339,8 +339,8 @@ function ExpandedPanel({ pr }: { pr: PR }) {
                 <span className="text-gray-300 w-28 truncate">{r.login}</span>
                 <span className={clsx(
                   'text-[9px] px-1.5 py-0.5 rounded font-semibold',
-                  r.state === 'APPROVED' && 'bg-green-950 text-accent-green',
-                  r.state === 'CHANGES_REQUESTED' && 'bg-red-950 text-accent-red',
+                  r.state === 'APPROVED' && 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25',
+                  r.state === 'CHANGES_REQUESTED' && 'bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25',
                   r.state === 'COMMENTED' && 'bg-surface-3 text-gray-400',
                 )}>
                   {r.state.replace('_', ' ')}
@@ -373,8 +373,8 @@ function ExpandedPanel({ pr }: { pr: PR }) {
                     'text-[9px] px-1 rounded',
                     f.status === 'added' && 'text-accent-green',
                     f.status === 'removed' && 'text-accent-red',
-                    f.status === 'modified' && 'text-accent-blue',
-                    f.status === 'renamed' && 'text-accent-yellow',
+                    f.status === 'modified' && 'text-neutral-400',
+                    f.status === 'renamed' && 'text-neutral-400',
                   )}>
                     {f.status}
                   </span>
@@ -427,7 +427,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
   return (
     <div className={clsx(
       'bg-surface-1 border rounded-lg p-4 transition-colors',
-      repetitive ? 'border-yellow-800' : 'border-border',
+      repetitive ? 'border-neutral-600' : 'border-border',
     )}>
       <div className="flex items-start gap-3">
         {/* Left: gate indicator */}
@@ -449,17 +449,17 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-semibold">DRAFT</span>
             )}
             {repetitive && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-950 text-yellow-400 font-semibold" title="Similar title to another open PR">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25 font-semibold" title="Similar title to another open PR">
                 SIMILAR
               </span>
             )}
             {hasConflict && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-950 text-accent-red font-semibold flex items-center gap-0.5">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25 font-semibold flex items-center gap-0.5">
                 <AlertTriangle size={8} /> CONFLICT
               </span>
             )}
             {isStale && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-950 text-orange-400" title={`Open for ${agedays} days`}>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-neutral-500" title={`Open for ${agedays} days`}>
                 {agedays}d old
               </span>
             )}
@@ -479,7 +479,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
             href={pr.html_url}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-white hover:text-accent-blue font-medium block truncate"
+            className="text-sm text-white hover:text-neutral-300 font-medium block truncate"
           >
             {pr.title}
           </a>
@@ -490,7 +490,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
               <img src={pr.user.avatar_url} className="w-3 h-3 rounded-full" alt="" />
               {pr.user.login}
             </span>
-            <span className="text-accent-blue font-mono">{pr.head.ref}</span>
+            <span className="text-gray-500 font-mono">{pr.head.ref}</span>
             <span>→ {pr.base.ref}</span>
             <span className="flex items-center gap-0.5">
               <Calendar size={9} />
@@ -637,7 +637,7 @@ function AutomationTab() {
               <select
                 value={status?.interval_minutes ?? 10}
                 onChange={(e) => setInterval(Number(e.target.value))}
-                className="bg-surface-3 border border-border rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent-blue"
+                className="bg-surface-3 border border-border rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-neutral-500"
               >
                 {[1, 5, 10, 15, 30, 60].map(m => <option key={m} value={m}>{m} min</option>)}
               </select>
@@ -673,7 +673,7 @@ function AutomationTab() {
         <button
           onClick={() => runNow()}
           disabled={running || status?.running}
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-accent-blue/10 border border-accent-blue/20 text-[12px] text-accent-blue font-semibold hover:bg-accent-blue/20 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-nvidia/10 border border-nvidia/20 text-[12px] text-nvidia font-semibold hover:bg-nvidia/20 transition-colors disabled:opacity-50"
         >
           <Play size={12} />
           {status?.running ? 'Running…' : running ? 'Starting…' : 'Run Now'}
@@ -693,24 +693,24 @@ function AutomationTab() {
                   <span className="text-[10px] font-mono text-gray-500">#{r.pr_number}</span>
                   <span className={clsx(
                     'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase',
-                    r.classification === 'docs' && 'bg-blue-950 text-blue-400',
-                    r.classification === 'source' && 'bg-green-950 text-accent-green',
-                    r.classification === 'tests' && 'bg-purple-950 text-purple-400',
-                    r.classification === 'ci' && 'bg-yellow-950 text-yellow-400',
+                    r.classification === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                    r.classification === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                    r.classification === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                    r.classification === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                     r.classification === 'mixed' && 'bg-surface-3 text-gray-400',
                   )}>{r.classification}</span>
                   <p className="flex-1 text-[11px] text-gray-300 truncate">{r.title}</p>
                   <span className={clsx(
                     'text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0',
-                    r.gate_verdict === 'success' && 'text-accent-green bg-accent-green/10',
+                    r.gate_verdict === 'success' && 'text-nvidia bg-[#76b900]/10',
                     r.gate_verdict === 'failure' && 'text-accent-red bg-accent-red/10',
-                    r.gate_verdict === 'pending' && 'text-accent-yellow bg-accent-yellow/10',
+                    r.gate_verdict === 'pending' && 'text-neutral-400 bg-neutral-500/10',
                     r.gate_verdict === 'skipped' && 'text-gray-400 bg-surface-3',
                   )}>{r.gate_verdict}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(r.actions ?? []).map((a: any, i: number) => (
-                    <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-accent-blue/10 text-accent-blue border border-accent-blue/20">
+                    <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-neutral-400 border border-border">
                       {ACTION_LABELS[a.type] ?? a.type}{a.detail ? `: ${a.detail}` : ''}
                     </span>
                   ))}
@@ -753,7 +753,7 @@ function RunnersTab() {
       {/* Runner assignment matrix */}
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Cpu size={14} className="text-accent-blue" />
+          <Cpu size={14} className="text-neutral-500" />
           <h2 className="text-sm font-semibold text-white">Runner Assignment by PR Type</h2>
         </div>
         <div className="space-y-2">
@@ -764,17 +764,17 @@ function RunnersTab() {
               <div key={cls} className="flex items-start gap-3 bg-surface-2 rounded-lg border border-border p-3">
                 <span className={clsx(
                   'text-[9px] px-2 py-1 rounded font-bold uppercase flex-shrink-0 mt-0.5',
-                  cls === 'docs' && 'bg-blue-950 text-blue-400',
-                  cls === 'tests' && 'bg-purple-950 text-purple-400',
-                  cls === 'source' && 'bg-green-950 text-accent-green',
-                  cls === 'ci' && 'bg-yellow-950 text-yellow-400',
+                  cls === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                  cls === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                  cls === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                  cls === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   cls === 'mixed' && 'bg-surface-3 text-gray-400',
                 )}>{cls}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[11px] font-mono text-white">{rec.runner}</span>
                     {rec.gpu
-                      ? <span className="text-[9px] px-1.5 py-0.5 rounded bg-accent-yellow/10 text-accent-yellow border border-accent-yellow/20 font-semibold">GPU</span>
+                      ? <span className="text-[9px] px-1.5 py-0.5 rounded bg-nvidia/10 text-nvidia border border-nvidia/20 font-semibold">GPU</span>
                       : <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-gray-400 border border-border">Hosted</span>
                     }
                   </div>
@@ -789,7 +789,7 @@ function RunnersTab() {
       {/* Best practices */}
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
-          <Server size={14} className="text-accent-blue" />
+          <Server size={14} className="text-neutral-500" />
           <h2 className="text-sm font-semibold text-white">Best Practices</h2>
         </div>
         <div className="space-y-2">
@@ -802,10 +802,10 @@ function RunnersTab() {
               <div className="flex items-center gap-2 pl-4">
                 <span className={clsx(
                   'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase',
-                  p.classification === 'docs' && 'bg-blue-950 text-blue-400',
-                  p.classification === 'tests' && 'bg-purple-950 text-purple-400',
-                  p.classification === 'source' && 'bg-green-950 text-accent-green',
-                  p.classification === 'ci' && 'bg-yellow-950 text-yellow-400',
+                  p.classification === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                  p.classification === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
+                  p.classification === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                  p.classification === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   p.classification === 'mixed' && 'bg-surface-3 text-gray-400',
                 )}>{p.classification}</span>
                 <span className="text-[10px] font-mono text-gray-300">→ {p.runner}</span>
@@ -838,6 +838,8 @@ export default function PRHub() {
     queryFn: getRepoPermissions,
     staleTime: 300_000,
   })
+  const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const repoSlug = activeRepoData?.active?.slug ?? ''
 
   const { data: statsData } = useQuery({
     queryKey: ['pr-stats'],
@@ -895,12 +897,10 @@ export default function PRHub() {
   }, [allPRs, repetitivePrefixes])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <GitPullRequest size={18} className="text-accent-blue" />
-          <h1 className="text-lg font-semibold">PR Hub</h1>
           {activeTab === 'prs' && (
             <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
               {prs.length} shown · {allPRs.length} {prState}
@@ -957,16 +957,16 @@ export default function PRHub() {
       {activeTab === 'runners' && <RunnersTab />}
 
       {activeTab === 'prs' && <>
-      <PermissionBanner canPush={canPush} />
+      <PermissionBanner canPush={canPush} repoSlug={repoSlug} />
       <StatsBar stats={statsData} />
-      <GateOverviewBar />
+      <GateOverviewBar days={ageFilter === 'all' ? undefined : parseInt(ageFilter)} />
 
       {/* Repetitive PR alert */}
       {repetitivePrefixes.length > 0 && (
-        <div className="flex items-start gap-2 bg-yellow-950/30 border border-yellow-800/50 rounded-lg px-3 py-2 text-xs">
-          <AlertCircle size={12} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs">
+          <AlertCircle size={12} className="text-neutral-500 flex-shrink-0 mt-0.5" />
           <div>
-            <span className="text-yellow-300 font-medium">Possible duplicate PRs detected</span>
+            <span className="text-neutral-300 font-medium">Possible duplicate PRs detected</span>
             <p className="text-gray-400 mt-0.5">
               PRs with similar titles: {repetitivePrefixes.slice(0, 3).map((p) => `"${p}…"`).join(', ')}
             </p>
@@ -982,7 +982,7 @@ export default function PRHub() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title, author, branch…"
-            className="w-full bg-surface-2 border border-border rounded-md pl-7 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue"
+            className="w-full bg-surface-2 border border-border rounded-md pl-7 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500"
           />
         </div>
         <div className="flex items-center gap-1">
@@ -990,7 +990,7 @@ export default function PRHub() {
           <select
             value={ageFilter}
             onChange={(e) => setAgeFilter(e.target.value as AgeFilter)}
-            className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-accent-blue"
+            className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-neutral-500"
           >
             {AGE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -1000,7 +1000,7 @@ export default function PRHub() {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-accent-blue"
+          className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-neutral-500"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>

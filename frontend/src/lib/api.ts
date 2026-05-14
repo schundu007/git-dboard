@@ -23,7 +23,7 @@ export const mergePR = (n: number, method = 'squash') =>
 
 // ── Builds ───────────────────────────────────────────────────────────────────
 export const getBuildRuns = (
-  workflow = 'postmerge-ci.yml',
+  workflow = '',
   page = 1,
   branch?: string,
   status?: string,
@@ -42,10 +42,10 @@ export const getBuildArtifacts = (id: number) => request<any>(`/builds/runs/${id
 
 export const getFailureSummary = (id: number) => request<any>(`/builds/runs/${id}/failure-summary`)
 
-export const getBuildStats = (workflow = 'postmerge-ci.yml', days = 14) =>
+export const getBuildStats = (workflow = '', days = 14) =>
   request<any>(`/builds/stats?workflow=${encodeURIComponent(workflow)}&days=${days}&limit=100`)
 
-export const triggerBuild = (ref = 'main', workflow = 'postmerge-ci.yml') =>
+export const triggerBuild = (ref = 'main', workflow = '') =>
   request<any>(`/builds/trigger?ref=${encodeURIComponent(ref)}&workflow=${encodeURIComponent(workflow)}`, { method: 'POST' })
 
 export const rerunBuild = (id: number) =>
@@ -142,7 +142,8 @@ export const getPRSummary = (n: number) => request<any>(`/prs/${n}/summary`)
 export const getPRReviews = (n: number) => request<any>(`/prs/${n}/reviews`)
 export const getPRFiles = (n: number) => request<any>(`/prs/${n}/files`)
 export const getPRGate = (n: number) => request<any>(`/prs/${n}/gate`)
-export const getPRGateOverview = () => request<any>('/prs/gate-overview')
+export const getPRGateOverview = (days?: number) =>
+  request<any>(`/prs/gate-overview${days != null ? `?days=${days}` : ''}`)
 
 // ── PR Automation ─────────────────────────────────────────────────────────────
 export const getAutomationStatus = () => request<any>('/automation/status')
@@ -222,6 +223,9 @@ export const getHealthCiTriage = () => request<any>('/health-analysis/ci-triage'
 export const getHealthPipelinePerf = () => request<any>('/health-analysis/pipeline-perf')
 export const getHealthRunnerHealth = () => request<any>('/health-analysis/runner-health')
 
+// ── Security & Compliance ─────────────────────────────────────────────────────
+export const getSecurityOverview = () => request<any>('/security/overview')
+
 // ── Improvement Plan ──────────────────────────────────────────────────────────
 export const getImprovementPlan = () => request<any>('/improvement/plan')
 export const getIssuesAnalysis = () => request<any>('/improvement/issues-analysis')
@@ -240,6 +244,20 @@ export const getTagsCompute = (params: {
   Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v) })
   return request<any>(`/tags/compute?${p}`)
 }
+
+// ── Repo management ───────────────────────────────────────────────────────────
+export const getRepos = () => request<any>('/repos')
+export const getActiveRepo = () => request<any>('/repos/active')
+export const addRepo = (body: { name: string; owner: string; repo: string; gh_pat?: string }) =>
+  request<any>('/repos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+export const deleteRepo = (id: number) =>
+  request<any>(`/repos/${id}`, { method: 'DELETE' })
+export const activateRepo = (id: number) =>
+  request<any>(`/repos/${id}/activate`, { method: 'POST' })
+export const deactivateRepo = () =>
+  request<any>('/repos/deactivate', { method: 'POST' })
+export const testRepoConnection = (body: { name: string; owner: string; repo: string; gh_pat?: string }) =>
+  request<any>('/repos/test-connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
 // ── WebSockets ────────────────────────────────────────────────────────────────
 export const buildLogsWS = (runId: number) =>

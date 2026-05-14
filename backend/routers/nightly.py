@@ -6,20 +6,20 @@ from services import github_client as gh
 
 router = APIRouter(prefix="/nightly", tags=["nightly"])
 
-# Primary CI workflow (build.yml = "Build and Test", 4000+ runs).
-# daily-compatibility.yml was disabled; build.yml is the active per-PR/push matrix.
-_WORKFLOW = "build.yml"
-
 _SKIP_JOBS = {"setup-versions", "notify-compatibility-status", "combine-compat-results", "combine-results"}
 
-ISAAC_SIM_VERSIONS = ["4.5.0", "5.0.0", "5.1.0"]
-IMAGE_EXTS = ["base", "ros2", "cloudxr", "ngc-slim"]
-_SHORT_VER = {v: v[:3] for v in ISAAC_SIM_VERSIONS}  # "4.5.0" → "4.5"
+
+async def _nightly_workflow() -> str | None:
+    wf = await gh.get_primary_workflows()
+    return wf["nightly"] or wf["ci"]
 
 
 @router.get("/runs")
 async def list_nightly_runs(per_page: int = 30, page: int = 1):
-    return await gh.get_workflow_runs(_WORKFLOW, per_page=per_page, page=page)
+    wf = await _nightly_workflow()
+    if not wf:
+        return {"workflow_runs": [], "total_count": 0}
+    return await gh.get_workflow_runs(wf, per_page=per_page, page=page)
 
 
 @router.get("/runs/{run_id}")
@@ -40,7 +40,7 @@ async def get_nightly_matrix(days: int = 14):
       cols  = dates      (YYYY-MM-DD, newest first)
       cells = {status, run_id, job_id, url}
     """
-    data = await gh.get_workflow_runs(_WORKFLOW, per_page=min(days * 2, 100))
+    data = await gh.get_workflow_runs(await _nightly_workflow() or "nightly.yml", per_page=min(days * 2, 100))
     runs = data.get("workflow_runs", [])
 
     # Deduplicate to one run per date (take the latest)
@@ -109,14 +109,14 @@ async def get_nightly_matrix(days: int = 14):
         "job_names": all_job_names,
         "flaky_jobs": flaky,
         "consecutive_failures": consecutive,
-        "workflow": _WORKFLOW,
+        "workflow": await _nightly_workflow(),
     }
 
 
 @router.get("/trend")
 async def get_nightly_trend(days: int = 30):
     """Daily pass-rate trend for charting."""
-    data = await gh.get_workflow_runs(_WORKFLOW, per_page=min(days * 2, 100))
+    data = await gh.get_workflow_runs(await _nightly_workflow() or "nightly.yml", per_page=min(days * 2, 100))
     runs = data.get("workflow_runs", [])
 
     by_date: dict[str, list[str]] = {}
@@ -141,9 +141,12 @@ async def get_nightly_trend(days: int = 30):
 
 @router.post("/trigger")
 async def trigger_nightly(ref: str = "main"):
+    wf = await _nightly_workflow()
+    if not wf:
+        raise HTTPException(status_code=404, detail="No nightly/CI workflow found for this repo")
     try:
-        await gh.trigger_workflow(_WORKFLOW, ref=ref)
-        return {"status": "triggered", "workflow": _WORKFLOW, "ref": ref}
+        await gh.trigger_workflow(wf, ref=ref)
+        return {"status": "triggered", "workflow": wf, "ref": ref}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -151,97 +154,59 @@ async def trigger_nightly(ref: str = "main"):
 @router.get("/image-matrix")
 async def get_nightly_image_matrix():
     """
-    Image publish status matrix sourced from publish-images.yaml.
-    Shows last N runs (by date) × extension × sim-version.
-    Since publish-images uses a single aggregated job, we reflect the
-    overall run conclusion per date and tag the row with known extensions.
+    Image publish status from the active repo's publish workflow.
+    Returns per-job breakdown and per-date history.
     """
-    short_versions = [_SHORT_VER[v] for v in ISAAC_SIM_VERSIONS]
-    empty_matrix = {ext: {v: None for v in short_versions} for ext in IMAGE_EXTS}
+    wf = await gh.get_primary_workflows()
+    publish_wf = wf["publish"]
 
-    # Fetch recent publish-images runs (the actual Docker push workflow)
+    if not publish_wf:
+        return {"jobs": [], "history": [], "run_date": None, "run_url": None, "no_data": True, "source": None}
+
     try:
-        data = await gh.get_workflow_runs("publish-images.yaml", per_page=20)
+        data = await gh.get_workflow_runs(publish_wf, per_page=20)
         publish_runs = data.get("workflow_runs", [])
     except Exception:
         publish_runs = []
 
     if not publish_runs:
-        return {
-            "extensions": IMAGE_EXTS,
-            "sim_versions": short_versions,
-            "matrix": empty_matrix,
-            "run_date": None,
-            "run_url": None,
-            "source": "publish-images.yaml",
-            "no_data": True,
-        }
+        return {"jobs": [], "history": [], "run_date": None, "run_url": None, "no_data": True, "source": publish_wf}
 
     latest_run = publish_runs[0]
 
-    # Fetch jobs for the latest run to check sub-job conclusions
     try:
         jobs_data = await gh.get_run_jobs(latest_run["id"])
         latest_jobs = jobs_data.get("jobs", [])
     except Exception:
         latest_jobs = []
 
-    # Build matrix: use the push job conclusion for each ext/version cell.
-    # If the push workflow uses a matrix strategy, each job name will contain
-    # ext and sim version. If not (single job), all cells get the same status.
-    matrix: dict = {ext: {v: None for v in short_versions} for ext in IMAGE_EXTS}
+    jobs = [
+        {
+            "name": j.get("name", ""),
+            "status": j.get("conclusion") or j.get("status", "in_progress"),
+            "url": j.get("html_url", latest_run["html_url"]),
+            "job_id": j.get("id"),
+        }
+        for j in latest_jobs
+    ]
 
-    matched_any = False
-    for job in latest_jobs:
-        name = job.get("name", "")
-        name_lower = name.lower()
-        conclusion = job.get("conclusion") or job.get("status", "in_progress")
-        url = job.get("html_url", latest_run["html_url"])
-
-        matched_ext = next((ext for ext in IMAGE_EXTS if ext in name_lower), None)
-        matched_ver = None
-        for full_ver in ISAAC_SIM_VERSIONS:
-            short = _SHORT_VER[full_ver]
-            if full_ver in name or short in name:
-                matched_ver = short
-                break
-
-        if matched_ext and matched_ver:
-            matrix[matched_ext][matched_ver] = {"status": conclusion, "url": url, "job_id": job.get("id")}
-            matched_any = True
-        elif matched_ver and not matched_ext:
-            # No ext in name — put in base
-            matrix["base"][matched_ver] = {"status": conclusion, "url": url, "job_id": job.get("id")}
-            matched_any = True
-
-    # If no per-job matrix matches, broadcast the run-level conclusion to all cells.
-    # This covers the "single aggregated build-and-push job" pattern.
-    if not matched_any:
-        run_conclusion = latest_run.get("conclusion") or latest_run.get("status", "in_progress")
-        run_url = latest_run.get("html_url", "")
-        run_id = latest_run.get("id")
-        for ext in IMAGE_EXTS:
-            for v in short_versions:
-                matrix[ext][v] = {"status": run_conclusion, "url": run_url, "job_id": run_id}
-
-    # Build per-date history for the trend strip (last 10 runs)
-    history = []
-    for r in publish_runs[:10]:
-        history.append({
+    history = [
+        {
             "date": r.get("created_at", "")[:10],
             "status": r.get("conclusion") or r.get("status", "in_progress"),
             "url": r.get("html_url", ""),
             "title": r.get("display_title", ""),
-        })
+        }
+        for r in publish_runs[:10]
+    ]
 
     return {
-        "extensions": IMAGE_EXTS,
-        "sim_versions": short_versions,
-        "matrix": matrix,
+        "jobs": jobs,
+        "history": history,
         "run_date": latest_run.get("created_at", "")[:10],
         "run_url": latest_run.get("html_url", ""),
-        "source": "publish-images.yaml",
-        "history": history,
+        "source": publish_wf,
+        "no_data": False,
     }
 
 

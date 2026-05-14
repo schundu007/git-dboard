@@ -4,7 +4,7 @@ import {
   Layers, RefreshCw, Copy, Trash2, CheckCircle, Search,
   ArrowUpDown, Package, AlertTriangle,
 } from 'lucide-react'
-import { getECRImages, getECRUri, deleteECRImage } from '../lib/api'
+import { getECRImages, getECRUri, deleteECRImage, getRegistryPushStatus } from '../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import type { ECRImage } from '../lib/types'
 import clsx from 'clsx'
@@ -73,9 +73,9 @@ function ImageRow({
                 className={clsx(
                   'px-1.5 py-0.5 rounded font-mono text-[10px]',
                   t === 'latest'
-                    ? 'bg-green-950 text-accent-green'
+                    ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25'
                     : t.startsWith('main') || t.match(/^v\d/)
-                    ? 'bg-blue-950 text-accent-blue'
+                    ? 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25'
                     : 'bg-surface-2 text-gray-300',
                 )}
               >
@@ -107,10 +107,10 @@ function ImageRow({
         <td className="px-4 py-3">
           <div className="flex items-center gap-1">
             {isLatest && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-950 text-accent-green">latest</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25">latest</span>
             )}
             {isMain && !isLatest && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-950 text-accent-blue">main</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25">main</span>
             )}
           </div>
         </td>
@@ -124,7 +124,7 @@ function ImageRow({
                 <button
                   onClick={() => { onDelete(image.tags[0]); setConfirming(false) }}
                   onBlur={() => setConfirming(false)}
-                  className="px-1.5 py-0.5 rounded text-[9px] bg-red-950 text-red-400 hover:bg-red-900 transition-colors whitespace-nowrap"
+                  className="px-1.5 py-0.5 rounded text-[9px] bg-red-500/[.07] text-red-400 ring-1 ring-red-500/25 hover:bg-accent-red/10 transition-colors whitespace-nowrap"
                 >
                   Delete?
                 </button>
@@ -200,6 +200,8 @@ export default function RegistryManager() {
   const qc = useQueryClient()
 
   const { data: uriData } = useQuery({ queryKey: ['ecr-uri'], queryFn: getECRUri })
+  const { data: pushStatus } = useQuery({ queryKey: ['registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 60_000 })
+  const ngcImage: string = pushStatus?.ngc?.image ?? ''
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['ecr-images'],
@@ -258,12 +260,10 @@ export default function RegistryManager() {
   const latestImage = images.find((img) => img.tags.includes('latest'))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Layers size={18} className="text-accent-purple" />
-          <h1 className="text-lg font-semibold">Registry</h1>
           {images.length > 0 && (
             <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
               {images.length} images
@@ -327,7 +327,7 @@ export default function RegistryManager() {
             </div>
           </div>
           <div className="text-[10px] text-gray-500 space-y-1">
-            <div>Base image: <span className="text-gray-300 font-mono">nvcr.io/nvidia/isaac-sim</span></div>
+            {ngcImage && <div>Image: <span className="text-gray-300 font-mono">{ngcImage}</span></div>}
           </div>
           <div className="bg-surface rounded-lg p-3">
             <p className="text-[10px] text-gray-500 mb-1.5">Login command</p>
