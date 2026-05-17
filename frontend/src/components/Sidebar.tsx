@@ -103,6 +103,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
   const [testResult, setTestResult] = useState<any>(null)
   const [switching, setSwitching] = useState<string | null>(null)
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
+  const [repoSearch, setRepoSearch] = useState('')
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -115,7 +116,10 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
   })
 
   const repoSlug = activeRepoData?.active?.slug ?? ''
-  const repos: any[] = reposData?.repos ?? []
+  const allRepos: any[] = reposData?.repos ?? []
+  const repos = repoSearch.trim()
+    ? allRepos.filter(r => (r.slug ?? '').toLowerCase().includes(repoSearch.toLowerCase()))
+    : allRepos
 
   function openPanel() {
     if (triggerRef.current) {
@@ -375,9 +379,26 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
             </div>
           )}
 
+          {/* Repo search */}
+          {allRepos.length > 5 && (
+            <div className="px-3 pb-1 pt-0.5">
+              <input
+                value={repoSearch}
+                onChange={e => setRepoSearch(e.target.value)}
+                placeholder={`Search ${allRepos.length} repos…`}
+                className="w-full bg-surface-3 border border-border rounded px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+              />
+            </div>
+          )}
+
           {/* Repo list */}
-          <div className="max-h-[260px] overflow-y-auto">
-            {repos.length === 0 && !showAddForm && (
+          <div className="max-h-[400px] overflow-y-auto">
+            {repos.length === 0 && repoSearch && (
+              <div className="px-3 py-4 text-center">
+                <p className="text-[11px] text-gray-400">No repos match "{repoSearch}"</p>
+              </div>
+            )}
+            {repos.length === 0 && !repoSearch && !showAddForm && (
               <div className="px-3 py-6 text-center">
                 <p className="text-[11px] text-gray-400">No saved repos.</p>
                 <button
