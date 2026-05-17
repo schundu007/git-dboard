@@ -22,9 +22,9 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 }
 
 const STATUS_ROW: Record<string, string> = {
-  pass: 'border-l-2 border-accent-green/40 bg-accent-green/4',
-  warn: 'border-l-2 border-orange-400/40 bg-orange-400/4',
-  fail: 'border-l-2 border-accent-red/50 bg-accent-red/6',
+  pass: 'bg-accent-green/[.04] ring-1 ring-accent-green/20',
+  warn: 'bg-orange-400/[.04] ring-1 ring-orange-400/20',
+  fail: 'bg-accent-red/[.05] ring-1 ring-accent-red/20',
 }
 
 function scoreColor(score: number): string {
@@ -69,7 +69,7 @@ function ScoreRing({ score, grade, label }: { score: number; grade: string; labe
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-black" style={{ color }}>{score}</span>
-          <span className="text-[8px] text-gray-600 -mt-0.5">/ 100</span>
+          <span className="text-[9px] text-gray-400 -mt-0.5">/ 100</span>
         </div>
       </div>
       <p className="text-[11px] font-bold" style={{ color }}>{grade} · {label}</p>
@@ -80,7 +80,7 @@ function ScoreRing({ score, grade, label }: { score: number; grade: string; labe
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function SecurityCompliance() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['security-overview'],
     queryFn: getSecurityOverview,
     staleTime: 300_000,
@@ -101,6 +101,8 @@ export default function SecurityCompliance() {
     )
   }
 
+  if (isError) return <p className="text-[11px] text-accent-red py-4">Failed to load security data</p>
+
   if (!data) return null
 
   const { score, grade, label, compliance, dependabot, code_scanning,
@@ -117,7 +119,7 @@ export default function SecurityCompliance() {
       <div className="flex items-center gap-2">
         <Shield size={14} className="text-accent-blue" />
         <h2 className="text-xs font-bold text-white uppercase tracking-wider">Security &amp; Compliance</h2>
-        <span className="text-[10px] text-gray-600">— posture score, vulnerability alerts &amp; hardening roadmap</span>
+        <span className="text-[10px] text-gray-400">— posture score, vulnerability alerts &amp; hardening roadmap</span>
       </div>
 
       {/* ── Row 1: Score + Compliance summary + Vulnerability counts ──────── */}
@@ -194,7 +196,7 @@ export default function SecurityCompliance() {
           />
           <FeatureRow label="OIDC token auth configured"        on={workflow_security.oidc_configured} warn={!workflow_security.oidc_configured} />
           <FeatureRow label="Fork PR approval required"         on={!workflow_security.can_approve_pr_reviews} />
-          <div className="mt-1 text-[10px] text-gray-600">
+          <div className="mt-1 text-[10px] text-gray-400">
             {workflow_security.workflow_count} workflow{workflow_security.workflow_count !== 1 ? 's' : ''} configured
           </div>
         </div>
@@ -232,7 +234,7 @@ export default function SecurityCompliance() {
                       {ok
                         ? <CheckCircle size={9} className="text-accent-green flex-shrink-0" />
                         : <XCircle    size={9} className="text-accent-red flex-shrink-0"   />}
-                      <span className={`text-[9px] ${ok ? 'text-gray-400' : 'text-gray-600'}`}>{name as string}</span>
+                      <span className={`text-[9px] ${ok ? 'text-gray-400' : 'text-gray-400'}`}>{name as string}</span>
                     </div>
                   ))}
                 </div>
@@ -323,7 +325,7 @@ export default function SecurityCompliance() {
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp size={12} className="text-accent-green" />
             <p className="text-[11px] font-semibold text-white">Security Hardening Roadmap</p>
-            <span className="text-[10px] text-gray-600">— ordered by risk reduction impact</span>
+            <span className="text-[10px] text-gray-400">— ordered by risk reduction impact</span>
           </div>
           {recommendations.length > 0 ? (
             <div className="space-y-2">

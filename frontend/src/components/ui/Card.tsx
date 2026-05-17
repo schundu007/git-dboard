@@ -10,17 +10,16 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variants: Record<Variant, string> = {
-  // Standard card: top-edge inner highlight gives subtle dimensionality
-  default:     'bg-surface-1 ring-1 ring-border rounded-xl shadow-card',
-  elevated:    'bg-surface-1 ring-1 ring-border rounded-xl shadow-md',
-  interactive: 'bg-surface-1 ring-1 ring-border rounded-xl shadow-card card-interactive cursor-pointer',
-  inset:       'bg-surface-2 ring-1 ring-border-subtle rounded-lg',
+  default:     'bg-surface-1 ring-1 ring-border rounded-lg shadow-card',
+  elevated:    'bg-surface-1 ring-1 ring-border rounded-lg shadow-md',
+  interactive: 'bg-surface-1 ring-1 ring-border rounded-lg shadow-card card-interactive cursor-pointer',
+  inset:       'bg-surface-2 ring-1 ring-border-subtle rounded-md',
   flush:       'bg-surface-1',
 }
 
 export function Card({ variant = 'default', children, noPad = false, className, ...props }: CardProps) {
   return (
-    <div className={cn(variants[variant], !noPad && 'p-4', className)} {...props}>
+    <div className={cn(variants[variant], !noPad && 'p-3.5', className)} {...props}>
       {children}
     </div>
   )
@@ -28,7 +27,7 @@ export function Card({ variant = 'default', children, noPad = false, className, 
 
 export function CardHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('flex items-center justify-between mb-4', className)} {...props}>
+    <div className={cn('flex items-center justify-between mb-3', className)} {...props}>
       {children}
     </div>
   )
@@ -44,7 +43,7 @@ export function CardTitle({ children, className, ...props }: HTMLAttributes<HTML
 
 export function CardDescription({ children, className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn('text-[11px] text-neutral-600 mt-0.5', className)} {...props}>
+    <p className={cn('text-[11px] text-neutral-400 mt-0.5', className)} {...props}>
       {children}
     </p>
   )
@@ -52,7 +51,7 @@ export function CardDescription({ children, className, ...props }: HTMLAttribute
 
 export function CardSection({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('border-t border-border px-4 py-3', className)} {...props}>
+    <div className={cn('border-t border-border px-3.5 py-2.5', className)} {...props}>
       {children}
     </div>
   )
@@ -79,19 +78,19 @@ export function StatCard({
   accentColor?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange' | 'indigo' | 'nvidia'
 }) {
   const iconColors: Record<string, string> = {
-    blue:   'text-blue-400',
-    green:  'text-emerald-400',
-    red:    'text-red-400',
-    yellow: 'text-amber-400',
-    purple: 'text-purple-400',
-    orange: 'text-orange-400',
+    blue:   'text-neutral-400',
+    green:  'text-nvidia',
+    red:    'text-accent-red',
+    yellow: 'text-accent-yellow',
+    purple: 'text-neutral-400',
+    orange: 'text-accent-yellow',
     indigo: 'text-nvidia',
     nvidia: 'text-nvidia',
   }
 
   return (
-    <div className="bg-surface-1 ring-1 ring-border rounded-xl p-4 shadow-card card-interactive">
-      <div className="flex items-start justify-between mb-3">
+    <div className="bg-surface-1 ring-1 ring-border rounded-lg p-3.5 shadow-card card-interactive">
+      <div className="flex items-start justify-between mb-2.5">
         <p className="section-label">{label}</p>
         {icon && (
           <span className={cn('flex-shrink-0', iconColors[accentColor])}>
@@ -101,8 +100,8 @@ export function StatCard({
       </div>
       <p className="stat-value">{value}</p>
       {(sub || trend) && (
-        <div className="flex items-center gap-2 mt-2">
-          {sub && <p className="text-[11px] text-neutral-600">{sub}</p>}
+        <div className="flex items-center gap-2 mt-1.5">
+          {sub && <p className="text-[11px] text-neutral-400">{sub}</p>}
           {trend && (
             <span className={cn(
               'text-[11px] font-medium tabular-nums',

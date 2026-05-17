@@ -1,4 +1,6 @@
 export { Button } from './Button'
+export { TabBar } from './TabBar'
+export type { TabDef } from './TabBar'
 export { Badge, StatusDot } from './Badge'
 export { Card, CardHeader, CardTitle, CardDescription, StatCard } from './Card'
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonRow, SkeletonTable } from './Skeleton'

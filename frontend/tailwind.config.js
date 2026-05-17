@@ -29,13 +29,13 @@ export default {
           green:  '#76b900',   // NVIDIA — success, active, live, confirmed
           blue:   '#0a66c2',   // info, links, secondary actions
           red:    '#b24020',   // error, danger, critical
-          yellow: '#d4d4d4',   // near-white — mild warnings (neutral tone)
+          yellow: '#d97706',   // amber-600 — warning / queued states
           orange: '#b24020',
           purple: '#0a66c2',
           cyan:   '#76b900',
           teal:   '#76b900',
           indigo: '#0a66c2',
-          lime:   '#E0FF4F',   // primary brand accent (dark mode)
+          lime:   '#76b900',   // aliased to NVIDIA green — neon lime retired
         },
 
         // ── DORA metrics ──────────────────────────────────────────────────────
@@ -79,9 +79,9 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Sora', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        sans: ['Plus Jakarta Sans', 'Inter var', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'ui-monospace', 'monospace'],
+        display: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans:    ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.65rem',  { lineHeight: '1rem' }],

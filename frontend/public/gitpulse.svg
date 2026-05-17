@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Branch tip left -->
+  <circle cx="8" cy="7" r="3" fill="#76b900"/>
+  <!-- Branch tip right -->
+  <circle cx="24" cy="7" r="3" fill="#76b900"/>
+  <!-- Merge commit node -->
+  <circle cx="16" cy="17" r="3.5" fill="#76b900"/>
+  <!-- Branch lines converging to merge commit -->
+  <path d="M8 10 L14 15" stroke="#76b900" stroke-width="2" stroke-linecap="round"/>
+  <path d="M24 10 L18 15" stroke="#76b900" stroke-width="2" stroke-linecap="round"/>
+  <!-- Pulse line through the base -->
+  <path d="M2 26 L6 26 L9 22 L12 29 L15 24 L18 26 L30 26" stroke="#76b900" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

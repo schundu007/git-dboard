@@ -5,7 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import {
   LayoutDashboard, GitPullRequest, Container, Moon, ScrollText,
   Server, Layers, BarChart2, GitBranch, CircleDot, TrendingUp,
-  ShieldCheck, Tag, Lightbulb, Search, ArrowRight,
+  ShieldCheck, Tag, Lightbulb, Search, ArrowRight, BookOpen,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
@@ -34,6 +34,7 @@ const NAV_ENTRIES: NavEntry[] = [
   { group: 'Observability',   label: 'Log Monitor',     description: 'Centralised log search',          path: '/logs',        icon: ScrollText,      keywords: 'logs errors warning search' },
   { group: 'Observability',   label: 'Analytics',       description: 'Commit & build trends',           path: '/analytics',   icon: BarChart2,       keywords: 'analytics charts trends stats' },
   { group: 'Observability',   label: 'Repo Insights',   description: 'GitHub repository analytics',     path: '/insights',    icon: TrendingUp,      keywords: 'contributors forks pulse' },
+  { group: 'Automations',    label: 'Scripts',         description: 'Bash/Python script analysis & Q&A', path: '/scripts',     icon: BookOpen,        keywords: 'automations bash python yaml ecr ros scripts bugs' },
 ]
 
 interface CommandPaletteProps {
@@ -87,21 +88,22 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
           >
             {/* Input */}
             <div className="flex items-center gap-3 px-4 border-b border-border">
-              <Search size={15} className="text-gray-600 flex-shrink-0" />
+              <Search size={15} className="text-gray-400 flex-shrink-0" />
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Search pages, features…"
-                className="flex-1 h-14 bg-transparent text-[15px] text-gray-200 placeholder:text-gray-600 outline-none border-none"
+                className="flex-1 h-14 bg-transparent text-[15px] text-gray-200 placeholder:text-gray-400 outline-none border-none"
               />
-              <kbd className="flex-shrink-0 text-[10px] font-mono text-gray-700 bg-surface-3 border border-border rounded px-1.5 py-0.5">
+              <kbd className="flex-shrink-0 text-[10px] font-mono text-gray-400 bg-surface-3 border border-border rounded px-1.5 py-0.5">
                 ESC
               </kbd>
             </div>
 
             <Command.List className="max-h-[380px] overflow-y-auto p-2">
-              <Command.Empty className="py-10 text-center text-sm text-gray-600">
-                No results for &ldquo;{search}&rdquo;
+              <Command.Empty className="py-10 text-center space-y-1">
+                <p className="text-sm text-gray-400">No match for &ldquo;{search}&rdquo;</p>
+                <p className="text-[11px] text-gray-400 font-mono">try: builds · nightly · runners · logs</p>
               </Command.Empty>
 
               {groups.map((group) => {
@@ -123,10 +125,10 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                             {entry.label}
                           </p>
                           {entry.description && (
-                            <p className="text-[11px] text-gray-600 truncate">{entry.description}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{entry.description}</p>
                           )}
                         </div>
-                        <ArrowRight size={12} className="text-gray-700 group-aria-selected:text-accent-blue flex-shrink-0 opacity-0 group-aria-selected:opacity-100 transition-all" />
+                        <ArrowRight size={12} className="text-gray-400 group-aria-selected:text-accent-blue flex-shrink-0 opacity-0 group-aria-selected:opacity-100 transition-all" />
                       </Command.Item>
                     ))}
                   </Command.Group>
@@ -136,13 +138,13 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
 
             {/* Footer */}
             <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border bg-surface-2/50">
-              <span className="text-[10px] text-gray-700 flex items-center gap-1">
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
                 <kbd className="font-mono bg-surface-3 border border-border rounded px-1 py-0.5">↑↓</kbd> navigate
               </span>
-              <span className="text-[10px] text-gray-700 flex items-center gap-1">
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
                 <kbd className="font-mono bg-surface-3 border border-border rounded px-1 py-0.5">↵</kbd> open
               </span>
-              <span className="text-[10px] text-gray-700 flex items-center gap-1 ml-auto">
+              <span className="text-[10px] text-gray-400 flex items-center gap-1 ml-auto">
                 <kbd className="font-mono bg-surface-3 border border-border rounded px-1 py-0.5">ESC</kbd> close
               </span>
             </div>

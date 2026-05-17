@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { getIssues, getIssueStats, getIssueLabels, getIssueMilestones, getActiveRepo } from '../lib/api'
+import { EmptyState } from '../components/ui/EmptyState'
 import clsx from 'clsx'
 
 // ── Label badge ───────────────────────────────────────────────────────────────
@@ -50,10 +51,10 @@ function MilestoneCard({ m }: { m: any }) {
           style={{ width: `${m.pct}%` }}
         />
       </div>
-      <div className="flex items-center justify-between text-[9px] text-gray-600">
+      <div className="flex items-center justify-between text-[9px] text-gray-400">
         <span>{m.closed_issues} closed · {m.open_issues} open</span>
         {m.due_on && (
-          <span className={clsx('flex items-center gap-0.5', overdue ? 'text-accent-red' : 'text-gray-600')}>
+          <span className={clsx('flex items-center gap-0.5', overdue ? 'text-accent-red' : 'text-gray-400')}>
             <Clock size={8} />
             {overdue ? 'Overdue' : formatDistanceToNow(new Date(m.due_on), { addSuffix: true })}
           </span>
@@ -144,17 +145,17 @@ function StatsBar({ stats }: { stats: any }) {
       <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">Open Issues</p>
         <p className="text-2xl font-semibold text-accent-green tabular-nums">{stats.open_count}</p>
-        <p className="text-[10px] text-gray-600">currently open</p>
+        <p className="text-[10px] text-gray-400">currently open</p>
       </div>
       <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">Closed Issues</p>
         <p className="text-2xl font-semibold text-accent-purple tabular-nums">{stats.closed_count}</p>
-        <p className="text-[10px] text-gray-600">resolved</p>
+        <p className="text-[10px] text-gray-400">resolved</p>
       </div>
       <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">Labels</p>
         <p className="text-2xl font-semibold text-white tabular-nums">{stats.label_count}</p>
-        <p className="text-[10px] text-gray-600">defined</p>
+        <p className="text-[10px] text-gray-400">defined</p>
       </div>
       <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
         <p className="text-[10px] text-gray-500 uppercase tracking-wider">Resolution Rate</p>
@@ -162,8 +163,8 @@ function StatsBar({ stats }: { stats: any }) {
           <p className="text-2xl font-semibold text-accent-blue tabular-nums">
             {Math.round(stats.closed_count / (stats.open_count + stats.closed_count) * 100)}%
           </p>
-        ) : <p className="text-2xl font-semibold text-gray-600">—</p>}
-        <p className="text-[10px] text-gray-600">of tracked issues</p>
+        ) : <p className="text-2xl font-semibold text-gray-400">—</p>}
+        <p className="text-[10px] text-gray-400">of tracked issues</p>
       </div>
     </div>
   )
@@ -304,7 +305,7 @@ export default function IssueHub() {
       {/* Filter bar + issue list */}
       <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
         {/* Controls */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border card-head flex-wrap">
           {/* State toggle */}
           <div className="flex items-center bg-surface-2 border border-border rounded-lg p-0.5">
             <button onClick={() => { setState('open'); setPage(1) }}
@@ -326,7 +327,7 @@ export default function IssueHub() {
             <Tag size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={labelFilter} onChange={(e) => { setLabelFilter(e.target.value); setPage(1) }}
               placeholder="Label filter"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue" />
           </div>
 
           {/* Assignee filter */}
@@ -334,7 +335,7 @@ export default function IssueHub() {
             <User size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={assigneeFilter} onChange={(e) => { setAssigneeFilter(e.target.value); setPage(1) }}
               placeholder="Assignee"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-28 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-28 text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue" />
           </div>
 
           {/* Search */}
@@ -342,28 +343,31 @@ export default function IssueHub() {
             <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search issues…"
-              className="w-full bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue" />
+              className="w-full bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue" />
           </div>
 
           {hasFilters && (
             <button onClick={() => { setLabelFilter(''); setAssigneeFilter(''); setSearch(''); setPage(1) }}
-              className="text-[10px] text-gray-600 hover:text-gray-400 px-1.5">
+              className="text-[10px] text-gray-400 hover:text-gray-400 px-1.5">
               ✕ Clear
             </button>
           )}
 
-          <span className="text-[10px] text-gray-600 ml-auto">{filtered.length} issues</span>
+          <span className="text-[10px] text-gray-400 ml-auto">{filtered.length} issues</span>
         </div>
 
         {/* Issue list */}
         {isLoading && (
-          <div className="text-center py-12 text-gray-500 text-sm">Loading issues…</div>
+          <div className="flex items-center justify-center py-12 gap-2 text-[12px] text-gray-500">
+            <span className="w-3.5 h-3.5 rounded-full border border-border border-t-accent-blue animate-spin" />
+            Loading issues…
+          </div>
         )}
         {isError && (
-          <div className="text-center py-12 text-accent-red text-sm">Failed to load issues.</div>
+          <EmptyState icon={<AlertCircle size={16} />} title="Failed to load issues" size="sm" className="py-12" />
         )}
-        {!isLoading && filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-500 text-sm">No issues found.</div>
+        {!isLoading && !isError && filtered.length === 0 && (
+          <EmptyState icon={<CircleDot size={16} />} title="No issues found" description="Try adjusting the filters" size="sm" className="py-12" />
         )}
 
         <div>

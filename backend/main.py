@@ -17,7 +17,9 @@ from services import pr_automation
 
 logger = logging.getLogger("auto_ingest")
 
-CORS_ORIGINS = [f"http://localhost:{p}" for p in range(5173, 5180)] + ["http://localhost:3000"]
+import os as _os
+_extra = [o.strip() for o in _os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+CORS_ORIGINS = [f"http://localhost:{p}" for p in range(5173, 5180)] + ["http://localhost:3000"] + _extra
 
 AUTO_INGEST_INTERVAL = 300  # seconds between polls
 

@@ -81,10 +81,10 @@ function calcHealthScore(
 // ── Severity helpers ───────────────────────────────────────────────────────────
 
 const SEV: Record<Severity, { dot: string; badge: string; text: string; row: string }> = {
-  critical: { dot: 'bg-accent-red',           badge: 'bg-accent-red/15 text-accent-red border-accent-red/30',         text: 'text-accent-red',   row: 'border-l-2 border-accent-red/60 bg-accent-red/5'   },
-  high:     { dot: 'bg-orange-400',            badge: 'bg-orange-400/15 text-orange-300 border-orange-400/30',         text: 'text-orange-300',   row: 'border-l-2 border-orange-400/50 bg-orange-400/5'   },
-  medium:   { dot: 'bg-accent-yellow',         badge: 'bg-accent-yellow/10 text-gray-300 border-accent-yellow/25',     text: 'text-gray-300',     row: 'border-l-2 border-accent-yellow/40 bg-surface-2'   },
-  good:     { dot: 'bg-accent-green',          badge: 'bg-accent-green/15 text-accent-green border-accent-green/30',   text: 'text-accent-green', row: 'border-l-2 border-accent-green/50 bg-accent-green/5'},
+  critical: { dot: 'bg-accent-red',    badge: 'bg-accent-red/15 text-accent-red border-accent-red/30',         text: 'text-accent-red',   row: 'bg-accent-red/[.05] ring-1 ring-accent-red/20'    },
+  high:     { dot: 'bg-orange-400',   badge: 'bg-orange-400/15 text-orange-300 border-orange-400/30',         text: 'text-orange-300',   row: 'bg-orange-400/[.05] ring-1 ring-orange-400/20'    },
+  medium:   { dot: 'bg-accent-yellow', badge: 'bg-accent-yellow/10 text-gray-300 border-accent-yellow/25',    text: 'text-gray-300',     row: 'bg-surface-2 ring-1 ring-accent-yellow/20'         },
+  good:     { dot: 'bg-accent-green',  badge: 'bg-accent-green/15 text-accent-green border-accent-green/30',  text: 'text-accent-green', row: 'bg-accent-green/[.04] ring-1 ring-accent-green/20' },
 }
 
 const EFFORT_COLOR: Record<string, string> = {
@@ -106,7 +106,7 @@ export default function BusinessReport() {
 
   const { data: build  } = useQuery({ queryKey: ['build-stats-biz'],  queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
   const { data: prs    } = useQuery({ queryKey: ['pr-stats'],          queryFn: getPRStats,                  staleTime: 60_000  })
-  const { data: dora   } = useQuery({ queryKey: ['health-dora'],       queryFn: getHealthDora,               staleTime: 120_000 })
+  const { data: dora   } = useQuery({ queryKey: ['health-dora'],       queryFn: () => getHealthDora(),               staleTime: 120_000 })
   const { data: wins   } = useQuery({ queryKey: ['quick-wins'],        queryFn: getQuickWins,                staleTime: 300_000 })
   const { data: plan   } = useQuery({ queryKey: ['improvement-plan'],  queryFn: getImprovementPlan,          staleTime: 300_000 })
   const { data: active } = useQuery({ queryKey: ['active-repo'],       queryFn: getActiveRepo,               staleTime: 30_000  })
@@ -370,7 +370,7 @@ export default function BusinessReport() {
                 <ScoreRing score={health.score} color={health.color} />
               </div>
               <p className="text-xs font-bold mt-1" style={{ color: health.color }}>{health.label}</p>
-              <p className="text-[10px] text-gray-600 text-center mt-0.5">
+              <p className="text-[10px] text-gray-400 text-center mt-0.5">
                 {criticalItems > 0 ? `${criticalItems} critical action${criticalItems > 1 ? 's' : ''} identified` : `${totalItems} improvements tracked`}
               </p>
             </div>
@@ -447,10 +447,10 @@ export default function BusinessReport() {
 
           {/* ── Key Insights ─────────────────────────────────────────────── */}
           <div className="border-t border-border p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Info size={12} className="text-accent-blue" />
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Key Insights</p>
-              <span className="text-[10px] text-gray-600">— executive summary of the most critical findings</span>
+            <div className="section-head section-head-flush mb-3">
+              <Info size={13} className="text-accent-blue flex-shrink-0" />
+              <span>Key Insights</span>
+              <span className="text-[10px] font-normal text-gray-500 ml-1">executive summary of the most critical findings</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
               {/* Insight 1: Root cause concentration */}
@@ -509,10 +509,10 @@ export default function BusinessReport() {
           {/* ── Row 2: Risk register ──────────────────────────────────────── */}
           {risks.length > 0 && (
             <div className="border-t border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Shield size={12} className="text-gray-400" />
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Risk Register</p>
-                <span className="text-[10px] text-gray-600">— business consequences of current issues</span>
+              <div className="section-head section-head-flush mb-3">
+                <Shield size={13} className="text-gray-400 flex-shrink-0" />
+                <span>Risk Register</span>
+                <span className="text-[10px] font-normal text-gray-500 ml-1">business consequences of current issues</span>
               </div>
               <div className="space-y-2">
                 {risks.map((r, i) => {
@@ -545,10 +545,10 @@ export default function BusinessReport() {
           {/* ── Row 3: ROI action table ───────────────────────────────────── */}
           {roiRows.length > 0 && (
             <div className="border-t border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={12} className="text-gray-400" />
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Highest-ROI Actions</p>
-                <span className="text-[10px] text-gray-600">— ordered by impact ÷ effort</span>
+              <div className="section-head section-head-flush mb-3">
+                <TrendingUp size={13} className="text-accent-green flex-shrink-0" />
+                Highest-ROI Actions
+                <span className="text-xs text-gray-500 font-normal ml-1">— ordered by impact ÷ effort</span>
               </div>
               <div className="rounded-lg border border-border overflow-hidden">
                 <table className="w-full text-[11px]">
@@ -566,7 +566,7 @@ export default function BusinessReport() {
                   <tbody className="divide-y divide-border">
                     {roiRows.map(row => (
                       <tr key={row.rank} className="hover:bg-surface-2 transition-colors">
-                        <td className="px-3 py-2.5 text-gray-600 font-bold">{row.rank}</td>
+                        <td className="px-3 py-2.5 text-gray-400 font-bold">{row.rank}</td>
                         <td className="px-3 py-2.5 text-white font-medium leading-snug max-w-[200px]">{row.action}</td>
                         <td className="px-3 py-2.5">
                           <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border capitalize ${EFFORT_COLOR[row.effort] ?? EFFORT_COLOR.medium}`}>
@@ -599,7 +599,7 @@ export default function BusinessReport() {
                                 #{iss}
                               </a>
                             ))}
-                            {!ghBase && <span className="text-[9px] text-gray-600">—</span>}
+                            {!ghBase && <span className="text-[9px] text-gray-400">—</span>}
                           </div>
                         </td>
                         <td className="px-3 py-2.5">
@@ -693,14 +693,14 @@ function KpiCell({ label, sub, value, delta, good, icon }: {
   return (
     <div className="p-3 space-y-0.5">
       <div className="flex items-center justify-between">
-        <span className="text-gray-600">{icon}</span>
+        <span className="text-gray-400">{icon}</span>
         {good
           ? <TrendingUp size={10} className="text-accent-green" />
           : <TrendingDown size={10} className="text-accent-red" />}
       </div>
       <p className={`text-xl font-black tabular-nums leading-none mt-1.5 ${good ? 'text-accent-green' : 'text-accent-red'}`}>{value}</p>
       <p className="text-[10px] text-gray-400 font-medium">{label}</p>
-      <p className="text-[9px] text-gray-600">{sub}</p>
+      <p className="text-[9px] text-gray-400">{sub}</p>
       <p className={`text-[9px] font-semibold ${good ? 'text-accent-green' : 'text-orange-400'}`}>{delta}</p>
     </div>
   )

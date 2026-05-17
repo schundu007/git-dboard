@@ -6,16 +6,19 @@ import {
   Clock, CheckCircle2, AlertTriangle, Users, Calendar,
   StopCircle, Zap, Activity, HardDrive, Trash2, Rocket,
   GitBranch, Filter, Search, BarChart3, Globe, Timer,
+  Moon, Terminal, Settings,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell,
+  LineChart, Line, CartesianGrid,
 } from 'recharts'
 import {
   getBuildRuns, getBuildJobs, getBuildArtifacts, getBuildStats,
   getFailureSummary, getAllRuns, getCaches, deleteCache,
   getDeployments, getEnvironments, getBuildUsage, getBuildPerformance, getWorkflowsWithStatus,
   triggerBuild, rerunBuild, rerunFailedJobs, cancelBuild, buildLogsWS,
+  getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly,
 } from '../lib/api'
 import StatusBadge from '../components/StatusBadge'
 import LogViewer, { LogLine } from '../components/LogViewer'
@@ -42,8 +45,8 @@ const GH_EVENTS = [
 ]
 
 type StatusFilter = 'all' | 'in_progress' | 'success' | 'failure' | 'cancelled'
-type StatsWindow = 7 | 14 | 30 | 60
-type MainMode = 'runs' | 'management'
+type StatsWindow = 1 | 3 | 7 | 14 | 130
+type MainMode = 'runs' | 'nightly' | 'management'
 type MgmtTab = 'caches' | 'deployments' | 'usage' | 'performance'
 type RunsSubMode = 'all' | 'list' | string  // 'all' | 'list' (workflow browser) | workflow filename
 
@@ -68,10 +71,10 @@ function StatCard({
     <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-500 font-medium">{label}</p>
-        {Icon && <Icon size={13} className="text-gray-600" />}
+        {Icon && <Icon size={13} className="text-gray-400" />}
       </div>
       <p className={clsx('text-2xl font-semibold tabular-nums', color)}>{value ?? '—'}</p>
-      {sub && <p className="text-[10px] text-gray-600">{sub}</p>}
+      {sub && <p className="text-[10px] text-gray-400">{sub}</p>}
     </div>
   )
 }
@@ -87,7 +90,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
   })
 
   if (isLoading) return (
-    <div className="h-48 flex items-center justify-center text-gray-600 text-xs">Loading stats…</div>
+    <div className="h-48 flex items-center justify-center text-gray-400 text-xs">Loading stats…</div>
   )
   if (!data) return null
 
@@ -190,12 +193,12 @@ function FailureDetail({ runId }: { runId: number }) {
       </button>
       {open && (
         <div className="mt-2 bg-accent-red/[.03] rounded border border-accent-red/20 p-2.5 space-y-2.5">
-          {isLoading && <p className="text-[10px] text-gray-600">Fetching logs…</p>}
+          {isLoading && <p className="text-[10px] text-gray-400">Fetching logs…</p>}
           {data?.summaries?.map((s: any, i: number) => (
             <div key={i} className="space-y-1">
               <p className="text-[10px] font-semibold text-accent-red flex items-center gap-1">
                 <XCircle size={9} /> {s.job}
-                {s.runner && <span className="text-gray-600 font-normal ml-1">on {s.runner}</span>}
+                {s.runner && <span className="text-gray-400 font-normal ml-1">on {s.runner}</span>}
               </p>
               {s.failed_steps?.map((step: any) => (
                 <p key={step.number} className="text-[10px] text-red-400 pl-3 flex items-center gap-1">
@@ -219,7 +222,7 @@ function FailureDetail({ runId }: { runId: number }) {
             </div>
           ))}
           {data?.failed_jobs === 0 && (
-            <p className="text-[10px] text-gray-600">No failed jobs found.</p>
+            <p className="text-[10px] text-gray-400">No failed jobs found.</p>
           )}
         </div>
       )}
@@ -247,7 +250,7 @@ function JobList({ runId }: { runId: number }) {
               <StatusBadge status={j.conclusion ?? j.status} />
             </div>
           </div>
-          {j.runner_name && <p className="text-[10px] text-gray-600 mt-1">runner: {j.runner_name}</p>}
+          {j.runner_name && <p className="text-[10px] text-gray-400 mt-1">runner: {j.runner_name}</p>}
           {j.steps?.filter((s) => s.conclusion === 'failure').map((s) => (
             <p key={s.number} className="text-[10px] text-accent-red mt-0.5 flex items-center gap-1">
               <XCircle size={9} /> Step {s.number}: {s.name}
@@ -268,8 +271,8 @@ function ArtifactsPanel({ runId }: { runId: number }) {
     staleTime: 300_000,
   })
   const artifacts = data?.artifacts ?? []
-  if (isLoading) return <p className="text-[10px] text-gray-600">Loading artifacts…</p>
-  if (!artifacts.length) return <p className="text-[10px] text-gray-600">No artifacts.</p>
+  if (isLoading) return <p className="text-[10px] text-gray-400">Loading artifacts…</p>
+  if (!artifacts.length) return <p className="text-[10px] text-gray-400">No artifacts.</p>
   return (
     <div className="space-y-1.5">
       {artifacts.map((a: any) => (
@@ -277,7 +280,7 @@ function ArtifactsPanel({ runId }: { runId: number }) {
           <div className="flex items-center gap-2">
             <Package size={11} className="text-gray-500" />
             <span className="text-gray-200">{a.name}</span>
-            <span className="text-gray-600">{a.size_kb} KB</span>
+            <span className="text-gray-400">{a.size_kb} KB</span>
             {a.expired && <span className="text-accent-red text-[9px]">EXPIRED</span>}
           </div>
           {!a.expired && a.url && (
@@ -309,7 +312,7 @@ function LogPanel({ runId, onClose }: { runId: number; onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-end justify-center p-4">
       <div className="w-full max-w-5xl bg-surface-1 border border-border rounded-xl shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head">
           <span className="text-sm font-medium">Live Logs — run #{runId}</span>
           <div className="flex items-center gap-3">
             {done ? <span className="text-xs text-nvidia">Stream complete</span> : <span className="text-xs text-nvidia animate-pulse">Streaming…</span>}
@@ -359,13 +362,13 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <span className="text-[10px] text-gray-600 font-mono">#{run.run_number}</span>
+              <span className="text-[10px] text-gray-400 font-mono">#{run.run_number}</span>
               {showWorkflow && (run as any).workflow_label && (
                 <span className="text-[10px] bg-surface-3 text-gray-400 px-1.5 py-0.5 rounded">
                   {(run as any).workflow_label}
                 </span>
               )}
-              <span className="text-[10px] text-gray-600 bg-surface-2 px-1.5 py-0.5 rounded">{run.event}</span>
+              <span className="text-[10px] text-gray-400 bg-surface-2 px-1.5 py-0.5 rounded">{run.event}</span>
               {run.duration_label && run.duration_label !== '—' && (
                 <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
                   <Clock size={9} /> {run.duration_label}
@@ -422,6 +425,8 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
               <ExternalLink size={12} className="text-gray-500 hover:text-neutral-300" />
             </a>
             <button onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Collapse run details' : 'Expand run details'}
               className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-surface-2 transition-colors">
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -554,7 +559,7 @@ function AllWorkflowsPanel() {
         <div className="flex items-center gap-2 mb-2">
           <Filter size={11} className="text-gray-500" />
           <span className="text-xs text-gray-500 font-medium">Filters</span>
-          {isFetching && <span className="text-[9px] text-gray-600 animate-pulse ml-auto">Refreshing…</span>}
+          {isFetching && <span className="text-[9px] text-gray-400 animate-pulse ml-auto">Refreshing…</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           {/* Status pills */}
@@ -572,7 +577,7 @@ function AllWorkflowsPanel() {
             <GitBranch size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={branch} onChange={(e) => { setBranch(e.target.value); setPage(1) }}
               placeholder="branch"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-32 text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
           </div>
           {/* Event */}
           <select value={event} onChange={(e) => { setEvent(e.target.value); setPage(1) }}
@@ -585,16 +590,16 @@ function AllWorkflowsPanel() {
             <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
             <input value={actor} onChange={(e) => { setActor(e.target.value); setPage(1) }}
               placeholder="actor / author"
-              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-36 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
+              className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-36 text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
           </div>
           {/* Clear */}
           {(branch || event || actor || statusFilter !== 'all') && (
             <button onClick={() => { setStatusFilter('all'); setBranch(''); setEvent(''); setActor(''); setPage(1) }}
-              className="text-[10px] text-gray-600 hover:text-gray-400 px-1.5">
+              className="text-[10px] text-gray-400 hover:text-gray-400 px-1.5">
               ✕ Clear
             </button>
           )}
-          <span className="text-[10px] text-gray-600 ml-auto">
+          <span className="text-[10px] text-gray-400 ml-auto">
             {total.toLocaleString()} total runs
           </span>
         </div>
@@ -603,10 +608,15 @@ function AllWorkflowsPanel() {
       {/* Live runs section */}
       <LiveRunsBanner runs={runs} />
 
-      {isLoading && <div className="text-center py-12 text-gray-500 text-sm">Loading runs…</div>}
-      {isError && <div className="text-center py-12 text-accent-red text-sm">Failed to load runs.</div>}
-      {!isLoading && displayed.length === 0 && (
-        <div className="text-center py-12 text-gray-500 text-sm">No runs match the selected filters.</div>
+      {isLoading && (
+        <div className="flex items-center justify-center py-12 gap-2 text-[12px] text-gray-500">
+          <span className="w-3.5 h-3.5 rounded-full border border-border border-t-accent-blue animate-spin" />
+          Loading runs…
+        </div>
+      )}
+      {isError && <div className="py-12 text-center text-[12px] text-accent-red">Failed to load runs.</div>}
+      {!isLoading && !isError && displayed.length === 0 && (
+        <div className="py-12 text-center text-[12px] text-gray-500">No runs match the selected filters.</div>
       )}
 
       <div className="space-y-2.5">
@@ -637,7 +647,7 @@ const GH_CACHE_LIMIT_GB = 10
 const GH_CACHE_LIMIT_BYTES = GH_CACHE_LIMIT_GB * 1024 ** 3
 
 function staleness(lastAccessedAt: string | null): { label: string; color: string } {
-  if (!lastAccessedAt) return { label: 'unknown', color: 'text-gray-600' }
+  if (!lastAccessedAt) return { label: 'unknown', color: 'text-gray-400' }
   const days = Math.floor((Date.now() - new Date(lastAccessedAt).getTime()) / 86_400_000)
   if (days <= 3) return { label: `${days}d ago`, color: 'text-accent-green' }
   if (days <= 7) return { label: `${days}d ago`, color: 'text-neutral-400' }
@@ -702,7 +712,7 @@ function CachesPanel() {
               {topPrefixes.map(([prefix, count]) => (
                 <div key={prefix} className="flex justify-between text-[10px]">
                   <span className="font-mono text-gray-400">{prefix}-*</span>
-                  <span className="text-gray-600">{count}</span>
+                  <span className="text-gray-400">{count}</span>
                 </div>
               ))}
             </div>
@@ -725,7 +735,7 @@ function CachesPanel() {
               style={{ width: `${usedPct}%` }}
             />
           </div>
-          <p className="text-[9px] text-gray-600 mt-1">Caches exceeding the limit are evicted automatically (oldest first)</p>
+          <p className="text-[9px] text-gray-400 mt-1">Caches exceeding the limit are evicted automatically (oldest first)</p>
         </div>
       )}
 
@@ -757,12 +767,12 @@ function CachesPanel() {
         <div className="relative">
           <GitBranch size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={refFilter} onChange={(e) => setRefFilter(e.target.value)} placeholder="filter by branch"
-            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
+            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
         </div>
         <div className="relative">
           <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={keyFilter} onChange={(e) => setKeyFilter(e.target.value)} placeholder="filter by key"
-            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-52 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
+            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-52 text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
         </div>
         <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-0.5 ml-auto">
           {(['size', 'age', 'ref'] as const).map((s) => (
@@ -795,7 +805,7 @@ function CachesPanel() {
                   <div key={`${c.id}-acc`} className={clsx('bg-surface-1 px-3 py-2.5 text-[10px]', s.color)}>{s.label}</div>
                   <div key={`${c.id}-del`} className="bg-surface-1 px-3 py-2.5 flex items-center justify-center">
                     <button onClick={() => del(c.id)} disabled={deleting && deletingId === c.id}
-                      className="p-1 rounded text-gray-600 hover:text-accent-red hover:bg-accent-red/10 transition-colors disabled:opacity-50">
+                      className="p-1 rounded text-gray-400 hover:text-accent-red hover:bg-accent-red/10 transition-colors disabled:opacity-50">
                       <Trash2 size={11} />
                     </button>
                   </div>
@@ -914,11 +924,11 @@ function DeploymentsPanel() {
                   {name}
                 </span>
                 {isPinned && (
-                  <span className="text-[8px] text-nvidia flex-shrink-0">★</span>
+                  <span className="text-[9px] text-nvidia flex-shrink-0">★</span>
                 )}
               </div>
               {s?.lastAt && (
-                <p className="text-[9px] text-gray-600 mt-0.5 pl-3.5">
+                <p className="text-[9px] text-gray-400 mt-0.5 pl-3.5">
                   {formatDistanceToNow(new Date(s.lastAt), { addSuffix: true })}
                 </p>
               )}
@@ -978,14 +988,14 @@ function DeploymentsPanel() {
                     {!selectedEnv && (
                       <span className="text-xs font-medium text-white">{d.environment}</span>
                     )}
-                    <span className="text-[10px] text-gray-600 bg-surface-2 px-1.5 py-0.5 rounded">{d.task}</span>
+                    <span className="text-[10px] text-gray-400 bg-surface-2 px-1.5 py-0.5 rounded">{d.task}</span>
                     <span className="font-mono text-[10px] text-gray-500">{d.ref}</span>
-                    <span className="font-mono text-[10px] text-gray-600">{d.sha}</span>
+                    <span className="font-mono text-[10px] text-gray-400">{d.sha}</span>
                   </div>
                   {d.description && (
                     <p className="text-[10px] text-gray-500 mt-0.5 truncate">{d.description}</p>
                   )}
-                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600">
+                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
                     {d.creator_avatar && (
                       <img src={d.creator_avatar} className="w-3 h-3 rounded-full" alt="" />
                     )}
@@ -1076,7 +1086,7 @@ function UsagePanel() {
                 value="0m"
                 sub="self-hosted runners"
                 icon={Timer}
-                color="text-gray-600"
+                color="text-gray-400"
               />
             </>
           ) : (
@@ -1166,7 +1176,7 @@ function UsagePanel() {
 // ── Performance metrics panel ─────────────────────────────────────────────────
 
 function PerformanceMetricsPanel() {
-  const [days, setDays] = useState<7 | 14 | 30>(14)
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const [sortBy, setSortBy] = useState<'failure_rate' | 'avg' | 'total'>('avg')
 
   const { data, isLoading, isError } = useQuery({
@@ -1206,7 +1216,7 @@ function PerformanceMetricsPanel() {
         </div>
         <div className="flex items-center gap-1">
           <Calendar size={11} className="text-gray-500" />
-          {([7, 14, 30] as const).map((d) => (
+          {([1, 3, 7, 14, 130] as const).map((d) => (
             <button key={d} onClick={() => setDays(d)}
               className={clsx('px-2 py-0.5 rounded text-[10px] transition-colors',
                 days === d ? 'bg-surface-3 text-white' : 'text-gray-500 hover:bg-surface-2')}>
@@ -1284,7 +1294,7 @@ function PerformanceMetricsPanel() {
               {([['failure_rate', 'Job Failures'], ['avg', 'Duration'], ['total', 'Runs']] as const).map(([key, label]) => (
                 <button key={key} onClick={() => setSortBy(key as any)}
                   className={clsx('px-2 py-0.5 rounded text-[9px] transition-colors',
-                    sortBy === key ? 'bg-surface-3 text-white' : 'text-gray-600 hover:text-gray-400')}>
+                    sortBy === key ? 'bg-surface-3 text-white' : 'text-gray-400 hover:text-gray-400')}>
                   {label}
                 </button>
               ))}
@@ -1308,7 +1318,7 @@ function PerformanceMetricsPanel() {
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p50_label ?? '—'}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p90_label ?? '—'}</div>
                   <div className={clsx('bg-surface-1 px-3 py-2.5 text-[10px] font-semibold text-right',
-                    w.success_rate == null ? 'text-gray-600' : w.success_rate >= 80 ? 'text-nvidia' : w.success_rate >= 60 ? 'text-neutral-400' : 'text-accent-red')}>
+                    w.success_rate == null ? 'text-gray-400' : w.success_rate >= 80 ? 'text-nvidia' : w.success_rate >= 60 ? 'text-neutral-400' : 'text-accent-red')}>
                     {w.success_rate != null ? `${w.success_rate}%` : '—'}
                   </div>
                 </div>
@@ -1356,13 +1366,13 @@ function WorkflowListPanel() {
         <div className="relative flex-1 max-w-xs">
           <Search size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workflows…"
-            className="w-full bg-surface-2 border border-border rounded-md pl-6 pr-2 py-1 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
+            className="w-full bg-surface-2 border border-border rounded-md pl-6 pr-2 py-1 text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
         </div>
         <label className="flex items-center gap-1.5 text-[10px] text-gray-500 cursor-pointer select-none">
           <input type="checkbox" checked={showDisabled} onChange={(e) => setShowDisabled(e.target.checked)} className="w-3 h-3" />
           Show disabled
         </label>
-        <span className="text-[10px] text-gray-600 ml-auto">{filtered.length} of {data?.total ?? '…'} workflows</span>
+        <span className="text-[10px] text-gray-400 ml-auto">{filtered.length} of {data?.total ?? '…'} workflows</span>
       </div>
 
       {isLoading && <div className="text-center py-12 text-gray-500 text-sm">Loading workflows…</div>}
@@ -1384,14 +1394,13 @@ function WorkflowListPanel() {
                 )}
                 <span className="text-xs font-medium text-white truncate">{w.name}</span>
               </div>
-              <p className="text-[9px] font-mono text-gray-600">{w.filename}</p>
-              <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-600 flex-wrap">
+              <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-400 flex-wrap">
                 {w.last_branch && <span className="text-gray-500 font-mono">{w.last_branch}</span>}
                 {w.last_run_at && (
                   <span>{formatDistanceToNow(new Date(w.last_run_at), { addSuffix: true })}</span>
                 )}
                 {w.state !== 'active' && (
-                  <span className="text-gray-600 bg-surface-3 px-1.5 py-0.5 rounded">disabled</span>
+                  <span className="text-gray-400 bg-surface-3 px-1.5 py-0.5 rounded">disabled</span>
                 )}
               </div>
             </div>
@@ -1399,7 +1408,7 @@ function WorkflowListPanel() {
               {w.last_status && <StatusBadge status={w.last_status} />}
               {w.html_url && (
                 <a href={w.html_url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={11} className="text-gray-600 hover:text-neutral-300" />
+                  <ExternalLink size={11} className="text-gray-400 hover:text-neutral-300" />
                 </a>
               )}
             </div>
@@ -1448,7 +1457,7 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
           </button>
           <div className="flex items-center gap-1">
             <Calendar size={11} className="text-gray-500" />
-            {([7, 14, 30, 60] as StatsWindow[]).map((d) => (
+            {([1, 3, 7, 14, 130] as StatsWindow[]).map((d) => (
               <button key={d} onClick={() => setStatsWindow(d)}
                 className={clsx('px-2 py-0.5 rounded text-[10px] transition-colors',
                   statsWindow === d ? 'bg-surface-3 text-white' : 'text-gray-500 hover:bg-surface-2')}>
@@ -1474,10 +1483,10 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-500">Branch:</span>
           <input value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="filter by branch"
-            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-xs w-40 text-white placeholder-gray-600 focus:outline-none focus:border-neutral-500" />
-          {branch && <button onClick={() => setBranch('')} className="text-gray-600 hover:text-gray-400 text-xs">✕</button>}
+            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-xs w-40 text-white placeholder-gray-500 focus:outline-none focus:border-neutral-500" />
+          {branch && <button onClick={() => setBranch('')} className="text-gray-400 hover:text-gray-400 text-xs">✕</button>}
         </div>
-        <span className="text-xs text-gray-600 ml-auto">{runs.length} runs</span>
+        <span className="text-xs text-gray-400 ml-auto">{runs.length} runs</span>
       </div>
 
       {isLoading && <div className="text-center py-12 text-gray-500 text-sm">Loading runs…</div>}
@@ -1492,6 +1501,292 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
   )
 }
 
+// ── Nightly: cell colour ─────────────────────────────────────────────────────
+
+function nightlyCellStyle(status: string | undefined) {
+  if (!status) return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '—' }
+  const s = status.toLowerCase()
+  if (s === 'success')
+    return { bg: 'bg-accent-green/10 border border-accent-green/25', text: 'text-accent-green', sym: '✓' }
+  if (s === 'failure')
+    return { bg: 'bg-accent-red/10 border border-accent-red/25', text: 'text-accent-red', sym: '✗' }
+  if (['in_progress', 'queued'].includes(s))
+    return { bg: 'bg-accent-blue/10 border border-accent-blue/25 animate-pulse', text: 'text-accent-blue', sym: '~' }
+  if (s === 'skipped')
+    return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '⊘' }
+  return { bg: 'bg-surface-2 border border-border', text: 'text-gray-500', sym: '?' }
+}
+
+// ── Nightly: job matrix ──────────────────────────────────────────────────────
+
+function NightlyMatrixTable() {
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['nightly-matrix', days],
+    queryFn: () => getNightlyMatrix(days),
+    refetchInterval: 120_000,
+  })
+
+  if (isLoading) return <div className="text-center py-10 text-gray-500 text-sm">Loading matrix — fetching job data…</div>
+  if (isError) return (
+    <div className="text-center py-10 text-[12px] text-gray-500">
+      Failed to load — <button onClick={() => refetch()} className="text-accent-blue hover:underline">retry</button>
+    </div>
+  )
+
+  const dates: string[] = data?.dates ?? []
+  const matrix: Record<string, Record<string, any>> = data?.matrix ?? {}
+  const jobNames: string[] = data?.job_names ?? []
+  const flaky: string[] = data?.flaky_jobs ?? []
+  const consecutive: Record<string, number> = data?.consecutive_failures ?? {}
+
+  if (dates.length === 0) return <p className="text-gray-400 text-sm text-center py-6">No nightly runs found.</p>
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-gray-500">Window:</span>
+          {([1, 3, 7, 14, 130] as const).map((d) => (
+            <button key={d} onClick={() => setDays(d)}
+              className={clsx('px-2 py-0.5 rounded transition-colors',
+                days === d ? 'bg-surface-3 text-white' : 'text-gray-500 hover:bg-surface-2')}>
+              {d}d
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+          {[{ sym: '✓', cls: 'text-accent-green', label: 'pass' },
+            { sym: '✗', cls: 'text-accent-red', label: 'fail' },
+            { sym: '~', cls: 'text-accent-blue', label: 'running' },
+            { sym: '—', cls: 'text-gray-400', label: 'no run' }].map(({ sym, cls, label }) => (
+            <span key={label} className="flex items-center gap-1"><span className={cls}>{sym}</span> {label}</span>
+          ))}
+          <button onClick={() => refetch()} className="p-1 rounded hover:bg-surface-2 text-gray-400 hover:text-white ml-1">
+            <RefreshCw size={11} />
+          </button>
+        </div>
+      </div>
+
+      {flaky.length > 0 && (
+        <div className="flex items-start gap-2 bg-yellow-950/40 border border-yellow-800 rounded-lg px-3 py-2">
+          <AlertTriangle size={12} className="text-accent-yellow mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-[10px] font-medium text-accent-yellow">Flaky jobs detected</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{flaky.join(' · ')}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="text-xs w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left text-gray-500 font-normal pb-2 pr-4 whitespace-nowrap min-w-[220px]">Job</th>
+              {dates.map((d) => (
+                <th key={d} className="text-[9px] text-gray-400 font-normal pb-2 px-0.5 text-center whitespace-nowrap">{d.slice(5)}</th>
+              ))}
+              <th className="text-[9px] text-gray-400 font-normal pb-2 px-2 text-center whitespace-nowrap">Streak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobNames.map((name) => {
+              const isFlaky = flaky.includes(name)
+              const streak = consecutive[name] ?? 0
+              return (
+                <tr key={name} className={isFlaky ? 'bg-yellow-950/10' : ''}>
+                  <td className="pr-4 py-1 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      {isFlaky && <Zap size={9} className="text-accent-yellow flex-shrink-0" />}
+                      <span className={clsx('text-gray-300 truncate max-w-[200px]', isFlaky && 'text-accent-yellow')}>{name}</span>
+                    </div>
+                  </td>
+                  {dates.map((d) => {
+                    const cell = matrix[d]?.[name]
+                    const { bg, text, sym } = nightlyCellStyle(cell?.status)
+                    return (
+                      <td key={d} className="px-0.5 py-1 text-center">
+                        {cell ? (
+                          <a href={cell.url} target="_blank" rel="noreferrer">
+                            <span className={clsx('inline-flex items-center justify-center w-7 h-5 rounded text-[10px] font-bold cursor-pointer transition-opacity hover:opacity-70', bg, text)}
+                              title={`${name}\n${d}: ${cell.status}`}>{sym}</span>
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-7 h-5 rounded text-[10px] text-gray-400">—</span>
+                        )}
+                      </td>
+                    )
+                  })}
+                  <td className="px-2 py-1 text-center">
+                    {streak > 0
+                      ? <span className="text-[10px] text-accent-red font-semibold">{streak}×</span>
+                      : <span className="text-[10px] text-gray-400">—</span>}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Nightly: trend chart ─────────────────────────────────────────────────────
+
+function NightlyTrendChart() {
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
+  const { data, isLoading } = useQuery({
+    queryKey: ['nightly-trend', days],
+    queryFn: () => getNightlyTrend(days),
+    refetchInterval: 300_000,
+  })
+  const trend = [...(data?.trend ?? [])].reverse()
+
+  return (
+    <div className="bg-surface-1 border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between mb-4">
+        <span className="section-head">Nightly Pass Rate Trend</span>
+        <div className="flex items-center gap-1 text-[10px]">
+          {([1, 3, 7, 14, 130] as const).map((d) => (
+            <button key={d} onClick={() => setDays(d)}
+              className={clsx('px-1.5 py-0.5 rounded', days === d ? 'bg-surface-3 text-white' : 'text-gray-500 hover:bg-surface-2')}>
+              {d}d
+            </button>
+          ))}
+        </div>
+      </div>
+      {isLoading && <div className="h-[120px] flex items-center justify-center text-gray-400 text-xs">Loading…</div>}
+      {!isLoading && trend.length === 0 && <div className="h-[120px] flex items-center justify-center text-gray-400 text-xs">No data in this window.</div>}
+      {!isLoading && trend.length > 0 && (
+        <ResponsiveContainer width="100%" height={120}>
+          <LineChart data={trend}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" />
+            <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v) => v.slice(5)} interval="preserveStartEnd" />
+            <YAxis domain={[0, 100]} tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v) => `${v}%`} width={32} />
+            <Tooltip
+              contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 6, fontSize: 11 }}
+              formatter={(v: any) => [`${v}%`, 'Pass rate']}
+            />
+            <Line type="monotone" dataKey="pass_rate" stroke="#76b900" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#76b900' }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
+
+// ── Nightly: failure detail ───────────────────────────────────────────────────
+
+function NightlyFailureDetail({ runId }: { runId: number }) {
+  const [open, setOpen] = useState(false)
+  const { data, isLoading } = useQuery({
+    queryKey: ['failure-summary', runId],
+    queryFn: () => getFailureSummary(runId),
+    enabled: open,
+    staleTime: 300_000,
+  })
+
+  return (
+    <div className="mt-2 border-t border-red-900/20 pt-2">
+      <button onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-[10px] text-accent-red hover:text-red-400 transition-colors">
+        <Terminal size={9} />
+        {open ? 'Hide error detail' : 'Show error detail'}
+        {open ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+      </button>
+      {open && (
+        <div className="mt-2 bg-black/40 rounded border border-red-900/40 p-2.5 space-y-3">
+          {isLoading && <p className="text-[10px] text-gray-400">Fetching job logs…</p>}
+          {data?.summaries?.length === 0 && !isLoading && (
+            <p className="text-[10px] text-gray-400">No failed jobs found in this run.</p>
+          )}
+          {data?.summaries?.map((s: any, i: number) => (
+            <div key={i} className="space-y-1">
+              <p className="text-[10px] font-semibold text-accent-red flex items-center gap-1">
+                <XCircle size={9} /> {s.job}
+                {s.runner && <span className="text-gray-400 font-normal ml-1">on {s.runner}</span>}
+              </p>
+              {s.failed_steps?.map((step: any) => (
+                <p key={step.number} className="text-[10px] text-orange-400 pl-3 flex items-center gap-1">
+                  <AlertTriangle size={8} /> Step {step.number}: {step.name}
+                </p>
+              ))}
+              {s.error_lines?.length > 0 && (
+                <div className="bg-black/60 rounded p-1.5 font-mono max-h-40 overflow-y-auto">
+                  {s.error_lines.map((line: string, li: number) => (
+                    <p key={li} className={clsx(
+                      'text-[9px] leading-4 break-all whitespace-pre-wrap',
+                      line.toLowerCase().includes('error') || line.includes('##[error]')
+                        ? 'text-accent-red'
+                        : line.toLowerCase().includes('traceback') || line.toLowerCase().includes('exception')
+                        ? 'text-orange-400'
+                        : 'text-gray-400',
+                    )}>{line}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Nightly: recent runs ─────────────────────────────────────────────────────
+
+function NightlyRecentRuns() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['nightly-runs'],
+    queryFn: () => getNightlyRuns(),
+    refetchInterval: 60_000,
+  })
+  const runs: WorkflowRun[] = data?.workflow_runs ?? []
+  if (isLoading || runs.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <div className="section-head">Recent Nightly Runs</div>
+      {runs.slice(0, 15).map((r) => {
+        const isFailed = r.conclusion === 'failure' || r.conclusion === 'timed_out'
+        const isRunning = r.status === 'in_progress' || r.status === 'queued'
+        const dur = (r as any).duration_label
+        return (
+          <div key={r.id} className={clsx('bg-surface-1 border rounded-xl px-4 py-3',
+            isFailed ? 'border-red-900/40' : 'border-border')}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <StatusBadge status={r.conclusion ?? r.status} />
+                <div className="min-w-0">
+                  <p className="text-sm text-white truncate font-medium">{r.display_title || r.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 flex-wrap">
+                    <span className="text-accent-blue font-mono">{r.head_branch}</span>
+                    <span className="font-mono">{r.head_sha?.slice(0, 7)}</span>
+                    <span>{r.created_at.slice(0, 10)}</span>
+                    <span>{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
+                    {dur && dur !== '—' && <span className="flex items-center gap-0.5"><Clock size={9} /> {dur}</span>}
+                    {isRunning && (
+                      <span className="flex items-center gap-1 text-accent-blue">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse" />
+                        {r.status === 'queued' ? 'Queued' : 'Running'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <a href={r.html_url} target="_blank" rel="noreferrer" className="flex-shrink-0 ml-3">
+                <ExternalLink size={12} className="text-gray-500 hover:text-accent-blue" />
+              </a>
+            </div>
+            {isFailed && <NightlyFailureDetail runId={r.id} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BuildPipeline() {
@@ -1501,35 +1796,46 @@ export default function BuildPipeline() {
   const [statsWindow, setStatsWindow] = useState<StatsWindow>(14)
   const [showStats, setShowStats] = useState(true)
   const [ref, setRef] = useState('main')
+  const [nightlyRef, setNightlyRef] = useState('main')
   const qc = useQueryClient()
-
-  const activeWorkflow = PINNED.find((p) => p.filename === workflow)
 
   const { mutate: trigger, isPending: triggering } = useMutation({
     mutationFn: () => triggerBuild(ref, workflow === 'all' ? '' : workflow),
     onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 3000),
   })
 
-  // Derive the active tab key for the unified tab bar
-  const activeTab: string = mode === 'management' ? mgmtTab : workflow
-
-  const selectTab = (key: string) => {
-    const mgmtKeys = ['caches', 'deployments', 'usage', 'performance']
-    if (mgmtKeys.includes(key)) {
-      setMode('management')
-      setMgmtTab(key as MgmtTab)
-    } else {
-      setMode('runs')
-      setWorkflow(key)
-    }
-  }
+  const { mutate: triggerNight, isPending: triggeringNight } = useMutation({
+    mutationFn: () => triggerNightly(nightlyRef),
+  })
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="space-y-4">
+
+      {/* ── Primary tab navigation ──────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-1 bg-surface-2 rounded-xl p-1">
+          {([
+            { key: 'runs',       icon: Activity, label: 'Runs'       },
+            { key: 'nightly',    icon: Moon,     label: 'Nightly'    },
+            { key: 'management', icon: Settings, label: 'Management' },
+          ] as { key: MainMode; icon: any; label: string }[]).map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setMode(key)}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                mode === key
+                  ? 'bg-surface-3 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-surface-3/50',
+              )}
+            >
+              <Icon size={11} />
+              {label}
+            </button>
+          ))}
         </div>
+
+        {/* Contextual right actions */}
         <div className="flex items-center gap-2">
           {mode === 'runs' && workflow !== 'all' && workflow !== 'list' && (
             <>
@@ -1543,56 +1849,79 @@ export default function BuildPipeline() {
               </button>
             </>
           )}
-          <button onClick={() => { qc.invalidateQueries({ queryKey: ['build-runs'] }); qc.invalidateQueries({ queryKey: ['all-runs'] }) }}
+          {mode === 'nightly' && (
+            <>
+              <input value={nightlyRef} onChange={(e) => setNightlyRef(e.target.value)}
+                className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs w-24 text-white focus:outline-none focus:border-neutral-500"
+                placeholder="ref" />
+              <button onClick={() => triggerNight()} disabled={triggeringNight}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-yellow text-black hover:opacity-90 disabled:opacity-50 font-medium transition-colors">
+                <Play size={11} />
+                {triggeringNight ? 'Triggering…' : 'Run Nightly'}
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: ['build-runs'] })
+              qc.invalidateQueries({ queryKey: ['all-runs'] })
+              if (mode === 'nightly') {
+                qc.invalidateQueries({ queryKey: ['nightly-matrix'] })
+                qc.invalidateQueries({ queryKey: ['nightly-runs'] })
+                qc.invalidateQueries({ queryKey: ['nightly-trend'] })
+              }
+            }}
             className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
             <RefreshCw size={13} />
           </button>
         </div>
       </div>
 
-      {/* ── Unified tab bar ───────────────────────────────────────────────────── */}
-      <div className="border-b border-border pb-3 space-y-2">
-        {/* Runs row */}
-        <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-xs text-gray-500 font-medium w-20 flex-shrink-0">Workflows</span>
-          <button onClick={() => selectTab('all')}
+      {/* ── Sub-navigation ──────────────────────────────────────────────── */}
+      {mode === 'runs' && (
+        <div className="flex flex-wrap gap-1 pb-3 border-b border-border">
+          <button onClick={() => setWorkflow('all')}
             className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              activeTab === 'all' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
-            All
+              workflow === 'all' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+            All Runs
           </button>
           {PINNED.map((w) => (
-            <button key={w.filename} onClick={() => selectTab(w.filename)}
+            <button key={w.filename} onClick={() => setWorkflow(w.filename)}
               className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                activeTab === w.filename ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+                workflow === w.filename ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
               {w.label}
             </button>
           ))}
-          <button onClick={() => selectTab('list')}
+          <button onClick={() => setWorkflow('list')}
             className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              activeTab === 'list' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-500 hover:bg-surface-3 hover:text-gray-300')}>
+              workflow === 'list' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-500 hover:bg-surface-3 hover:text-gray-300')}>
             Browse All →
           </button>
         </div>
+      )}
 
-        {/* Management row */}
-        <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-xs text-gray-500 font-medium w-20 flex-shrink-0">Management</span>
-          {[
-            { key: 'caches',      icon: HardDrive, label: 'Caches' },
-            { key: 'deployments', icon: Rocket,    label: 'Deployments' },
-            { key: 'usage',       icon: BarChart3, label: 'Usage / Billing' },
-            { key: 'performance', icon: TrendingUp, label: 'Performance' },
-          ].map(({ key, icon: Icon, label }) => (
-            <button key={key} onClick={() => selectTab(key)}
+      {mode === 'nightly' && (
+        <div className="pb-3 border-b border-border" />
+      )}
+
+      {mode === 'management' && (
+        <div className="flex flex-wrap gap-1 pb-3 border-b border-border">
+          {([
+            { key: 'caches',      icon: HardDrive,  label: 'Caches'           },
+            { key: 'deployments', icon: Rocket,     label: 'Deployments'      },
+            { key: 'usage',       icon: BarChart3,  label: 'Usage / Billing'  },
+            { key: 'performance', icon: TrendingUp, label: 'Performance'      },
+          ] as { key: MgmtTab; icon: any; label: string }[]).map(({ key, icon: Icon, label }) => (
+            <button key={key} onClick={() => setMgmtTab(key)}
               className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-                activeTab === key ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
+                mgmtTab === key ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
               <Icon size={11} /> {label}
             </button>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* ── Content ───────────────────────────────────────────────────────────── */}
+      {/* ── Tab content ─────────────────────────────────────────────────── */}
       {mode === 'runs' && (
         workflow === 'list'
           ? <WorkflowListPanel />
@@ -1607,6 +1936,17 @@ export default function BuildPipeline() {
             />
       )}
 
+      {mode === 'nightly' && (
+        <div className="space-y-5">
+          <NightlyTrendChart />
+          <div className="bg-surface-1 border border-border rounded-xl p-4">
+            <div className="section-head">Isaac Sim Compatibility Matrix</div>
+            <NightlyMatrixTable />
+          </div>
+          <NightlyRecentRuns />
+        </div>
+      )}
+
       {mode === 'management' && (
         <>
           {mgmtTab === 'caches'      && <CachesPanel />}
@@ -1615,6 +1955,7 @@ export default function BuildPipeline() {
           {mgmtTab === 'performance' && <PerformanceMetricsPanel />}
         </>
       )}
+
     </div>
   )
 }

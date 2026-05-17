@@ -92,16 +92,16 @@ export default function RepoWelcome() {
 
   if (switching) {
     return (
-      <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center gap-4">
+      <div className="fixed inset-0 z-[200] bg-black/80 flex flex-col items-center justify-center gap-4">
         <Loader2 size={28} className="text-nvidia animate-spin" />
         <p className="text-[14px] font-semibold text-white">Setting up {switching}…</p>
-        <p className="text-[11px] text-gray-600">Loading dashboard…</p>
+        <p className="text-[11px] text-gray-400">Loading dashboard…</p>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0a0a0a] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-[#0a0a0a] dark-surface flex items-center justify-center p-4">
       <div className="w-full max-w-[480px] space-y-6">
         {/* Logo + title */}
         <div className="flex flex-col items-center gap-4 text-center">
@@ -132,9 +132,9 @@ export default function RepoWelcome() {
                     </div>
                     <div className="min-w-0 text-left flex-1">
                       <p className="text-[13px] font-semibold text-white truncate">{slug.split('/')[1]}</p>
-                      <p className="text-[11px] text-gray-600 font-mono truncate">{slug.split('/')[0]}</p>
+                      <p className="text-[11px] text-gray-400 font-mono truncate">{slug.split('/')[0]}</p>
                     </div>
-                    <ArrowRight size={14} className="text-gray-600 group-hover:text-nvidia transition-colors flex-shrink-0" />
+                    <ArrowRight size={14} className="text-gray-400 group-hover:text-nvidia transition-colors flex-shrink-0" />
                   </button>
                 )
               })}
@@ -144,7 +144,7 @@ export default function RepoWelcome() {
 
         {/* Add new repo form */}
         <div className="bg-surface-1 border border-border rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <div className="px-4 py-3 border-b border-border card-head flex items-center gap-2">
             <Plus size={13} className="text-nvidia" />
             <span className="text-[13px] font-semibold text-white">Add a repository</span>
           </div>
@@ -154,7 +154,7 @@ export default function RepoWelcome() {
               <label className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                 <LinkIcon size={9} />
                 GitHub URL
-                <span className="text-gray-700 normal-case font-normal ml-1">paste to auto-fill owner and repo</span>
+                <span className="text-gray-400 normal-case font-normal ml-1">paste to auto-fill owner and repo</span>
               </label>
               <input
                 value={urlInput}
@@ -162,7 +162,7 @@ export default function RepoWelcome() {
                 placeholder="https://github.com/owner/repo"
                 autoFocus
                 className={cn(
-                  'w-full bg-surface-2 border rounded-xl px-3 py-2.5 text-[12px] text-white placeholder-gray-600 focus:outline-none transition-colors font-mono',
+                  'w-full bg-surface-2 border rounded-xl px-3 py-2.5 text-[12px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
                   urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-nvidia/60',
                 )}
               />
@@ -178,22 +178,30 @@ export default function RepoWelcome() {
             {/* Manual inputs */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Owner / Org *</label>
+                <label htmlFor="rw-owner" className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Owner / Org *</label>
                 <input
+                  id="rw-owner"
                   value={form.owner}
                   onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
                   placeholder="owner"
-                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  pattern="[A-Za-z0-9_.-]+"
+                  aria-describedby="rw-owner-hint"
+                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
                 />
+                <span id="rw-owner-hint" className="sr-only">GitHub owner or organization name</span>
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Repository *</label>
+                <label htmlFor="rw-repo" className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Repository *</label>
                 <input
+                  id="rw-repo"
                   value={form.repo}
                   onChange={e => setForm(f => ({ ...f, repo: e.target.value }))}
                   placeholder="repo"
-                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  pattern="[A-Za-z0-9_.-]+"
+                  aria-describedby="rw-repo-hint"
+                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
                 />
+                <span id="rw-repo-hint" className="sr-only">GitHub repository name</span>
               </div>
             </div>
 
@@ -212,7 +220,7 @@ export default function RepoWelcome() {
                   onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                   placeholder="ghp_xxxxxxxxxxxx"
                   type="password"
-                  className="mt-2 w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  className="mt-2 w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
                 />
               )}
             </div>
@@ -258,7 +266,7 @@ export default function RepoWelcome() {
         {/* Continue with env */}
         {envRepo?.slug && (
           <div className="text-center">
-            <p className="text-[11px] text-gray-600 mb-2">
+            <p className="text-[11px] text-gray-400 mb-2">
               Or continue with the environment default:
             </p>
             <button

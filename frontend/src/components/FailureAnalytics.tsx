@@ -120,7 +120,7 @@ export default function FailureAnalytics() {
       <div className="flex items-center gap-2">
         <Activity size={14} className="text-accent-blue" />
         <h2 className="text-xs font-bold text-white uppercase tracking-wider">Failure Intelligence</h2>
-        <span className="text-[10px] text-gray-600">— pipeline health, patterns &amp; remediation</span>
+        <span className="text-[10px] text-gray-400">— pipeline health, patterns &amp; remediation</span>
       </div>
 
       {/* ── Row 1: Build timeline + Failure type pie ─────────────────────── */}
@@ -206,7 +206,7 @@ export default function FailureAnalytics() {
           <div className="flex items-center gap-2 mb-3">
             <Shield size={12} className="text-accent-red" />
             <p className="text-[11px] font-semibold text-white">Recurring Failure Patterns</p>
-            <span className="text-[10px] text-gray-600">% of total failures sharing same root cause</span>
+            <span className="text-[10px] text-gray-400">% of total failures sharing same root cause</span>
           </div>
           {patterns.length > 0 ? (
             <div className="space-y-2">
@@ -248,7 +248,7 @@ export default function FailureAnalytics() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-gray-300 leading-relaxed">{rc.cause}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[9px] text-gray-600 capitalize">{rc.scope}</span>
+                      <span className="text-[9px] text-gray-400 capitalize">{rc.scope}</span>
                       <span className="text-[9px]" style={{ color: PRIORITY_COLOR[rc.priority] ?? '#86939e' }}>{rc.priority}</span>
                     </div>
                   </div>
@@ -265,7 +265,7 @@ export default function FailureAnalytics() {
           <div className="flex items-center gap-2 mb-3">
             <Users size={12} className="text-accent-blue" />
             <p className="text-[11px] font-semibold text-white">Top Committers</p>
-            <span className="text-[10px] text-gray-600">by total commits</span>
+            <span className="text-[10px] text-gray-400">by total commits</span>
           </div>
           {topContribs.length > 0 ? (
             <div className="space-y-1.5">
@@ -274,7 +274,7 @@ export default function FailureAnalytics() {
                 const pct = Math.round((c.total / maxCommits) * 100)
                 return (
                   <div key={c.login} className="flex items-center gap-2.5">
-                    <span className="text-[9px] text-gray-600 w-3 text-right flex-shrink-0">{i + 1}</span>
+                    <span className="text-[9px] text-gray-400 w-3 text-right flex-shrink-0">{i + 1}</span>
                     <img
                       src={c.avatar_url} alt={c.login}
                       className="w-5 h-5 rounded-full flex-shrink-0 border border-border"
@@ -333,7 +333,7 @@ export default function FailureAnalytics() {
           {/* In-progress items */}
           {inProgressItems.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">Active Work</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Active Work</p>
               {inProgressItems.slice(0, 5).map((item: any) => (
                 <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg bg-surface-2 border border-border">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse flex-shrink-0 mt-1.5" />
@@ -341,11 +341,11 @@ export default function FailureAnalytics() {
                     <p className="text-[10px] text-white font-medium leading-snug truncate">{item.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[9px]" style={{ color: PRIORITY_COLOR[item.priority] ?? '#86939e' }}>{item.priority}</span>
-                      <span className="text-[9px] text-gray-600">·</span>
+                      <span className="text-[9px] text-gray-400">·</span>
                       <span className="text-[9px] text-gray-500 capitalize">{item.scope}</span>
                       {item.active_prs?.length > 0 && ghBase && (
                         <>
-                          <span className="text-[9px] text-gray-600">·</span>
+                          <span className="text-[9px] text-gray-400">·</span>
                           <div className="flex gap-1">
                             {item.active_prs.slice(0, 2).map((pr: number) => (
                               <a key={pr} href={`${ghBase}/pull/${pr}`} target="_blank" rel="noreferrer"
@@ -395,11 +395,11 @@ export default function FailureAnalytics() {
                     <p className="text-[10px] text-white font-medium leading-snug">{item.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-[9px] capitalize text-gray-500">{item.scope}</span>
-                      <span className="text-[9px] text-gray-700">·</span>
+                      <span className="text-[9px] text-gray-400">·</span>
                       <span className="text-[9px] capitalize text-gray-500">{item.category}</span>
                       {item.estimated_savings?.pass_rate_delta && (
                         <>
-                          <span className="text-[9px] text-gray-700">·</span>
+                          <span className="text-[9px] text-gray-400">·</span>
                           <span className="text-[9px] text-accent-green font-semibold">{item.estimated_savings.pass_rate_delta}</span>
                         </>
                       )}
@@ -416,7 +416,7 @@ export default function FailureAnalytics() {
                         WIP
                       </span>
                     ) : (
-                      <span className="text-[9px] text-gray-600 bg-surface-3 border border-border px-1.5 py-0.5 rounded">Open</span>
+                      <span className="text-[9px] text-gray-400 bg-surface-3 border border-border px-1.5 py-0.5 rounded">Open</span>
                     )}
                     {item.active_prs?.length > 0 && ghBase && (
                       <a href={`${ghBase}/pull/${item.active_prs[0]}`} target="_blank" rel="noreferrer"
@@ -451,7 +451,7 @@ function FailurePct({ pct }: { pct: number }) {
         <circle cx="16" cy="16" r={r} fill="none" stroke={color} strokeWidth={stroke}
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
       </svg>
-      <span className="absolute text-[8px] font-bold" style={{ color }}>{pct}</span>
+      <span className="absolute text-[9px] font-bold" style={{ color }}>{pct}</span>
     </div>
   )
 }
@@ -467,7 +467,7 @@ function StatMini({ label, value, color, bg }: { label: string; value: number; c
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center py-8 text-[11px] text-gray-600">
+    <div className="flex items-center justify-center py-8 text-[11px] text-gray-400">
       {label}
     </div>
   )

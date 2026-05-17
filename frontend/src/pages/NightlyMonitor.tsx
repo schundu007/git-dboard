@@ -32,9 +32,9 @@ function cellStyle(status: string | undefined) {
 // ── Job-level matrix ─────────────────────────────────────────────────────────
 
 function MatrixTable() {
-  const [days, setDays] = useState(14)
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['nightly-matrix', days],
     queryFn: () => getNightlyMatrix(days),
     refetchInterval: 120_000,
@@ -47,6 +47,11 @@ function MatrixTable() {
       </div>
     )
   }
+  if (isError) return (
+    <div className="text-center py-10 text-[12px] text-gray-500">
+      Failed to load nightly matrix — <button onClick={() => refetch()} className="text-accent-blue hover:underline">retry</button>
+    </div>
+  )
 
   const dates: string[] = data?.dates ?? []
   const matrix: Record<string, Record<string, any>> = data?.matrix ?? {}
@@ -55,7 +60,7 @@ function MatrixTable() {
   const consecutive: Record<string, number> = data?.consecutive_failures ?? {}
 
   if (dates.length === 0) {
-    return <p className="text-gray-600 text-sm text-center py-6">No nightly runs found.</p>
+    return <p className="text-gray-400 text-sm text-center py-6">No nightly runs found.</p>
   }
 
   return (
@@ -64,7 +69,7 @@ function MatrixTable() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs">
           <span className="text-gray-500">Window:</span>
-          {[7, 14, 21, 30].map((d) => (
+          {([1, 3, 7, 14, 130] as const).map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
@@ -82,7 +87,7 @@ function MatrixTable() {
             { sym: '✓', cls: 'text-accent-green', label: 'pass' },
             { sym: '✗', cls: 'text-accent-red', label: 'fail' },
             { sym: '~', cls: 'text-accent-blue', label: 'running' },
-            { sym: '—', cls: 'text-gray-600', label: 'no run' },
+            { sym: '—', cls: 'text-gray-400', label: 'no run' },
           ].map(({ sym, cls, label }) => (
             <span key={label} className="flex items-center gap-1">
               <span className={cls}>{sym}</span> {label}
@@ -116,12 +121,12 @@ function MatrixTable() {
               {dates.map((d) => (
                 <th
                   key={d}
-                  className="text-[9px] text-gray-600 font-normal pb-2 px-0.5 text-center whitespace-nowrap"
+                  className="text-[9px] text-gray-400 font-normal pb-2 px-0.5 text-center whitespace-nowrap"
                 >
                   {d.slice(5)}
                 </th>
               ))}
-              <th className="text-[9px] text-gray-600 font-normal pb-2 px-2 text-center whitespace-nowrap">
+              <th className="text-[9px] text-gray-400 font-normal pb-2 px-2 text-center whitespace-nowrap">
                 Streak
               </th>
             </tr>
@@ -160,7 +165,7 @@ function MatrixTable() {
                             </span>
                           </a>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-7 h-5 rounded text-[10px] text-gray-700">
+                          <span className="inline-flex items-center justify-center w-7 h-5 rounded text-[10px] text-gray-400">
                             —
                           </span>
                         )}
@@ -171,7 +176,7 @@ function MatrixTable() {
                     {streak > 0 ? (
                       <span className="text-[10px] text-accent-red font-semibold">{streak}×</span>
                     ) : (
-                      <span className="text-[10px] text-gray-600">—</span>
+                      <span className="text-[10px] text-gray-400">—</span>
                     )}
                   </td>
                 </tr>
@@ -187,7 +192,7 @@ function MatrixTable() {
 // ── Trend chart ───────────────────────────────────────────────────────────────
 
 function TrendChart() {
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading } = useQuery({
     queryKey: ['nightly-trend', days],
     queryFn: () => getNightlyTrend(days),
@@ -199,11 +204,9 @@ function TrendChart() {
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Pass Rate Trend
-        </h2>
+        <span className="section-head">Pass Rate Trend</span>
         <div className="flex items-center gap-1 text-[10px]">
-          {[14, 30, 60, 90].map((d) => (
+          {([1, 3, 7, 14, 130] as const).map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
@@ -214,8 +217,8 @@ function TrendChart() {
           ))}
         </div>
       </div>
-      {isLoading && <div className="h-[120px] flex items-center justify-center text-gray-600 text-xs">Loading…</div>}
-      {!isLoading && trend.length === 0 && <div className="h-[120px] flex items-center justify-center text-gray-600 text-xs">No data in this window.</div>}
+      {isLoading && <div className="h-[120px] flex items-center justify-center text-gray-400 text-xs">Loading…</div>}
+      {!isLoading && trend.length === 0 && <div className="h-[120px] flex items-center justify-center text-gray-400 text-xs">No data in this window.</div>}
       {!isLoading && trend.length > 0 && <ResponsiveContainer width="100%" height={120}>
         <LineChart data={trend}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" />
@@ -274,15 +277,15 @@ function NightlyFailureDetail({ runId }: { runId: number }) {
 
       {open && (
         <div className="mt-2 bg-black/40 rounded border border-red-900/40 p-2.5 space-y-3">
-          {isLoading && <p className="text-[10px] text-gray-600">Fetching job logs…</p>}
+          {isLoading && <p className="text-[10px] text-gray-400">Fetching job logs…</p>}
           {data?.summaries?.length === 0 && !isLoading && (
-            <p className="text-[10px] text-gray-600">No failed jobs found in this run.</p>
+            <p className="text-[10px] text-gray-400">No failed jobs found in this run.</p>
           )}
           {data?.summaries?.map((s: any, i: number) => (
             <div key={i} className="space-y-1">
               <p className="text-[10px] font-semibold text-accent-red flex items-center gap-1">
                 <XCircle size={9} /> {s.job}
-                {s.runner && <span className="text-gray-600 font-normal ml-1">on {s.runner}</span>}
+                {s.runner && <span className="text-gray-400 font-normal ml-1">on {s.runner}</span>}
               </p>
               {s.failed_steps?.map((step: any) => (
                 <p key={step.number} className="text-[10px] text-orange-400 pl-3 flex items-center gap-1">
@@ -326,7 +329,7 @@ function RecentRuns() {
 
   return (
     <div className="space-y-2">
-      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Runs</h2>
+      <div className="section-head">Recent Runs</div>
       {runs.slice(0, 15).map((r) => {
         const isFailed = r.conclusion === 'failure' || r.conclusion === 'timed_out'
         const isRunning = r.status === 'in_progress' || r.status === 'queued'
@@ -417,9 +420,7 @@ export default function NightlyMonitor() {
       <TrendChart />
 
       <div className="bg-surface-1 border border-border rounded-xl p-4">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-          Isaac Sim Compatibility Matrix
-        </h2>
+        <div className="section-head">Isaac Sim Compatibility Matrix</div>
         <MatrixTable />
       </div>
 

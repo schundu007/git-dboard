@@ -252,6 +252,20 @@ async def security_overview():
             "severity": "low",
             "details": "Development branch should have at least basic protection to prevent accidental force pushes.",
         },
+        {
+            "id": "enforce-admins",
+            "name": "Branch protection enforced for admins",
+            "status": "pass" if main_prot["enforce_admins"] else "warn",
+            "severity": "medium",
+            "details": "Admin bypass allows repository owners to merge without reviews, creating an audit gap. Enable enforce_admins to close it.",
+        },
+        {
+            "id": "advanced-security-ghas",
+            "name": "GitHub Advanced Security (GHAS) enabled",
+            "status": "pass" if features["advanced_security"] else "warn",
+            "severity": "medium",
+            "details": "GHAS unlocks CodeQL code scanning, secret scanning, and security overview. Required for SLSA L2+ supply-chain attestation.",
+        },
     ]
 
     passed  = sum(1 for c in compliance_checks if c["status"] == "pass")

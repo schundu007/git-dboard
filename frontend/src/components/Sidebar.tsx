@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, useLocation, Link } from 'react-router-dom'
+import GitPulseLogo from './GitPulseLogo'
 import {
-  LayoutDashboard, GitPullRequest, Container, Moon, ScrollText,
-  Server, Layers, GitBranch, CircleDot, TrendingUp,
-  ShieldCheck, Shield, BarChart2, Cpu, Tag, Lightbulb, ChevronLeft, ChevronRight,
+  LayoutDashboard, GitPullRequest, Container,
+  Server, Layers, GitBranch,
+  Shield, BarChart2, Cpu, Lightbulb, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
-  Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink,
+  Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, BookOpen, Terminal,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -23,42 +24,42 @@ const NAV: NavSection[] = [
   {
     label: 'Overview',
     items: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+      { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'   },
+      { to: '/action-plan', icon: Lightbulb,       label: 'Action Plan' },
     ],
   },
   {
     label: 'Source Control',
     items: [
-      { to: '/prs',      icon: GitPullRequest, label: 'PR Hub' },
-      { to: '/issues',   icon: CircleDot,      label: 'Issues' },
-      { to: '/branches', icon: GitBranch,      label: 'Branches' },
+      { to: '/prs',      icon: GitPullRequest, label: 'Source Control' },
     ],
   },
   {
     label: 'CI / CD',
     items: [
-      { to: '/builds',   icon: Container, label: 'Builds' },
-      { to: '/nightly',  icon: Moon,      label: 'Nightly' },
-      { to: '/registry', icon: Layers,    label: 'Registry' },
-      { to: '/tags',     icon: Tag,       label: 'Image Tags' },
+      { to: '/builds',   icon: Container, label: 'CI Pipeline' },
+      { to: '/registry', icon: Layers,    label: 'Registry'    },
     ],
   },
   {
     label: 'Infrastructure',
     items: [
-      { to: '/infra',       icon: Server,      label: 'Runners' },
-      { to: '/health',      icon: ShieldCheck, label: 'Health' },
-      { to: '/improvement', icon: Lightbulb,   label: 'Improvements' },
-      { to: '/security',    icon: Shield,      label: 'Security' },
+      { to: '/infra',    icon: Server, label: 'Infrastructure' },
+      { to: '/security', icon: Shield, label: 'Security'       },
     ],
   },
   {
     label: 'Observability',
     items: [
-      { to: '/logs',       icon: ScrollText,    label: 'Logs' },
-      { to: '/monitoring', icon: AlertTriangle,  label: 'Monitoring' },
-      { to: '/insights',   icon: TrendingUp,     label: 'Insights' },
-      { to: '/analytics',  icon: BarChart2,      label: 'Analytics' },
+      { to: '/monitoring', icon: AlertTriangle, label: 'Diagnostics' },
+      { to: '/analytics',  icon: BarChart2,     label: 'Analytics'   },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { to: '/scripts',    icon: BookOpen, label: 'Scripts'    },
+      { to: '/playground', icon: Terminal, label: 'Playground' },
     ],
   },
 ]
@@ -82,7 +83,7 @@ function SwitchingOverlay({ slug }: { slug: string }) {
         <p className="text-[14px] font-semibold text-white">Switching repository</p>
         <p className="text-[12px] text-gray-400 font-mono mt-1">{slug}</p>
       </div>
-      <p className="text-[11px] text-gray-600">Reloading dashboard…</p>
+      <p className="text-[11px] text-gray-400">Reloading dashboard…</p>
     </div>,
     document.body,
   )
@@ -219,7 +220,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
           open ? 'bg-surface-2' : 'hover:bg-surface-2/60',
         )}
       >
-        <div className="flex-shrink-0 w-[26px] h-[26px] rounded-[7px] bg-nvidia dark:bg-[#76b900]/15 flex items-center justify-center">
+        <div className="flex-shrink-0 w-[26px] h-[26px] rounded bg-nvidia dark:bg-[#76b900]/15 flex items-center justify-center">
           <Cpu size={12} className="text-[#0f1a00] dark:text-nvidia" />
         </div>
         {!collapsed && (
@@ -228,14 +229,14 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
               <p className="text-[13px] font-semibold tracking-[-0.02em] text-neutral-900 dark:text-white leading-none truncate">
                 {repoSlug ? repoSlug.split('/')[1] : 'Select repo'}
               </p>
-              <p className="text-[10px] text-neutral-500 dark:text-neutral-600 font-mono mt-0.5 leading-none">
+              <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono mt-0.5 leading-none">
                 {repoSlug ? repoSlug.split('/')[0] : 'No repo active'}
               </p>
             </div>
             <ChevronDown
               size={12}
               className={cn(
-                'flex-shrink-0 text-neutral-600 transition-transform duration-150',
+                'flex-shrink-0 text-neutral-400 transition-transform duration-150',
                 open && 'rotate-180',
               )}
             />
@@ -273,7 +274,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
               <div>
                 <label className="flex items-center gap-1 text-[9px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
                   <LinkIcon size={8} /> GitHub URL
-                  <span className="text-gray-600 normal-case font-normal ml-1">paste to auto-fill</span>
+                  <span className="text-gray-400 normal-case font-normal ml-1">paste to auto-fill</span>
                 </label>
                 <input
                   value={urlInput}
@@ -281,7 +282,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                   placeholder="https://github.com/owner/repo"
                   autoFocus
                   className={cn(
-                    'w-full bg-surface-3 border rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none transition-colors font-mono',
+                    'w-full bg-surface-3 border rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
                     urlError ? 'border-accent-red/50' : 'border-border focus:border-nvidia/50',
                   )}
                 />
@@ -302,7 +303,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                     value={form.owner}
                     onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
                     placeholder="owner"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
                   />
                 </div>
                 <div>
@@ -311,7 +312,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                     value={form.repo}
                     onChange={e => setForm(f => ({ ...f, repo: e.target.value }))}
                     placeholder="repo"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -331,7 +332,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                     onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                     placeholder="ghp_xxxxxxxxxxxx"
                     type="password"
-                    className="mt-1 w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="mt-1 w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
                   />
                 )}
               </div>
@@ -378,7 +379,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
           <div className="max-h-[260px] overflow-y-auto">
             {repos.length === 0 && !showAddForm && (
               <div className="px-3 py-6 text-center">
-                <p className="text-[11px] text-gray-600">No saved repos.</p>
+                <p className="text-[11px] text-gray-400">No saved repos.</p>
                 <button
                   onClick={() => setShowAddForm(true)}
                   className="mt-2 text-[11px] text-nvidia hover:underline"
@@ -415,13 +416,13 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                     )}>
                       {slug.split('/')[1] ?? slug}
                     </p>
-                    <p className="text-[10px] text-gray-600 font-mono mt-0.5 truncate">{slug.split('/')[0]}</p>
+                    <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">{slug.split('/')[0]}</p>
                   </div>
                   {isActive && (
                     <Check size={12} className="text-nvidia flex-shrink-0" />
                   )}
                   {!isActive && (
-                    <span className="text-[9px] text-gray-600 opacity-0 group-hover:opacity-100">Switch</span>
+                    <span className="text-[9px] text-gray-400 opacity-0 group-hover:opacity-100">Switch</span>
                   )}
                 </button>
               )
@@ -433,7 +434,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
             <Link
               to="/settings"
               onClick={closePanel}
-              className="flex items-center gap-1.5 text-[10px] text-gray-600 hover:text-gray-300 transition-colors"
+              className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-gray-100 transition-colors"
             >
               <Settings size={10} />
               Manage in Settings
@@ -457,12 +458,13 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
     <NavLink
       to={item.to}
       end={item.exact}
+      aria-label={collapsed ? item.label : undefined}
       className={cn(
         'group flex items-center gap-2.5 rounded-md transition-all duration-150 select-none',
-        collapsed ? 'justify-center h-8 w-8 mx-auto' : 'px-2.5 py-[7px] mx-2',
+        collapsed ? 'justify-center h-7 w-7 mx-auto' : 'px-2.5 py-[6px] mx-2',
         isActive
-          ? 'bg-nvidia text-[#0f1a00] dark:bg-[#76b900]/15 dark:text-nvidia font-semibold'
-          : 'text-neutral-600 dark:text-neutral-400 hover:bg-[#76b900]/[.08] hover:text-[#2d4e00] dark:hover:bg-surface-2 dark:hover:text-neutral-100',
+          ? 'bg-surface-3 text-white dark:bg-surface-2 dark:text-white font-semibold'
+          : 'text-neutral-400 dark:text-neutral-400 hover:bg-surface-2/60 hover:text-neutral-100 dark:hover:bg-surface-2 dark:hover:text-neutral-100',
       )}
     >
       <item.icon
@@ -470,8 +472,8 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
         className={cn(
           'flex-shrink-0 transition-colors duration-150',
           isActive
-            ? 'text-[#0f1a00] dark:text-nvidia'
-            : 'text-neutral-500 dark:text-neutral-400 group-hover:text-[#2d4e00] dark:group-hover:text-neutral-200',
+            ? 'text-white dark:text-white'
+            : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-200 dark:group-hover:text-neutral-200',
         )}
       />
       {!collapsed && (
@@ -511,21 +513,30 @@ export default function Sidebar() {
         collapsed ? 'w-[60px]' : 'w-[220px]',
       )}
     >
-      {/* Brand / Repo Switcher */}
+      {/* App wordmark / icon — links to home */}
+      <Link
+        to="/"
+        className={cn(
+          'flex items-center border-b border-border/40 hover:opacity-80 transition-opacity',
+          collapsed ? 'justify-center py-2 px-0' : 'px-3.5 py-2.5',
+        )}
+      >
+        {collapsed
+          ? <GitPulseLogo size={20} className="text-nvidia" />
+          : <GitPulseLogo size={18} withText textSize="text-[13px]" className="text-nvidia" />
+        }
+      </Link>
+
+      {/* Repo Switcher */}
       <RepoSwitcher collapsed={collapsed} />
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 scrollbar-none">
         <RadixTooltip.Provider delayDuration={80}>
           {NAV.map((section, si) => (
-            <div key={section.label} className={cn(si > 0 && 'mt-3')}>
-              {!collapsed && (
-                <p className="px-4 pb-1 pt-1 section-label">
-                  {section.label}
-                </p>
-              )}
-              {collapsed && si > 0 && (
-                <div className="mx-3 my-2 h-px bg-border-subtle" />
+            <div key={section.label} className={cn(si > 0 && 'mt-1')}>
+              {si > 0 && (
+                <div className="mx-3 my-1.5 h-px bg-border-subtle" />
               )}
               <div className={cn('space-y-0.5', collapsed && 'flex flex-col items-center gap-0.5')}>
                 {section.items.map((item) => (
@@ -540,18 +551,18 @@ export default function Sidebar() {
       {/* Footer */}
       <div className={cn(
         'border-t border-border flex-shrink-0',
-        collapsed ? 'py-2.5 flex flex-col items-center gap-1.5' : 'px-3 py-3',
+        collapsed ? 'py-2 flex flex-col items-center gap-1.5' : 'px-3 py-2.5',
       )}>
         {!collapsed && (
           <div className="flex items-center gap-1.5 mb-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-            <span className="text-[11px] text-neutral-600 font-mono truncate">{repoSlug}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-nvidia flex-shrink-0" />
+            <span className="text-[11px] text-neutral-400 font-mono truncate">{repoSlug}</span>
           </div>
         )}
         {!collapsed && (
           <div className="flex items-center gap-1.5 mb-2">
-            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-surface-2 ring-1 ring-border rounded text-neutral-600">⌘K</kbd>
-            <span className="text-[10px] text-neutral-700">command palette</span>
+            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-surface-2 ring-1 ring-border rounded text-neutral-400">⌘K</kbd>
+            <span className="text-[10px] text-neutral-400">command palette</span>
           </div>
         )}
         <div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-1')}>
@@ -559,7 +570,7 @@ export default function Sidebar() {
             <Link
               to="/settings"
               className={cn(
-                'flex items-center justify-center rounded-md text-neutral-600 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
+                'flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
                 collapsed ? 'w-8 h-8' : 'w-8 h-7',
               )}
             >
@@ -570,8 +581,10 @@ export default function Sidebar() {
           <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse'} side="right" delayDuration={80}>
             <button
               onClick={toggle}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-expanded={!collapsed}
               className={cn(
-                'flex items-center justify-center rounded-md text-neutral-600 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
+                'flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
                 collapsed ? 'w-8 h-8' : 'flex-1 h-7 gap-1.5 px-2 text-[11px]',
               )}
             >

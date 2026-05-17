@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -6,7 +8,45 @@ from services import pr_automation
 from services.pr_automation import RUNNER_RECOMMENDATIONS
 from services import github_client as gh
 
+try:
+    from anthropic import AsyncAnthropic
+    _ANTHROPIC_AVAILABLE = True
+except ImportError:
+    _ANTHROPIC_AVAILABLE = False
+
 router = APIRouter(prefix="/automation", tags=["automation"])
+
+_ANALYSIS_SYSTEM_PROMPT = """\
+You are a senior DevOps and software engineer performing a thorough code review.
+Analyze the provided script and return ONLY a JSON object (no markdown, no extra text) with this exact schema:
+
+{
+  "errors": [
+    {
+      "line": <integer or null>,
+      "title": "<short issue title>",
+      "description": "<detailed explanation of the problem>",
+      "severity": "<high|medium|low>"
+    }
+  ],
+  "enhancements": [
+    {
+      "title": "<short enhancement title>",
+      "description": "<what to improve and why>",
+      "example": "<optional: short code snippet showing the improvement, or null>"
+    }
+  ],
+  "explanation": "<2-4 paragraph explanation of what the script does, its purpose, key logic, and notable patterns>",
+  "corrected_script": "<the complete corrected and improved script with all errors fixed>"
+}
+
+Rules:
+- errors: real bugs, security issues, missing error handling, incorrect logic. Empty array if none found.
+- enhancements: style improvements, performance, robustness, best practices. Always provide at least 2.
+- explanation: clear prose, no bullet points, explain to someone unfamiliar with the code.
+- corrected_script: full working script, not a diff. Keep inline comments minimal.
+- Return ONLY the JSON object. No markdown code fences. No preamble.\
+"""
 
 
 class ConfigUpdate(BaseModel):
@@ -112,3 +152,45 @@ async def get_runner_recommendations():
         ]
 
     return {"recommendations": recs, "best_practices": best_practices, "has_gpu": has_gpu}
+
+
+class ScriptAnalysisRequest(BaseModel):
+    script: str
+    language: str = "python"
+
+
+@router.post("/analyze-script")
+async def analyze_script(body: ScriptAnalysisRequest):
+    if not _ANTHROPIC_AVAILABLE:
+        raise HTTPException(503, "anthropic package is not installed — run: pip install anthropic")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY is not set on the server")
+    if not body.script.strip():
+        raise HTTPException(400, "script must not be empty")
+
+    client = AsyncAnthropic(api_key=api_key)
+    try:
+        message = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            system=_ANALYSIS_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Language: {body.language}\n\n"
+                        f"Script to analyze:\n\n"
+                        f"```{body.language}\n{body.script}\n```"
+                    ),
+                }
+            ],
+        )
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(500, f"Failed to parse analysis response: {exc}") from exc
+    except Exception as exc:
+        raise HTTPException(500, str(exc)) from exc

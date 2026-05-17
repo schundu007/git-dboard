@@ -96,17 +96,17 @@ function PulseTab() {
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Commits (4 weeks)</p>
           <p className="text-2xl font-semibold text-white tabular-nums">{data.recent_commits ?? 0}</p>
-          <p className="text-[10px] text-gray-600">across all branches</p>
+          <p className="text-[10px] text-gray-400">across all branches</p>
         </div>
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Issues Opened (30d)</p>
           <p className="text-2xl font-semibold text-accent-red tabular-nums">{data.new_issues_30d ?? 0}</p>
-          <p className="text-[10px] text-gray-600">new issues opened</p>
+          <p className="text-[10px] text-gray-400">new issues opened</p>
         </div>
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Issues Closed (30d)</p>
           <p className="text-2xl font-semibold text-accent-green tabular-nums">{data.closed_issues_30d ?? 0}</p>
-          <p className="text-[10px] text-gray-600">resolved recently</p>
+          <p className="text-[10px] text-gray-400">resolved recently</p>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ function PulseTab() {
             <p className="text-sm text-gray-300">{data.description}</p>
           </div>
           {data.size_kb && (
-            <p className="text-[10px] text-gray-600 mt-2">Repository size: {(data.size_kb / 1024).toFixed(1)} MB</p>
+            <p className="text-[10px] text-gray-400 mt-2">Repository size: {(data.size_kb / 1024).toFixed(1)} MB</p>
           )}
         </div>
       )}
@@ -157,7 +157,7 @@ function ComputingNotice() {
         <span className="inline-block w-2 h-2 rounded-full bg-nvidia animate-pulse" />
         GitHub is computing stats — auto-retrying…
       </div>
-      <p className="text-[11px] text-gray-600">This can take up to 60 seconds for large repos</p>
+      <p className="text-[11px] text-gray-400">This can take up to 60 seconds for large repos</p>
     </div>
   )
 }
@@ -218,7 +218,7 @@ function ContributorsTab() {
           return (
             <div key={c.login} className="bg-surface-1 border border-border rounded-xl p-3">
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-gray-600 w-5 text-right flex-shrink-0">#{idx + 1}</span>
+                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">#{idx + 1}</span>
                 {c.avatar_url && <img src={c.avatar_url} className="w-6 h-6 rounded-full flex-shrink-0" alt="" />}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -246,7 +246,7 @@ function ContributorsTab() {
                   </div>
                 ) : (
                   <div className="w-24 h-6 flex-shrink-0 flex items-center justify-end">
-                    <span className="text-[9px] text-gray-700">no weekly data</span>
+                    <span className="text-[9px] text-gray-400">no weekly data</span>
                   </div>
                 )}
               </div>
@@ -345,19 +345,19 @@ function CodeFrequencyTab() {
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Lines Added</p>
           <p className="text-2xl font-semibold text-accent-green tabular-nums">+{totalAdded.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-600">last 52 weeks</p>
+          <p className="text-[10px] text-gray-400">last 52 weeks</p>
         </div>
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Lines Deleted</p>
           <p className="text-2xl font-semibold text-accent-red tabular-nums">-{totalDeleted.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-600">last 52 weeks</p>
+          <p className="text-[10px] text-gray-400">last 52 weeks</p>
         </div>
         <div className="bg-surface-1 border border-border rounded-lg p-3 space-y-1">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">Net Change</p>
           <p className={clsx('text-2xl font-semibold tabular-nums', netChange >= 0 ? 'text-accent-green' : 'text-accent-red')}>
             {netChange >= 0 ? '+' : ''}{netChange.toLocaleString()}
           </p>
-          <p className="text-[10px] text-gray-600">lines of code</p>
+          <p className="text-[10px] text-gray-400">lines of code</p>
         </div>
       </div>
 
@@ -423,7 +423,7 @@ function ForksTab() {
                 className="text-xs font-medium text-white hover:text-neutral-300 transition-colors truncate block">
                 {f.full_name}
               </a>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600">
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
                 <span className="flex items-center gap-0.5"><Star size={8} className="text-neutral-400" /> {f.stars}</span>
                 <span className="flex items-center gap-0.5"><GitFork size={8} /> {f.forks}</span>
                 {f.pushed_at && (
@@ -432,7 +432,7 @@ function ForksTab() {
               </div>
             </div>
             <a href={f.html_url} target="_blank" rel="noreferrer">
-              <ExternalLink size={11} className="text-gray-600 hover:text-neutral-300 flex-shrink-0" />
+              <ExternalLink size={11} className="text-gray-400 hover:text-neutral-300 flex-shrink-0" />
             </a>
           </div>
         ))}
@@ -488,8 +488,8 @@ function BuildTrendsTab() {
             <span className="text-accent-red">{summary.failed} failed</span>
           </div>
         )}
-        {btLoading ? <p className="text-gray-600 text-sm text-center py-6">Loading…</p>
-          : series.length === 0 ? <p className="text-gray-600 text-sm text-center py-6">No data in window.</p>
+        {btLoading ? <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
+          : series.length === 0 ? <p className="text-gray-400 text-sm text-center py-6">No data in window.</p>
           : (
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={series}>
@@ -582,7 +582,7 @@ function PRVelocityTab() {
                   <img src={a.avatar_url} className="w-4 h-4 rounded-full flex-shrink-0" alt="" />
                   <span className="text-gray-300 truncate flex-1">{a.login}</span>
                   <span className="text-nvidia font-semibold tabular-nums">{a.merged}</span>
-                  <span className="text-gray-600">merged</span>
+                  <span className="text-gray-400">merged</span>
                 </div>
               ))}
             </div>
@@ -641,8 +641,8 @@ function FailureAnalysisTab() {
             ))}
           </div>
         </div>
-        {isLoading ? <p className="text-gray-600 text-sm text-center py-6">Loading…</p>
-          : jobs.length === 0 ? <p className="text-gray-600 text-sm text-center py-6">No data.</p>
+        {isLoading ? <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
+          : jobs.length === 0 ? <p className="text-gray-400 text-sm text-center py-6">No data.</p>
           : (
           <>
             <ResponsiveContainer width="100%" height={Math.max(jobs.length * 30, 120)}>
@@ -666,7 +666,7 @@ function FailureAnalysisTab() {
                     <span className={clsx('font-semibold', j.failure_rate >= 50 ? 'text-accent-red' : j.failure_rate >= 20 ? 'text-neutral-300' : j.failure_rate > 0 ? 'text-neutral-400' : 'text-nvidia')}>
                       {j.failure_rate}%
                     </span>
-                    <span className="text-gray-600">{j.failed}/{j.total}</span>
+                    <span className="text-gray-400">{j.failed}/{j.total}</span>
                     {j.consecutive_failures > 0 && <span className="text-accent-red">streak: {j.consecutive_failures}</span>}
                   </div>
                 </div>
@@ -684,9 +684,9 @@ function FailureAnalysisTab() {
 function InsightSection({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <div className="flex items-center gap-2 border-b border-border pb-2">
-        <Icon size={13} className="text-neutral-500 flex-shrink-0" />
-        <h2 className="text-sm font-semibold text-white">{label}</h2>
+      <div className="section-head">
+        <Icon size={13} className="flex-shrink-0" />
+        {label}
       </div>
       {children}
     </section>

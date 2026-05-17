@@ -18,7 +18,7 @@ const getApiUrl = () => localStorage.getItem('api_url') || 'http://localhost:800
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
+      <div className="px-4 py-3 border-b border-border card-head">
         <h2 className="text-[13px] font-semibold text-white">{title}</h2>
       </div>
       <div className="p-4 space-y-4">{children}</div>
@@ -89,8 +89,9 @@ function ApiSection() {
       </Row>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Server size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600" />
+          <Server size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
+            type="url"
             value={apiDraft}
             onChange={e => setApiDraft(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && save()}
@@ -104,7 +105,8 @@ function ApiSection() {
           {saved ? 'Saved' : 'Save'}
         </button>
         <button onClick={() => testConnection(apiDraft)}
-          className="px-3 py-1.5 rounded-lg text-[12px] border border-border bg-surface-2 text-gray-400 hover:border-neutral-500 transition-colors flex-shrink-0">
+          disabled={testState === 'loading'}
+          className="px-3 py-1.5 rounded-lg text-[12px] border border-border bg-surface-2 text-gray-400 hover:border-neutral-500 disabled:opacity-40 transition-colors flex-shrink-0">
           Test
         </button>
       </div>
@@ -123,14 +125,14 @@ function GitHubSection() {
         description={token ? 'Configured via VITE_GITHUB_TOKEN' : 'Not set — add to .env and restart Vite'}
       >
         <div className="flex items-center gap-1.5">
-          <Key size={12} className={token ? 'text-nvidia' : 'text-gray-600'} />
-          <span className={cn('text-[11px] font-mono', token ? 'text-nvidia' : 'text-gray-600')}>
+          <Key size={12} className={token ? 'text-nvidia' : 'text-gray-400'} />
+          <span className={cn('text-[11px] font-mono', token ? 'text-nvidia' : 'text-gray-400')}>
             {token ? `${token.slice(0, 4)}${'•'.repeat(12)}` : 'not set'}
           </span>
         </div>
       </Row>
-      <p className="text-[11px] text-gray-600 bg-surface-2 rounded-lg px-3 py-2 font-mono border border-border">
-        VITE_GITHUB_TOKEN=ghp_xxxx&nbsp;&nbsp;<span className="text-gray-700">← .env · restart Vite</span>
+      <p className="text-[11px] text-gray-400 bg-surface-2 rounded-lg px-3 py-2 font-mono border border-border">
+        VITE_GITHUB_TOKEN=ghp_xxxx&nbsp;&nbsp;<span className="text-gray-400">← .env · restart Vite</span>
       </p>
     </SectionCard>
   )
@@ -225,7 +227,7 @@ function SwitchingOverlay({ slug }: { slug: string }) {
         <p className="text-[14px] font-semibold text-white">Switching repository</p>
         <p className="text-[12px] text-gray-400 font-mono mt-1">{slug}</p>
       </div>
-      <p className="text-[11px] text-gray-600">Reloading dashboard…</p>
+      <p className="text-[11px] text-gray-400">Reloading dashboard…</p>
     </div>
   )
 }
@@ -303,7 +305,7 @@ function AlertRulesSection() {
 
   return (
     <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-border card-head flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell size={13} className="text-gray-500" />
           <h2 className="text-[13px] font-semibold text-white">Alert Rules</h2>
@@ -311,7 +313,7 @@ function AlertRulesSection() {
             {metCount} active
           </span>
         </div>
-        <p className="text-[10px] text-gray-600 hidden sm:block">
+        <p className="text-[10px] text-gray-400 hidden sm:block">
           Rules are evaluated on dashboard load. Future: push/email notifications.
         </p>
       </div>
@@ -371,20 +373,20 @@ function AlertRulesSection() {
                       'text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border',
                       rule.enabled
                         ? 'bg-accent-green/10 text-accent-green border-accent-green/30'
-                        : 'bg-surface-3 text-gray-600 border-border'
+                        : 'bg-surface-3 text-gray-400 border-border'
                     )}>
                       {rule.enabled ? 'Monitoring' : 'Paused'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-600 mt-0.5">{rule.description}</p>
-                  <p className="text-[9px] text-gray-700 font-mono mt-0.5">metric: {rule.metric}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{rule.description}</p>
+                  <p className="text-[9px] text-gray-400 font-mono mt-0.5">metric: {rule.metric}</p>
                 </div>
 
                 {/* Edit button */}
                 {!isEditing && (
                   <button
                     onClick={() => startEdit(rule)}
-                    className="flex-shrink-0 text-gray-600 hover:text-gray-300 transition-colors p-1 rounded hover:bg-surface-2"
+                    className="flex-shrink-0 text-gray-400 hover:text-gray-300 transition-colors p-1 rounded hover:bg-surface-2"
                     title="Edit threshold"
                   >
                     <Pencil size={11} />
@@ -502,7 +504,7 @@ export default function Settings() {
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-3 border border-border text-gray-500 font-mono">env</span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-600 mt-0.5">All dashboard pages fetch data from this repo.</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">All dashboard pages fetch data from this repo.</p>
             </div>
             {active.id && (
               <button
@@ -517,7 +519,7 @@ export default function Settings() {
 
         {/* Repo list card */}
         <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head card-head">
             <div className="flex items-center gap-2">
               <GitBranch size={13} className="text-gray-500" />
               <span className="text-[13px] font-semibold text-white">Repositories</span>
@@ -542,10 +544,10 @@ export default function Settings() {
             <div className="p-4 border-b border-border space-y-3 bg-surface-2/50">
               {/* GitHub URL paste */}
               <div>
-                <label className="flex items-center gap-1 text-xs font-semibold text-gray-600 mb-1">
+                <label className="flex items-center gap-1 text-xs font-semibold text-gray-400 mb-1">
                   <Link size={9} />
                   GitHub URL
-                  <span className="text-gray-600 normal-case font-normal ml-1">(paste to auto-fill)</span>
+                  <span className="text-gray-400 normal-case font-normal ml-1">(paste to auto-fill)</span>
                 </label>
                 <input
                   value={urlInput}
@@ -553,7 +555,7 @@ export default function Settings() {
                   placeholder="https://github.com/owner/repo"
                   autoFocus
                   className={cn(
-                    'w-full bg-surface-3 border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none transition-colors font-mono',
+                    'w-full bg-surface-3 border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
                     urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-nvidia/50',
                   )}
                 />
@@ -566,7 +568,7 @@ export default function Settings() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-[10px] text-gray-600">
+              <div className="flex items-center gap-2 text-[10px] text-gray-400">
                 <div className="flex-1 h-px bg-border" />
                 <span>or enter manually</span>
                 <div className="flex-1 h-px bg-border" />
@@ -574,43 +576,43 @@ export default function Settings() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Owner / Org *</label>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1">Owner / Org *</label>
                   <input
                     value={form.owner}
                     onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
                     placeholder="e.g. isaac-sim"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Repository *</label>
+                  <label className="block text-xs font-semibold text-gray-400 mb-1">Repository *</label>
                   <input
                     value={form.repo}
                     onChange={e => setForm(f => ({ ...f, repo: e.target.value }))}
-                    placeholder="e.g. IsaacLab"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors"
+                    placeholder="e.g. my-repo"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Display Name</label>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Display Name</label>
                 <input
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Auto-filled on test"
-                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors"
+                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  GitHub PAT <span className="text-gray-600 normal-case font-normal">(leave blank to use env GH_PAT)</span>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">
+                  GitHub PAT <span className="text-gray-400 normal-case font-normal">(leave blank to use env GH_PAT)</span>
                 </label>
                 <input
                   type="password"
                   value={form.gh_pat}
                   onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                   placeholder="ghp_…"
-                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
                 />
               </div>
 
@@ -661,14 +663,14 @@ export default function Settings() {
 
           {/* Repo rows */}
           {isLoading ? (
-            <div className="p-8 text-center text-[12px] text-gray-600 flex items-center justify-center gap-2">
+            <div className="p-8 text-center text-[12px] text-gray-400 flex items-center justify-center gap-2">
               <Loader2 size={13} className="animate-spin" /> Loading…
             </div>
           ) : repos.length === 0 ? (
             <div className="p-8 text-center">
-              <Globe size={24} className="mx-auto text-gray-700 mb-2" />
-              <p className="text-[12px] text-gray-600">No repositories added yet.</p>
-              <p className="text-[11px] text-gray-700 mt-0.5">
+              <Globe size={24} className="mx-auto text-gray-400 mb-2" />
+              <p className="text-[12px] text-gray-400">No repositories added yet.</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
                 Using <span className="font-mono text-gray-500">{active?.slug}</span> from .env
               </p>
             </div>
@@ -698,15 +700,15 @@ export default function Settings() {
                               Active
                             </span>
                           )}
-                          {r.has_pat && <Lock size={10} className="text-gray-600" />}
+                          {r.has_pat && <Lock size={10} className="text-gray-400" />}
                         </div>
-                        <p className="text-[11px] text-gray-600 font-mono">{r.slug}</p>
+                        <p className="text-[11px] text-gray-400 font-mono">{r.slug}</p>
                       </div>
 
                       {caps.workflows?.length > 0 && (
                         <button
                           onClick={() => setExpandedCaps(showCaps ? null : r.id)}
-                          className="text-gray-600 hover:text-gray-400 transition-colors"
+                          className="text-gray-400 hover:text-gray-400 transition-colors"
                         >
                           {showCaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
@@ -725,7 +727,7 @@ export default function Settings() {
                         <button
                           onClick={() => deleteMut.mutate(r.id)}
                           disabled={deleteMut.isPending}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-accent-red hover:bg-accent-red/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-accent-red hover:bg-accent-red/10 transition-colors"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -744,7 +746,7 @@ export default function Settings() {
                         {caps.workflows?.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {caps.workflows.map((w: string) => (
-                              <span key={w} className="text-[10px] font-mono text-gray-600 bg-surface-3 border border-border px-1.5 py-0.5 rounded">
+                              <span key={w} className="text-[10px] font-mono text-gray-400 bg-surface-3 border border-border px-1.5 py-0.5 rounded">
                                 {w}
                               </span>
                             ))}
@@ -765,7 +767,7 @@ export default function Settings() {
             <AlertCircle size={12} />
             How repo switching works
           </div>
-          <ul className="space-y-1 text-[11px] text-gray-600 list-disc list-inside leading-relaxed">
+          <ul className="space-y-1 text-[11px] text-gray-400 list-disc list-inside leading-relaxed">
             <li>Switching clears all cached data and reloads the dashboard</li>
             <li>The active repo overrides <span className="font-mono text-gray-500">GH_OWNER / GH_REPO</span> from <span className="font-mono text-gray-500">.env</span></li>
             <li>A per-repo PAT overrides the env <span className="font-mono text-gray-500">GH_PAT</span> — useful for private repos</li>
@@ -785,8 +787,8 @@ export default function Settings() {
         {/* About */}
         <div className="rounded-xl border border-border bg-surface-1 p-4 space-y-1.5">
           <p className="text-[12px] text-gray-500 font-semibold">About</p>
-          <p className="text-[11px] text-gray-600">DevOps Dashboard</p>
-          <p className="text-[11px] text-gray-700 font-mono">React + Vite + FastAPI</p>
+          <p className="text-[11px] text-gray-400">DevOps Dashboard</p>
+          <p className="text-[11px] text-gray-400 font-mono">React + Vite + FastAPI</p>
         </div>
       </div>
     </>

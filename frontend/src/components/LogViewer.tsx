@@ -36,7 +36,7 @@ export default function LogViewer({ lines, autoScroll = true, maxHeight = '400px
     >
       <div className="p-3 space-y-0">
         {lines.length === 0 && (
-          <p className="text-gray-600 text-center py-6">No logs yet.</p>
+          <p className="text-gray-400 text-center py-6">No logs yet.</p>
         )}
         {lines.map((l, i) => {
           const lv = level(l.line)

@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
-  GitPullRequest, ExternalLink, RefreshCw, ChevronDown, ChevronUp,
+  GitPullRequest, GitBranch, CircleDot, ExternalLink, RefreshCw, ChevronDown, ChevronUp,
   Play, Lock, CheckCircle2, XCircle, Clock, AlertTriangle, Search,
   MessageSquare, FileText, AlertCircle, Users, Calendar, ShieldCheck,
   Zap, Cpu, ToggleLeft, ToggleRight, Server,
 } from 'lucide-react'
+import { BranchesTab, IssuesTab } from './BranchMonitor'
 import { formatDistanceToNow, differenceInDays } from 'date-fns'
 import {
   getPRs, getPRSummary, getPRReviews, getPRFiles,
@@ -17,6 +19,7 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import type { PR } from '../lib/types'
 import clsx from 'clsx'
+import { TabBar } from '../components/ui/TabBar'
 
 // ── Classification chip ───────────────────────────────────────────────────────
 
@@ -71,7 +74,7 @@ function GateOverviewBar({ days }: { days?: number }) {
         {pending > 0 && <span className="flex items-center gap-1 text-neutral-400"><Clock size={9} />{pending} pending</span>}
         {skipped > 0 && <span className="flex items-center gap-1 text-gray-400">{skipped} skipped</span>}
       </div>
-      <span className="ml-auto text-gray-600">{total} PRs evaluated</span>
+      <span className="ml-auto text-gray-400">{total} PRs evaluated</span>
     </div>
   )
 }
@@ -81,7 +84,7 @@ function GateOverviewBar({ days }: { days?: number }) {
 const CAT_ICON: Record<string, string> = { success: '✓', failure: '✗', pending: '●', missing: '○' }
 const CAT_COLOR: Record<string, string> = {
   success: 'text-accent-green', failure: 'text-accent-red',
-  pending: 'text-neutral-400', missing: 'text-gray-600',
+  pending: 'text-neutral-400', missing: 'text-gray-400',
 }
 
 function GatePanel({ prNumber }: { prNumber: number }) {
@@ -91,7 +94,7 @@ function GatePanel({ prNumber }: { prNumber: number }) {
     staleTime: 45_000,
   })
 
-  if (isLoading) return <p className="text-[10px] text-gray-600">Evaluating gate…</p>
+  if (isLoading) return <p className="text-[10px] text-gray-400">Evaluating gate…</p>
   if (!data) return null
 
   const { classification, gate, file_count, check_count, head_sha } = data
@@ -123,9 +126,9 @@ function GatePanel({ prNumber }: { prNumber: number }) {
                 <div className="min-w-0">
                   <p className={clsx('text-[10px] font-semibold capitalize', CAT_COLOR[result])}>{cat}</p>
                   {hits.length > 0 ? (
-                    <p className="text-[9px] text-gray-600 truncate" title={hits.join(', ')}>{hits[0]}{hits.length > 1 ? ` +${hits.length - 1}` : ''}</p>
+                    <p className="text-[9px] text-gray-400 truncate" title={hits.join(', ')}>{hits[0]}{hits.length > 1 ? ` +${hits.length - 1}` : ''}</p>
                   ) : (
-                    <p className="text-[9px] text-gray-700">no check matched</p>
+                    <p className="text-[9px] text-gray-400">no check matched</p>
                   )}
                 </div>
               </div>
@@ -134,7 +137,7 @@ function GatePanel({ prNumber }: { prNumber: number }) {
         </div>
       )}
 
-      <p className="text-[9px] text-gray-700 font-mono">
+      <p className="text-[9px] text-gray-400 font-mono">
         {file_count} files · {check_count} check runs · SHA {head_sha}
       </p>
     </div>
@@ -170,7 +173,7 @@ function PermissionBanner({ canPush, repoSlug }: { canPush: boolean; repoSlug: s
     <div className="flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-3 py-2 text-xs">
       <Lock size={11} className="text-neutral-500 flex-shrink-0" />
       <span className="text-gray-500">
-        Read-only on <span className="font-medium text-gray-700">{repoSlug}</span> —
+        Read-only on <span className="font-medium text-gray-400">{repoSlug}</span> —
         merges and reviews must be performed on{' '}
         <a href={`https://github.com/${repoSlug}`} target="_blank" rel="noreferrer" className="text-accent-blue hover:underline">
           GitHub ↗
@@ -301,7 +304,7 @@ function ExpandedPanel({ pr }: { pr: PR }) {
 
       {/* Check runs */}
       {summaryLoading ? (
-        <p className="text-[10px] text-gray-600">Loading checks…</p>
+        <p className="text-[10px] text-gray-400">Loading checks…</p>
       ) : checks ? (
         <div>
           <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">CI Checks</p>
@@ -317,7 +320,7 @@ function ExpandedPanel({ pr }: { pr: PR }) {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <StatusBadge status={c.conclusion ?? c.status} />
                   <a href={c.html_url} target="_blank" rel="noreferrer">
-                    <ExternalLink size={10} className="text-gray-600 hover:text-neutral-300" />
+                    <ExternalLink size={10} className="text-gray-400 hover:text-neutral-300" />
                   </a>
                 </div>
               </div>
@@ -346,7 +349,7 @@ function ExpandedPanel({ pr }: { pr: PR }) {
                   {r.state.replace('_', ' ')}
                 </span>
                 {r.submitted_at && (
-                  <span className="text-gray-600 text-[10px]">{formatDistanceToNow(new Date(r.submitted_at), { addSuffix: true })}</span>
+                  <span className="text-gray-400 text-[10px]">{formatDistanceToNow(new Date(r.submitted_at), { addSuffix: true })}</span>
                 )}
                 {r.body && <span className="text-gray-500 text-[10px] truncate max-w-xs italic">"{r.body}"</span>}
               </div>
@@ -417,6 +420,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
   const { mutate: triggerCI, isPending: triggering } = useMutation({
     mutationFn: () => triggerPRCI(pr.number),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['pr-summary', pr.number] }),
+    onError: () => toast.error('Failed to trigger CI'),
   })
 
   const agedays = differenceInDays(new Date(), new Date(pr.created_at))
@@ -443,7 +447,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
         <div className="flex-1 min-w-0">
           {/* Row 1: badges */}
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span className="text-[10px] text-gray-600 font-mono">#{pr.number}</span>
+            <span className="text-[10px] text-gray-400 font-mono">#{pr.number}</span>
             <InlineGateBadge prNumber={pr.number} />
             {pr.draft && (
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-semibold">DRAFT</span>
@@ -525,6 +529,7 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
           <button
             onClick={() => triggerCI()}
             disabled={triggering}
+            aria-label="Trigger CI"
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-surface-2 text-gray-300 hover:bg-surface-3 disabled:opacity-50 transition-colors"
             title="Trigger build.yml"
           >
@@ -541,6 +546,8 @@ function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetit
           </a>
           <button
             onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Collapse PR details' : 'Expand PR details'}
             className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-surface-2 transition-colors"
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -594,16 +601,19 @@ function AutomationTab() {
   const { mutate: runNow, isPending: running } = useMutation({
     mutationFn: triggerAutomationRun,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onError: () => toast.error('Automation run failed'),
   })
 
   const { mutate: toggleEnabled } = useMutation({
     mutationFn: (enabled: boolean) => updateAutomationConfig({ enabled }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onError: () => toast.error('Failed to update automation'),
   })
 
   const { mutate: setInterval } = useMutation({
     mutationFn: (interval_minutes: number) => updateAutomationConfig({ interval_minutes }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onError: () => toast.error('Failed to update interval'),
   })
 
   const enabled = status?.enabled ?? false
@@ -616,7 +626,7 @@ function AutomationTab() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap size={14} className={enabled ? 'text-accent-green' : 'text-gray-500'} />
-            <h2 className="text-sm font-semibold text-white">PR Automation</h2>
+            <h2 className="text-base font-bold text-white">PR Automation</h2>
             <span className={clsx('text-[9px] px-2 py-0.5 rounded font-bold', enabled ? 'bg-accent-green/10 text-accent-green border border-accent-green/20' : 'bg-surface-3 text-gray-500 border border-border')}>
               {enabled ? 'ENABLED' : 'DISABLED'}
             </span>
@@ -641,13 +651,13 @@ function AutomationTab() {
               >
                 {[1, 5, 10, 15, 30, 60].map(m => <option key={m} value={m}>{m} min</option>)}
               </select>
-              <span className="text-gray-600">polling interval</span>
+              <span className="text-gray-400">polling interval</span>
             </div>
           </div>
           <div className="bg-surface-2 rounded-lg p-3 border border-border">
             <p className="text-gray-500 mb-1">Stats</p>
             <p className="text-white font-semibold">{status?.total_runs ?? 0} runs · {status?.actions_taken ?? 0} actions</p>
-            <p className="text-gray-600 text-[10px]">{status?.last_run_at ? `Last: ${formatDistanceToNow(new Date(status.last_run_at), { addSuffix: true })}` : 'Never run'}</p>
+            <p className="text-gray-400 text-[10px]">{status?.last_run_at ? `Last: ${formatDistanceToNow(new Date(status.last_run_at), { addSuffix: true })}` : 'Never run'}</p>
           </div>
         </div>
 
@@ -727,7 +737,7 @@ function AutomationTab() {
       )}
 
       {!isLoading && results.length === 0 && (
-        <div className="text-center py-8 text-gray-600 text-sm">
+        <div className="text-center py-8 text-gray-400 text-sm">
           No runs yet — click <span className="text-white">Run Now</span> to process open PRs
         </div>
       )}
@@ -752,9 +762,9 @@ function RunnersTab() {
     <div className="space-y-4">
       {/* Runner assignment matrix */}
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Cpu size={14} className="text-neutral-500" />
-          <h2 className="text-sm font-semibold text-white">Runner Assignment by PR Type</h2>
+        <div className="section-head">
+          <Cpu size={14} className="text-neutral-500 flex-shrink-0" />
+          Runner Assignment by PR Type
         </div>
         <div className="space-y-2">
           {classifications.map((cls) => {
@@ -788,9 +798,9 @@ function RunnersTab() {
 
       {/* Best practices */}
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Server size={14} className="text-neutral-500" />
-          <h2 className="text-sm font-semibold text-white">Best Practices</h2>
+        <div className="section-head">
+          <Server size={14} className="text-neutral-500 flex-shrink-0" />
+          Best Practices
         </div>
         <div className="space-y-2">
           {practices.map((p: any, i: number) => (
@@ -821,11 +831,11 @@ function RunnersTab() {
 
 // ── Page tabs ─────────────────────────────────────────────────────────────────
 
-type Tab = 'prs' | 'automation' | 'runners'
+type Tab = 'prs' | 'branches' | 'issues' | 'automation' | 'runners'
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
-export default function PRHub() {
+export default function SourceControl() {
   const [activeTab, setActiveTab] = useState<Tab>('prs')
   const [prState, setPrState] = useState<'open' | 'closed'>('open')
   const [search, setSearch] = useState('')
@@ -897,55 +907,47 @@ export default function PRHub() {
   }, [allPRs, repetitivePrefixes])
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="space-y-4">
+      {/* Tab navigation — prominent, full-width */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabBar
+          tabs={[
+            { id: 'prs',        label: 'Pull Requests', icon: GitPullRequest },
+            { id: 'branches',   label: 'Branches',      icon: GitBranch      },
+            { id: 'issues',     label: 'Issues',        icon: CircleDot      },
+            { id: 'automation', label: 'Automation',    icon: Zap            },
+            { id: 'runners',    label: 'Runners',       icon: Cpu            },
+          ]}
+          active={activeTab}
+          onChange={setActiveTab}
+        />
+        <div className="flex items-center gap-2 flex-shrink-0">
           {activeTab === 'prs' && (
-            <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
-              {prs.length} shown · {allPRs.length} {prState}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Tab switcher */}
-          <div className="flex rounded-md overflow-hidden border border-border text-xs">
-            {([
-              { id: 'prs', label: 'PRs', icon: GitPullRequest },
-              { id: 'automation', label: 'Automation', icon: Zap },
-              { id: 'runners', label: 'Runners', icon: Cpu },
-            ] as const).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={clsx(
-                  'flex items-center gap-1.5 px-3 py-1.5 transition-colors',
-                  activeTab === id ? 'bg-surface-3 text-white' : 'text-gray-400 hover:bg-surface-2',
-                )}
-              >
-                <Icon size={11} />{label}
-              </button>
-            ))}
-          </div>
-          {activeTab === 'prs' && (
-            <div className="flex rounded-md overflow-hidden border border-border text-xs">
-              {(['open', 'closed'] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setPrState(s)}
-                  className={clsx(
-                    'px-3 py-1.5 transition-colors capitalize',
-                    prState === s ? 'bg-surface-3 text-white' : 'text-gray-400 hover:bg-surface-2',
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+            <>
+              <span className="text-[11px] text-gray-500 bg-surface-2 border border-border/50 px-2.5 py-1 rounded-lg">
+                {prs.length} shown · {allPRs.length} {prState}
+              </span>
+              <div className="flex rounded-lg overflow-hidden border border-border/60 text-[11px]">
+                {(['open', 'closed'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setPrState(s)}
+                    className={clsx(
+                      'px-3 py-1.5 transition-colors capitalize font-medium',
+                      prState === s
+                        ? 'bg-surface-3 text-white'
+                        : 'text-gray-500 hover:text-gray-200 hover:bg-surface-2 bg-surface-1',
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
           <button
             onClick={() => qc.invalidateQueries({ queryKey: ['prs'] })}
-            className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-surface-2 text-gray-500 hover:text-white transition-colors border border-transparent hover:border-border/50"
             title="Refresh"
           >
             <RefreshCw size={13} />
@@ -953,8 +955,10 @@ export default function PRHub() {
         </div>
       </div>
 
+      {activeTab === 'branches'   && <BranchesTab />}
+      {activeTab === 'issues'     && <IssuesTab />}
       {activeTab === 'automation' && <AutomationTab />}
-      {activeTab === 'runners' && <RunnersTab />}
+      {activeTab === 'runners'    && <RunnersTab />}
 
       {activeTab === 'prs' && <>
       <PermissionBanner canPush={canPush} repoSlug={repoSlug} />

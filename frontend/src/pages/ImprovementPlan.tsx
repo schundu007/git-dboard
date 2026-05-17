@@ -9,6 +9,8 @@ import {
 import clsx from 'clsx'
 import { getImprovementPlan, getIssuesAnalysis, getActiveRepo } from '../lib/api'
 import BusinessReport from '../components/BusinessReport'
+import { TabBar } from '../components/ui/TabBar'
+import { CurrentArchSVG, TargetArchSVG } from '../components/CICDArchitectures'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -223,7 +225,7 @@ function PlanItemCard({ item }: { item: any }) {
                   <p className="text-[11px] text-accent-green flex items-center gap-1.5"><DollarSign size={10} /> {savings.cost_note}</p>
                 )}
                 {!savings.pass_rate_delta && !savings.gpu_hours_per_week && !savings.time_per_run_min && !savings.cost_note && (
-                  <p className="text-[11px] text-gray-600">Qualitative improvement</p>
+                  <p className="text-[11px] text-gray-400">Qualitative improvement</p>
                 )}
               </div>
             </div>
@@ -233,7 +235,7 @@ function PlanItemCard({ item }: { item: any }) {
                 <ul className="flex flex-col gap-1">
                   {item.files.map((f: string) => (
                     <li key={f} className="text-[10px] font-mono text-gray-400 flex items-center gap-1.5">
-                      <Terminal size={9} className="text-gray-600 flex-shrink-0" />
+                      <Terminal size={9} className="text-gray-400 flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -441,7 +443,7 @@ function IssuesAnalysisTab() {
 
       {/* Key insights */}
       <div className="bg-surface-1 border border-border rounded-xl p-4">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2.5">Key Insights</p>
+        <div className="section-head"><Lightbulb size={13} className="text-accent-yellow flex-shrink-0" />Key Insights</div>
         <ul className="flex flex-col gap-1.5">
           {(data.key_insights ?? []).map((ins: string, i: number) => (
             <li key={i} className="flex items-start gap-2 text-[11px] text-gray-300">
@@ -478,10 +480,10 @@ function IssuesAnalysisTab() {
       {/* Infrastructure issues */}
       {activeSection === 'infra' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Package size={13} className="text-accent-yellow" />
-            <p className="text-[11px] font-semibold text-white">Infrastructure Issues</p>
-            <span className="text-[10px] text-gray-500">— build pipeline, installation, Docker, ECR, CI failures</span>
+          <div className="section-head">
+            <Package size={13} className="text-accent-yellow flex-shrink-0" />
+            Infrastructure Issues
+            <span className="text-xs text-gray-400 font-normal ml-1">— build pipeline, installation, Docker, ECR, CI failures</span>
           </div>
           <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
             <table className="w-full">
@@ -505,10 +507,10 @@ function IssuesAnalysisTab() {
       {/* Product bugs */}
       {activeSection === 'bugs' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Bug size={13} className="text-accent-red" />
-            <p className="text-[11px] font-semibold text-white">Product Bugs</p>
-            <span className="text-[10px] text-gray-500">— runtime crashes, physics correctness, training failures</span>
+          <div className="section-head">
+            <Bug size={13} className="text-accent-red flex-shrink-0" />
+            Product Bugs
+            <span className="text-xs text-gray-400 font-normal ml-1">— runtime crashes, physics correctness, training failures</span>
           </div>
           <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
             <table className="w-full">
@@ -532,10 +534,10 @@ function IssuesAnalysisTab() {
       {/* Feature requests */}
       {activeSection === 'features' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Lightbulb size={13} className="text-purple-400" />
-            <p className="text-[11px] font-semibold text-white">Feature Requests</p>
-            <span className="text-[10px] text-gray-500">— Newton backend, new algorithms, packaging improvements</span>
+          <div className="section-head">
+            <Lightbulb size={13} className="text-purple-400 flex-shrink-0" />
+            Feature Requests
+            <span className="text-xs text-gray-400 font-normal ml-1">— Newton backend, new algorithms, packaging improvements</span>
           </div>
           <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
             <table className="w-full">
@@ -594,7 +596,7 @@ function ContextBar({ ctx }: { ctx: any }) {
   ]
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-3">
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium mb-2">Live Baseline Metrics</p>
+      <div className="section-head">Live Baseline Metrics</div>
       <div className="flex flex-wrap gap-x-5 gap-y-1.5">
         {metrics.map(({ label, value, bad, icon: Icon }) => (
           <div key={label} className="flex items-center gap-1.5">
@@ -710,7 +712,7 @@ function PlanTab({ items, summary }: { items: any[]; summary: any }) {
                 )}
               >
                 {s === 'all' ? 'All Scopes' : s.charAt(0).toUpperCase() + s.slice(1)}
-                <span className="ml-1 text-gray-600">({scopeCount})</span>
+                <span className="ml-1 text-gray-400">({scopeCount})</span>
               </button>
             )
           })}
@@ -735,7 +737,7 @@ function PlanTab({ items, summary }: { items: any[]; summary: any }) {
                 )}
               >
                 {p === 'all' ? 'All priorities' : PRIORITY_META[p]?.label}
-                <span className="ml-1 text-gray-600">({priorityCount})</span>
+                <span className="ml-1 text-gray-400">({priorityCount})</span>
               </button>
             )
           })}
@@ -748,6 +750,54 @@ function PlanTab({ items, summary }: { items: any[]; summary: any }) {
           <p className="text-center py-10 text-gray-500 text-sm">No items match the selected filters</p>
         )}
         {filtered.map((item: any) => <PlanItemCard key={item.id} item={item} />)}
+      </div>
+    </div>
+  )
+}
+
+// ── CI/CD Architecture comparison ─────────────────────────────────────────────
+
+type ArchView = 'current' | 'target'
+
+function CICDArchitectureSection() {
+  const [view, setView] = useState<ArchView>('current')
+  return (
+    <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
+          <span className="text-[11px] font-semibold text-white tracking-[0.15em] uppercase">CI/CD Pipeline</span>
+        </div>
+        <div className="flex gap-1">
+          {([
+            { id: 'current' as ArchView, label: 'Current State',  color: view === 'current' ? 'bg-[#1e3a5f]/60 text-[#60a5fa] border-[#1e3a5f]' : 'bg-surface-2 text-gray-400 border-border hover:border-gray-600' },
+            { id: 'target'  as ArchView, label: 'Target State',   color: view === 'target'  ? 'bg-[#0d9488]/15 text-[#0d9488] border-[#0d9488]/40' : 'bg-surface-2 text-gray-400 border-border hover:border-gray-600' },
+          ]).map(({ id, label, color }) => (
+            <button key={id} onClick={() => setView(id)}
+              className={clsx('px-3 py-1 rounded-lg text-[11px] font-medium border transition-all', color)}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={clsx(
+        'p-2 w-full',
+        view === 'current' ? 'bg-[#060c18]' : 'bg-[#060c06]',
+      )} style={{ aspectRatio: '1000 / 480' }}>
+        {view === 'current' ? <CurrentArchSVG /> : <TargetArchSVG />}
+      </div>
+      <div className="px-4 py-2 border-t border-border flex items-center gap-4">
+        {view === 'current' ? (
+          <>
+            <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Issues</span>
+            <span className="text-[10px] text-[#ef4444] font-mono">No BuildKit cache · No ECR pull-through · No SBOM · No observability</span>
+          </>
+        ) : (
+          <>
+            <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Improvements</span>
+            <span className="text-[10px] text-[#0d9488] font-mono">BuildKit cache · ECR regional · SBOM + cosign · SLSA L3 · Prometheus + Grafana + PagerDuty</span>
+          </>
+        )}
       </div>
     </div>
   )
@@ -773,6 +823,9 @@ export default function ImprovementPlan() {
     <div className="space-y-5">
       <BusinessReport />
 
+      {/* CI/CD architecture comparison */}
+      <CICDArchitectureSection />
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <p className="text-[11px] text-gray-500">
@@ -795,26 +848,14 @@ export default function ImprovementPlan() {
       </div>
 
       {/* Main tab switcher */}
-      <div className="flex gap-1 border-b border-border pb-0">
-        {([
-          { id: 'plan',   label: 'Improvement Plan',   icon: Lightbulb },
-          { id: 'issues', label: 'GitHub Issues Analysis', icon: Bug },
-        ] as { id: MainTab; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setMainTab(id)}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium border-b-2 transition-all -mb-px',
-              mainTab === id
-                ? 'border-accent-blue text-accent-blue'
-                : 'border-transparent text-gray-400 hover:text-gray-200',
-            )}
-          >
-            <Icon size={13} />
-            {label}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        tabs={[
+          { id: 'plan',   label: 'Improvement Plan',      icon: Lightbulb },
+          { id: 'issues', label: 'GitHub Issues Analysis', icon: Bug        },
+        ]}
+        active={mainTab}
+        onChange={setMainTab}
+      />
 
       {isLoading && <div className="text-center py-16 text-gray-500 text-sm">Loading…</div>}
 

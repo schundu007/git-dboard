@@ -22,7 +22,7 @@ export function EmptyState({ icon, title, description, action, size = 'md', clas
     <div className={cn('flex flex-col items-center justify-center text-center animate-fade-in', s.wrap, className)}>
       {icon && (
         <div className={cn(
-          'flex items-center justify-center rounded-xl bg-surface-2 ring-1 ring-border text-neutral-600 mb-4',
+          'flex items-center justify-center rounded-xl bg-surface-2 ring-1 ring-border text-neutral-400 mb-4',
           s.icon,
         )}>
           {icon}
@@ -30,7 +30,7 @@ export function EmptyState({ icon, title, description, action, size = 'md', clas
       )}
       <p className={cn('font-semibold text-neutral-300', s.title)}>{title}</p>
       {description && (
-        <p className={cn('text-neutral-600 mt-1.5 max-w-sm', s.desc)}>{description}</p>
+        <p className={cn('text-neutral-400 mt-1.5 max-w-sm', s.desc)}>{description}</p>
       )}
       {action && <div className="mt-5">{action}</div>}
     </div>

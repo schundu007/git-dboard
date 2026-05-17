@@ -151,6 +151,17 @@ export const triggerAutomationRun = () => request<any>('/automation/run', { meth
 export const updateAutomationConfig = (body: { enabled?: boolean; interval_minutes?: number }) =>
   request<any>('/automation/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 export const getRunnerRecommendations = () => request<any>('/automation/runner-recommendations')
+
+export type ScriptError = { line: number | null; title: string; description: string; severity: 'high' | 'medium' | 'low' }
+export type ScriptEnhancement = { title: string; description: string; example: string | null }
+export type ScriptAnalysis = { errors: ScriptError[]; enhancements: ScriptEnhancement[]; explanation: string; corrected_script: string }
+
+export const analyzeScript = (script: string, language: string) =>
+  request<ScriptAnalysis>('/automation/analyze-script', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ script, language }),
+  })
 export const triggerPRCI = (n: number) =>
   request<any>(`/prs/${n}/trigger-ci`, { method: 'POST' })
 
@@ -218,7 +229,7 @@ export const getInsightsForks = (sort = 'newest', page = 1) => request<any>(`/in
 export const getInsightsPulse = () => request<any>('/insights/pulse')
 
 // ── Health Analysis (DORA + CI Triage + Pipeline Perf + Runner Health) ────────
-export const getHealthDora = () => request<any>('/health-analysis/dora')
+export const getHealthDora = (days = 14) => request<any>(`/health-analysis/dora?days=${days}`)
 export const getHealthCiTriage = () => request<any>('/health-analysis/ci-triage')
 export const getHealthPipelinePerf = () => request<any>('/health-analysis/pipeline-perf')
 export const getHealthRunnerHealth = () => request<any>('/health-analysis/runner-health')

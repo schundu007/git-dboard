@@ -4,6 +4,7 @@ import {
   ShieldCheck, Zap, GitMerge, Clock, TrendingDown, Server,
   AlertTriangle, XCircle, Timer, Cpu, ExternalLink,
   Activity, RefreshCw, ChevronDown, ChevronRight, Target,
+  Rocket, Moon, Wrench, BarChart2, CheckCircle2,
 } from 'lucide-react'
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip,
@@ -54,7 +55,7 @@ function StatCard({
         <p className="text-2xl font-bold text-white tabular-nums font-mono">
           {value}<span className="text-sm font-normal text-gray-500 ml-1">{unit}</span>
         </p>
-        {subtitle && <p className="text-[10px] text-gray-600 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-[10px] text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
     </div>
   )
@@ -63,20 +64,24 @@ function StatCard({
 // ── DORA Tab ──────────────────────────────────────────────────────────────────
 
 function DoraTab() {
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['health-dora'],
-    queryFn: getHealthDora,
+  const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ['health-dora', days],
+    queryFn: () => getHealthDora(days),
     staleTime: 120_000,
     refetchInterval: 300_000,
   })
 
   if (isLoading) return <Loading label="Computing DORA metrics…" />
+  if (isError) return <QueryError refetch={refetch} />
   if (!data) return null
 
   const df = data.deployment_frequency
   const lt = data.lead_time
   const mttr = data.mttr
   const cfr = data.change_failure_rate
+
+  const noData = data.ci_pass_rate == null && data.nightly_pass_rate == null && (df?.total_in_period ?? 0) === 0
 
   const tooltipStyle = {
     contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', fontSize: 11 },
@@ -87,26 +92,44 @@ function DoraTab() {
     <div className="space-y-5">
       {/* Sub-header */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] text-gray-500">
-          Industry benchmark · last {data.period_days} days (Google DevOps Research)
-        </p>
-        <button onClick={() => refetch()}
-          className={clsx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] bg-surface-2 text-gray-400 hover:text-gray-200 border border-border transition-colors', isFetching && 'animate-pulse')}>
-          <RefreshCw size={11} className={isFetching ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] text-gray-500">
+            Industry benchmark · last {data.period_days} days (Google DevOps Research)
+          </p>
+          {noData && (
+            <span className="text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5">
+              No activity in this window
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-[10px]">
+            {([1, 3, 7, 14, 130] as const).map((d) => (
+              <button key={d} onClick={() => setDays(d)}
+                className={clsx('px-1.5 py-0.5 rounded transition-colors',
+                  days === d ? 'bg-surface-3 text-white' : 'text-gray-500 hover:bg-surface-2')}>
+                {d}d
+              </button>
+            ))}
+          </div>
+          <button onClick={() => refetch()}
+            className={clsx('flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] bg-surface-2 text-gray-400 hover:text-gray-200 border border-border transition-colors', isFetching && 'animate-pulse')}>
+            <RefreshCw size={11} className={isFetching ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* 4 Metric cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label="Deploy Frequency"
-          value={df.per_week < 1 ? `${df.total_30d}` : df.per_week}
-          unit={df.per_week < 1 ? 'deploys/30d' : '/week'}
+          value={df.per_week < 1 ? `${df.total_in_period ?? df.total_30d}` : df.per_week}
+          unit={df.per_week < 1 ? `deploys/${data.period_days}d` : '/week'}
           rating={df.rating}
           icon={Zap}
           color="accent-blue"
-          subtitle={`${df.total_30d} deployments in 30 days`}
+          subtitle={`${df.total_in_period ?? df.total_30d} deployments in ${data.period_days} days`}
         />
         <StatCard
           label="Lead Time"
@@ -141,9 +164,7 @@ function DoraTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Deploy frequency chart */}
         <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-3">
-            Deployment Frequency — Last 14 Days
-          </p>
+          <div className="section-head">Deployment Frequency — Last 14 Days</div>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={df.chart} barSize={10}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" vertical={false} />
@@ -157,9 +178,7 @@ function DoraTab() {
 
         {/* Failure trend chart */}
         <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-3">
-            Pipeline Pass / Fail — Last 14 Days
-          </p>
+          <div className="section-head">Pipeline Pass / Fail — Last 14 Days</div>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={cfr.trend} barSize={8}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" vertical={false} />
@@ -176,9 +195,7 @@ function DoraTab() {
 
       {/* DORA reference table */}
       <div className="bg-surface-1 border border-border rounded-xl p-4">
-        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-3">
-          DORA Performance Benchmarks
-        </p>
+        <div className="section-head">DORA Performance Benchmarks</div>
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
@@ -193,7 +210,7 @@ function DoraTab() {
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                { name: 'Deploy Frequency', elite: 'Multiple/day', high: 'Daily–Weekly', medium: 'Monthly', low: '6+ months', current: df.rating, value: df.total_30d > 0 ? `${df.per_week.toFixed(1)}/wk` : 'No deploys' },
+                { name: 'Deploy Frequency', elite: 'Multiple/day', high: 'Daily–Weekly', medium: 'Monthly', low: '6+ months', current: df.rating, value: (df.total_in_period ?? df.total_30d) > 0 ? `${df.per_week.toFixed(1)}/wk` : 'No deploys' },
                 { name: 'Lead Time', elite: '< 1 hour', high: '< 1 day', medium: '< 1 week', low: '> 1 month', current: lt.rating, value: lt.avg_hours ? `${lt.avg_hours}h` : `${lt.avg_min}m` },
                 { name: 'MTTR', elite: '< 1 hour', high: '< 1 day', medium: '< 1 week', low: '> 1 month', current: mttr.rating, value: mttr.avg_min ? (mttr.avg_hours ? `${mttr.avg_hours}h` : `${mttr.avg_min}m`) : 'N/A' },
                 { name: 'Change Failure Rate', elite: '< 5%', high: '< 10%', medium: '< 15%', low: '> 15%', current: cfr.rating, value: `${cfr.pct}%` },
@@ -249,18 +266,18 @@ function TriageRow({ f }: { f: any }) {
             <span className={clsx('text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase', meta.color, 'bg-current/10')} style={{ backgroundColor: 'transparent', border: '1px solid currentColor' }}>
               {meta.label}
             </span>
-            <span className="text-[10px] text-gray-600 font-mono">{f.workflow?.replace('.yml', '')}</span>
-            {f.branch && <span className="text-[10px] text-gray-600">@ {f.branch}</span>}
+            <span className="text-[10px] text-gray-400 font-mono">{f.workflow?.replace('.yml', '')}</span>
+            {f.branch && <span className="text-[10px] text-gray-400">@ {f.branch}</span>}
           </div>
           {f.failed_jobs?.length > 0 && (
-            <p className="text-[10px] text-gray-600 mt-0.5 truncate">
+            <p className="text-[10px] text-gray-400 mt-0.5 truncate">
               Failed: {f.failed_jobs.join(' · ')}
             </p>
           )}
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {f.duration_min && (
-            <span className="text-[10px] text-gray-600 font-mono">{f.duration_min}m</span>
+            <span className="text-[10px] text-gray-400 font-mono">{f.duration_min}m</span>
           )}
           {f.run_attempt > 1 && (
             <span className="text-[9px] text-accent-yellow border border-accent-yellow/30 px-1.5 py-0.5 rounded">
@@ -268,7 +285,7 @@ function TriageRow({ f }: { f: any }) {
             </span>
           )}
           {f.created_at && (
-            <span className="text-[10px] text-gray-600">
+            <span className="text-[10px] text-gray-400">
               {formatDistanceToNow(new Date(f.created_at), { addSuffix: true })}
             </span>
           )}
@@ -304,13 +321,14 @@ function TriageRow({ f }: { f: any }) {
 
 function TriageTab() {
   const [filter, setFilter] = useState<string>('all')
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['health-triage'],
     queryFn: getHealthCiTriage,
     staleTime: 120_000,
   })
 
   if (isLoading) return <Loading label="Analyzing CI failures…" />
+  if (isError) return <QueryError refetch={refetch} />
   if (!data) return null
 
   const summary = data.summary ?? {}
@@ -345,7 +363,7 @@ function TriageTab() {
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider">{cat}</span>
               </div>
               <p className={clsx('text-xl font-bold font-mono', meta.color)}>{count}</p>
-              <p className="text-[10px] text-gray-600 mt-0.5">{pct}% of failures</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{pct}% of failures</p>
             </button>
           )
         })}
@@ -366,7 +384,7 @@ function TriageTab() {
         </div>
         {filtered.map((f: any) => <TriageRow key={f.run_id} f={f} />)}
         {filtered.length === 0 && (
-          <div className="text-center py-8 text-gray-600 text-sm">No failures in this category</div>
+          <div className="text-center py-8 text-gray-400 text-sm">No failures in this category</div>
         )}
       </div>
     </div>
@@ -376,13 +394,14 @@ function TriageTab() {
 // ── Pipeline Performance Tab ───────────────────────────────────────────────────
 
 function PerfTab() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['health-perf'],
     queryFn: getHealthPipelinePerf,
     staleTime: 120_000,
   })
 
   if (isLoading) return <Loading label="Fetching pipeline metrics…" />
+  if (isError) return <QueryError refetch={refetch} />
   if (!data) return null
 
   const workflows: any[] = data.workflows ?? []
@@ -401,7 +420,7 @@ function PerfTab() {
           <div key={wf.file} className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-white">{wf.workflow}</p>
-              <span className="text-[9px] text-gray-600 font-mono">{wf.file}</span>
+              <span className="text-[9px] text-gray-400 font-mono">{wf.file}</span>
             </div>
 
             {/* Stats row */}
@@ -442,7 +461,7 @@ function PerfTab() {
                 </LineChart>
               </ResponsiveContainer>
             )}
-            <p className="text-[10px] text-gray-600">
+            <p className="text-[10px] text-gray-400">
               Based on {wf.sample_count} recent runs · Red dots = failed runs
             </p>
           </div>
@@ -450,7 +469,7 @@ function PerfTab() {
       </div>
 
       {workflows.length === 0 && (
-        <div className="text-center py-12 text-gray-600 text-sm">No pipeline data available</div>
+        <div className="text-center py-12 text-gray-400 text-sm">No pipeline data available</div>
       )}
     </div>
   )
@@ -517,7 +536,7 @@ function RunnersTab() {
         <div className="bg-surface-1 border border-border rounded-xl p-4">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">All Runners</p>
           <p className="text-2xl font-bold text-white font-mono">{s.online}<span className="text-sm text-gray-500">/{s.total}</span></p>
-          <p className="text-[10px] text-gray-600 mt-1">online</p>
+          <p className="text-[10px] text-gray-400 mt-1">online</p>
           <div className="h-1.5 bg-surface-3 rounded-full mt-2">
             <div className="h-full bg-accent-green rounded-full" style={{ width: `${s.total ? (s.online / s.total) * 100 : 0}%` }} />
           </div>
@@ -525,7 +544,7 @@ function RunnersTab() {
         <div className="bg-surface-1 border border-border rounded-xl p-4">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Utilization</p>
           <p className={clsx('text-2xl font-bold font-mono', utilizationColor(s.utilization_pct))}>{s.utilization_pct}%</p>
-          <p className="text-[10px] text-gray-600 mt-1">{s.busy} busy / {s.idle} idle</p>
+          <p className="text-[10px] text-gray-400 mt-1">{s.busy} busy / {s.idle} idle</p>
           <div className="h-1.5 bg-surface-3 rounded-full mt-2">
             <div className={clsx('h-full rounded-full', s.utilization_pct >= 90 ? 'bg-accent-red' : s.utilization_pct >= 70 ? 'bg-accent-yellow' : 'bg-accent-blue')}
               style={{ width: `${s.utilization_pct}%` }} />
@@ -537,7 +556,7 @@ function RunnersTab() {
             <p className="text-[10px] text-gray-500 uppercase tracking-wider">GPU Runners</p>
           </div>
           <p className="text-2xl font-bold text-white font-mono">{gpu.online}<span className="text-sm text-gray-500">/{gpu.total}</span></p>
-          <p className="text-[10px] text-gray-600 mt-1">online</p>
+          <p className="text-[10px] text-gray-400 mt-1">online</p>
           <div className="h-1.5 bg-surface-3 rounded-full mt-2">
             <div className="h-full bg-accent-purple rounded-full" style={{ width: `${gpu.total ? (gpu.online / gpu.total) * 100 : 0}%` }} />
           </div>
@@ -545,7 +564,7 @@ function RunnersTab() {
         <div className="bg-surface-1 border border-border rounded-xl p-4">
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">GPU Utilization</p>
           <p className={clsx('text-2xl font-bold font-mono', utilizationColor(gpu.utilization_pct))}>{gpu.utilization_pct}%</p>
-          <p className="text-[10px] text-gray-600 mt-1">{gpu.busy} busy / {gpu.idle} idle</p>
+          <p className="text-[10px] text-gray-400 mt-1">{gpu.busy} busy / {gpu.idle} idle</p>
           <div className="h-1.5 bg-surface-3 rounded-full mt-2">
             <div className={clsx('h-full rounded-full', gpu.utilization_pct >= 90 ? 'bg-accent-red' : gpu.utilization_pct >= 70 ? 'bg-accent-yellow' : 'bg-accent-purple')}
               style={{ width: `${gpu.utilization_pct}%` }} />
@@ -556,7 +575,7 @@ function RunnersTab() {
       {/* Groups breakdown */}
       {groups.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl p-4">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-3">Runner Groups</p>
+          <div className="section-head">Runner Groups</div>
           <div className="space-y-2">
             {groups.map((g) => (
               <div key={g.name} className="flex items-center gap-4">
@@ -608,7 +627,7 @@ function RunnersTab() {
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <RunnerDot status={r.status} busy={r.busy} />
-                    <span className={clsx('font-medium', r.status === 'online' ? (r.busy ? 'text-accent-yellow' : 'text-accent-green') : 'text-gray-600')}>
+                    <span className={clsx('font-medium', r.status === 'online' ? (r.busy ? 'text-accent-yellow' : 'text-accent-green') : 'text-gray-400')}>
                       {r.status === 'online' ? (r.busy ? 'Busy' : 'Idle') : 'Offline'}
                     </span>
                   </div>
@@ -631,137 +650,164 @@ interface SloDefinition {
   unit: string
   good: 'gte' | 'lte'
   description: string
+  icon: React.ElementType
+  iconColor: string
 }
 
-const SLO_DEFINITIONS: SloDefinition[] = [
-  { id: 'deploy-freq',  label: 'Deploy Frequency',    target: 1,  unit: '/week', good: 'gte', description: 'At least 1 deploy per week' },
-  { id: 'lead-time',   label: 'Lead Time',             target: 24, unit: 'hrs',  good: 'lte', description: 'Merge-to-deploy under 24 hours' },
-  { id: 'mttr',        label: 'MTTR',                  target: 8,  unit: 'hrs',  good: 'lte', description: 'Recover from incidents within 8 hours' },
-  { id: 'change-fail', label: 'Change Failure Rate',   target: 10, unit: '%',    good: 'lte', description: 'Less than 10% of changes fail in production' },
-  { id: 'nightly-pass',label: 'Nightly Pass Rate',     target: 90, unit: '%',    good: 'gte', description: 'Nightly builds pass at least 90% of the time' },
-  { id: 'build-pass',  label: 'Build Pass Rate',       target: 85, unit: '%',    good: 'gte', description: 'CI build success rate above 85%' },
+export const SLO_DEFINITIONS: SloDefinition[] = [
+  { id: 'deploy-freq',  label: 'Deploy Frequency',  target: 1,  unit: '/week', good: 'gte', description: 'At least 1 deploy per week',               icon: Rocket,     iconColor: 'text-accent-blue'   },
+  { id: 'lead-time',   label: 'Lead Time',           target: 24, unit: 'hrs',  good: 'lte', description: 'Merge-to-deploy under 24 hours',            icon: Clock,      iconColor: 'text-accent-purple' },
+  { id: 'mttr',        label: 'MTTR',                target: 8,  unit: 'hrs',  good: 'lte', description: 'Recover from incidents within 8 hours',     icon: Wrench,     iconColor: 'text-accent-yellow' },
+  { id: 'change-fail', label: 'Change Failure Rate', target: 10, unit: '%',    good: 'lte', description: 'Less than 10% of changes fail',             icon: TrendingDown,iconColor: 'text-accent-red'   },
+  { id: 'nightly-pass',label: 'Nightly Pass Rate',   target: 90, unit: '%',    good: 'gte', description: 'Nightly builds pass ≥90% of the time',      icon: Moon,       iconColor: 'text-accent-teal'   },
+  { id: 'build-pass',  label: 'CI Pass Rate',        target: 85, unit: '%',    good: 'gte', description: 'CI build success rate above 85%',           icon: BarChart2,  iconColor: 'text-accent-green'  },
 ]
 
-interface SloStatus {
+export interface SloStatus {
   status: 'MET' | 'BREACHED' | 'PENDING'
   current: number | null
-  budgetConsumed: number | null  // 0-100
+  budgetConsumed: number | null  // 0–100
 }
 
-function computeSloStatus(def: SloDefinition, current: number | null): SloStatus {
+export function computeSloStatus(def: SloDefinition, current: number | null): SloStatus {
   if (current === null) return { status: 'PENDING', current: null, budgetConsumed: null }
 
   const met = def.good === 'gte' ? current >= def.target : current <= def.target
   const status: 'MET' | 'BREACHED' = met ? 'MET' : 'BREACHED'
 
-  // Error budget: for percentage metrics (unit % or /week)
-  // Budget total = allowable deviation from target
   let budgetConsumed: number | null = null
   if (def.unit === '%') {
-    const totalBudget = def.good === 'gte'
-      ? (100 - def.target)   // e.g. 10% can fail for 90% target
-      : def.target            // e.g. 10% allowed failures for lte 10%
-
+    const totalBudget = def.good === 'gte' ? (100 - def.target) : def.target
     if (totalBudget > 0) {
-      if (def.good === 'gte') {
-        // budget consumed = how much of the allowed failure budget has been used
-        const deviation = Math.max(0, def.target - current)
-        budgetConsumed = Math.min(100, Math.round((deviation / totalBudget) * 100))
-      } else {
-        // budget consumed = current/target * 100
-        budgetConsumed = Math.min(100, Math.round((current / totalBudget) * 100))
-      }
+      budgetConsumed = def.good === 'gte'
+        ? Math.min(100, Math.round((Math.max(0, def.target - current) / totalBudget) * 100))
+        : Math.min(100, Math.round((current / totalBudget) * 100))
     }
   } else if (def.unit === '/week') {
-    // for deploy frequency: if target is 1/week, budget consumed = how far below target
-    if (def.good === 'gte' && current < def.target) {
-      budgetConsumed = Math.min(100, Math.round(((def.target - current) / def.target) * 100))
-    } else {
-      budgetConsumed = 0
-    }
-  } else if (def.unit === 'hrs') {
-    // for lead time / mttr: budget consumed based on how far over target
-    if (def.good === 'lte') {
-      if (current <= def.target) {
-        budgetConsumed = Math.round((current / def.target) * 50) // 50% max when at target
-      } else {
-        const overage = current - def.target
-        budgetConsumed = Math.min(100, 50 + Math.round((overage / def.target) * 50))
-      }
-    }
+    budgetConsumed = (def.good === 'gte' && current < def.target)
+      ? Math.min(100, Math.round(((def.target - current) / def.target) * 100))
+      : 0
+  } else if (def.unit === 'hrs' && def.good === 'lte') {
+    budgetConsumed = current <= def.target
+      ? Math.round((current / def.target) * 50)
+      : Math.min(100, 50 + Math.round(((current - def.target) / def.target) * 50))
   }
 
   return { status, current, budgetConsumed }
 }
 
+export function computeSloStatuses(data: any): Array<{ def: SloDefinition; sloData: SloStatus }> {
+  const df   = data?.deployment_frequency
+  const lt   = data?.lead_time
+  const mttr = data?.mttr
+  const cfr  = data?.change_failure_rate
+
+  const metricValues: Record<string, number | null> = {
+    'deploy-freq':  df?.per_week    ?? null,
+    'lead-time':    lt?.avg_hours   ?? null,
+    'mttr':         mttr?.avg_hours ?? null,
+    'change-fail':  cfr?.pct        ?? null,
+    'nightly-pass': data?.nightly_pass_rate ?? null,
+    'build-pass':   data?.ci_pass_rate      ?? null,
+  }
+
+  return SLO_DEFINITIONS.map((def) => ({
+    def,
+    sloData: computeSloStatus(def, metricValues[def.id] ?? null),
+  }))
+}
+
 function SloCard({ def, sloData }: { def: SloDefinition; sloData: SloStatus }) {
   const { status, current, budgetConsumed } = sloData
+  const Icon = def.icon
 
-  const statusCls = {
+  const stripCls = {
+    MET:      'bg-accent-green/[.06] border-b-accent-green/20',
+    BREACHED: 'bg-accent-red/[.06] border-b-accent-red/20',
+    PENDING:  'bg-surface-2/60 border-b-border',
+  }[status]
+
+  const statusPillCls = {
     MET:      'bg-accent-green/10 text-accent-green border-accent-green/30',
     BREACHED: 'bg-accent-red/10 text-accent-red border-accent-red/30',
     PENDING:  'bg-surface-3 text-gray-500 border-border',
   }[status]
 
   const budgetColor =
-    budgetConsumed == null ? 'bg-gray-600'
-    : budgetConsumed > 80  ? 'bg-accent-red'
+    budgetConsumed == null ? 'bg-gray-700'
+    : budgetConsumed >= 100 ? 'bg-accent-red'
+    : budgetConsumed > 75  ? 'bg-orange-500'
     : budgetConsumed > 50  ? 'bg-accent-yellow'
     : 'bg-accent-green'
 
+  const budgetTextCls =
+    budgetConsumed == null ? 'text-gray-400'
+    : budgetConsumed >= 100 ? 'text-accent-red'
+    : budgetConsumed > 75  ? 'text-orange-400'
+    : budgetConsumed > 50  ? 'text-accent-yellow'
+    : 'text-accent-green'
+
   const currentDisplay =
     current == null ? '—'
-    : def.unit === '%' ? `${current}%`
-    : def.unit === '/week' ? `${current}/wk`
-    : `${current}h`
+    : def.unit === '%'    ? `${current.toFixed(1)}%`
+    : def.unit === '/week'? `${current.toFixed(1)}/wk`
+    : `${current.toFixed(1)}h`
+
+  const budgetRemaining = budgetConsumed != null ? Math.max(0, 100 - budgetConsumed) : null
 
   return (
-    <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-[11px] font-semibold text-white">{def.label}</p>
-          <p className="text-[9px] text-gray-600 mt-0.5">{def.description}</p>
+    <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+      {/* Header strip */}
+      <div className={clsx('flex items-center justify-between px-4 py-2.5 border-b', stripCls)}>
+        <div className="flex items-center gap-2">
+          <Icon size={13} className={clsx('flex-shrink-0', def.iconColor)} />
+          <p className="text-[12px] font-bold text-white">{def.label}</p>
         </div>
-        <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider flex-shrink-0', statusCls)}>
-          {status}
+        <span className={clsx('text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider', statusPillCls)}>
+          {status === 'PENDING' ? 'N/A' : status}
         </span>
       </div>
 
-      {/* Target vs Current */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-surface-2 rounded-lg p-2 text-center">
-          <p className="text-[9px] text-gray-600 uppercase tracking-wider">Target</p>
-          <p className="text-sm font-bold font-mono text-gray-300">
-            {def.good === 'gte' ? '≥' : '≤'}{def.target}{def.unit}
-          </p>
-        </div>
-        <div className="bg-surface-2 rounded-lg p-2 text-center">
-          <p className="text-[9px] text-gray-600 uppercase tracking-wider">Current</p>
-          <p className={clsx(
-            'text-sm font-bold font-mono',
-            status === 'MET' ? 'text-accent-green' : status === 'BREACHED' ? 'text-accent-red' : 'text-gray-500'
-          )}>{currentDisplay}</p>
-        </div>
-      </div>
+      <div className="p-4 space-y-3">
+        <p className="text-[10px] text-gray-500 leading-relaxed">{def.description}</p>
 
-      {/* Error budget bar */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] text-gray-600">30-day error budget</span>
-          <span className={clsx('text-[9px] font-mono font-semibold',
-            budgetConsumed == null ? 'text-gray-600'
-            : budgetConsumed > 80 ? 'text-accent-red'
-            : budgetConsumed > 50 ? 'text-accent-yellow'
-            : 'text-accent-green'
-          )}>
-            {budgetConsumed == null ? '—' : `${budgetConsumed}%`}
-          </span>
+        {/* Target vs Current */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-surface-2 rounded-lg px-3 py-2">
+            <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Target</p>
+            <p className="text-sm font-bold font-mono text-gray-300">
+              {def.good === 'gte' ? '≥' : '≤'}{def.target}
+              <span className="text-[10px] font-normal text-gray-500 ml-0.5">{def.unit}</span>
+            </p>
+          </div>
+          <div className="bg-surface-2 rounded-lg px-3 py-2">
+            <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">Current</p>
+            <p className={clsx(
+              'text-sm font-bold font-mono',
+              status === 'MET' ? 'text-accent-green' : status === 'BREACHED' ? 'text-accent-red' : 'text-gray-500'
+            )}>{currentDisplay}</p>
+          </div>
         </div>
-        <div className="h-1.5 bg-surface-3 rounded-full overflow-hidden">
-          <div
-            className={clsx('h-full rounded-full transition-all duration-700', budgetColor)}
-            style={{ width: `${budgetConsumed ?? 0}%` }}
-          />
+
+        {/* Error budget */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] text-gray-400">30-day error budget</span>
+            <div className="flex items-center gap-1.5">
+              {budgetRemaining != null && (
+                <span className="text-[9px] text-gray-400">{budgetRemaining}% remaining</span>
+              )}
+              <span className={clsx('text-[9px] font-mono font-bold', budgetTextCls)}>
+                {budgetConsumed == null ? '—' : `${budgetConsumed}% used`}
+              </span>
+            </div>
+          </div>
+          <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
+            <div
+              className={clsx('h-full rounded-full transition-all duration-700', budgetColor)}
+              style={{ width: `${budgetConsumed ?? 0}%` }}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -771,61 +817,75 @@ function SloCard({ def, sloData }: { def: SloDefinition; sloData: SloStatus }) {
 function SloTracker() {
   const { data, isLoading } = useQuery({
     queryKey: ['health-dora'],
-    queryFn: getHealthDora,
+    queryFn: () => getHealthDora(),
     staleTime: 120_000,
     refetchInterval: 300_000,
   })
 
   if (isLoading) return <Loading label="Loading SLO data…" />
 
-  // Derive metric values from DORA data
-  const df = data?.deployment_frequency
-  const lt = data?.lead_time
-  const mttr = data?.mttr
-  const cfr = data?.change_failure_rate
+  const sloStatuses = computeSloStatuses(data)
+  const metCount      = sloStatuses.filter((s) => s.sloData.status === 'MET').length
+  const breachCount   = sloStatuses.filter((s) => s.sloData.status === 'BREACHED').length
+  const pendingCount  = sloStatuses.filter((s) => s.sloData.status === 'PENDING').length
+  const totalCount    = SLO_DEFINITIONS.length
+  const metPct        = Math.round((metCount / totalCount) * 100)
 
-  const metricValues: Record<string, number | null> = {
-    'deploy-freq':  df?.per_week   != null ? df.per_week : null,
-    'lead-time':    lt?.avg_hours  != null ? lt.avg_hours : null,
-    'mttr':         mttr?.avg_hours != null ? mttr.avg_hours : null,
-    'change-fail':  cfr?.pct       != null ? cfr.pct : null,
-    'nightly-pass': null,   // not directly in DORA; would need nightly trend data
-    'build-pass':   cfr?.pct != null ? Math.round(100 - cfr.pct) : null,
-  }
-
-  const sloStatuses = SLO_DEFINITIONS.map((def) => ({
-    def,
-    sloData: computeSloStatus(def, metricValues[def.id] ?? null),
-  }))
-
-  const metCount = sloStatuses.filter((s) => s.sloData.status === 'MET').length
-  const totalCount = SLO_DEFINITIONS.length
-
-  const summaryColor =
-    metCount === totalCount ? 'text-accent-green'
+  const healthColor =
+    metCount === totalCount   ? 'text-accent-green'
     : metCount >= totalCount * 0.7 ? 'text-accent-yellow'
     : 'text-accent-red'
 
+  const barColor =
+    metCount === totalCount   ? 'bg-accent-green'
+    : metCount >= totalCount * 0.7 ? 'bg-accent-yellow'
+    : 'bg-accent-red'
+
   return (
     <div className="space-y-5">
-      {/* Summary header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <p className="text-[11px] text-gray-500">30-day SLO summary:</p>
-          <span className={clsx('text-sm font-bold font-mono', summaryColor)}>
-            {metCount}/{totalCount} SLOs Met
-          </span>
+      {/* Summary band */}
+      <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 flex items-center gap-6">
+          {/* Score */}
+          <div className="flex-shrink-0 text-center">
+            <p className={clsx('text-3xl font-bold font-mono tabular-nums', healthColor)}>{metPct}%</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">SLOs Met</p>
+          </div>
+          {/* Bar + breakdown */}
+          <div className="flex-1 space-y-2">
+            <div className="h-2.5 bg-surface-3 rounded-full overflow-hidden">
+              <div
+                className={clsx('h-full rounded-full transition-all duration-700', barColor)}
+                style={{ width: `${metPct}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-4 text-[10px]">
+              <span className="flex items-center gap-1 text-accent-green">
+                <CheckCircle2 size={10} /> {metCount} met
+              </span>
+              {breachCount > 0 && (
+                <span className="flex items-center gap-1 text-accent-red">
+                  <XCircle size={10} /> {breachCount} breached
+                </span>
+              )}
+              {pendingCount > 0 && (
+                <span className="text-gray-400">{pendingCount} pending data</span>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 hidden sm:block text-right leading-relaxed">
+            30-day rolling window<br />DORA research targets
+          </p>
         </div>
-        <p className="text-[10px] text-gray-600">SLO targets based on industry standards (DORA research)</p>
       </div>
 
       {/* SLO grid */}
       {!data ? (
-        <div className="text-center py-8 text-gray-600 text-sm">
+        <div className="text-center py-8 text-gray-400 text-sm">
           No DORA data available — SLOs cannot be evaluated.
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {sloStatuses.map(({ def, sloData }) => (
             <SloCard key={def.id} def={def} sloData={sloData} />
           ))}
@@ -842,6 +902,15 @@ function Loading({ label }: { label: string }) {
     <div className="flex items-center justify-center py-16 gap-3 text-gray-500 text-sm">
       <RefreshCw size={14} className="animate-spin" />
       {label}
+    </div>
+  )
+}
+
+function QueryError({ refetch }: { refetch: () => void }) {
+  return (
+    <div className="flex items-center justify-center py-16 gap-2 text-[12px] text-gray-500">
+      Failed to load —{' '}
+      <button onClick={refetch} className="text-accent-blue hover:underline">retry</button>
     </div>
   )
 }
@@ -878,6 +947,12 @@ export default function HealthAnalysis() {
         </a>
       </div>
 
+      {/* SLO Tracker */}
+      <section className="space-y-5">
+        <SectionDivider icon={Target} title="SLO Tracker" subtitle="Service Level Objectives · 30-day error budgets" />
+        <SloTracker />
+      </section>
+
       {/* DORA Metrics */}
       <section className="space-y-5">
         <SectionDivider icon={Activity} title="DORA Metrics" subtitle="Deploy frequency, lead time, MTTR, change failure rate" />
@@ -886,7 +961,7 @@ export default function HealthAnalysis() {
 
       {/* CI Triage */}
       <section className="space-y-5">
-        <SectionDivider icon={AlertTriangle} title="CI Triage" subtitle="Infra vs product vs flaky failures" />
+        <SectionDivider icon={AlertTriangle} title="Failure Triage" subtitle="Infra vs product vs flaky failures" />
         <TriageTab />
       </section>
 
@@ -900,12 +975,6 @@ export default function HealthAnalysis() {
       <section className="space-y-5">
         <SectionDivider icon={Cpu} title="Runner Health" subtitle="GPU runner utilization & live status" />
         <RunnersTab />
-      </section>
-
-      {/* SLO Tracker */}
-      <section className="space-y-5">
-        <SectionDivider icon={Target} title="SLO Tracker" subtitle="Service Level Objectives · 30-day error budgets" />
-        <SloTracker />
       </section>
     </div>
   )

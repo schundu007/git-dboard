@@ -36,12 +36,12 @@ function FailureDetail({ runId }: { runId: number }) {
       </button>
       {open && (
         <div className="mt-1.5 bg-black/40 rounded border border-red-900/40 p-2 space-y-2">
-          {isLoading && <p className="text-[10px] text-gray-600">Fetching logs…</p>}
+          {isLoading && <p className="text-[10px] text-gray-400">Fetching logs…</p>}
           {data?.summaries?.map((s: any, i: number) => (
             <div key={i} className="space-y-1">
               <p className="text-[10px] font-semibold text-accent-red flex items-center gap-1">
                 <XCircle size={9} /> {s.job}
-                {s.runner && <span className="text-gray-600 font-normal ml-1">on {s.runner}</span>}
+                {s.runner && <span className="text-gray-400 font-normal ml-1">on {s.runner}</span>}
               </p>
               {s.failed_steps?.map((step: any) => (
                 <p key={step.number} className="text-[10px] text-orange-400 pl-3 flex items-center gap-1">
@@ -67,7 +67,7 @@ function FailureDetail({ runId }: { runId: number }) {
             </div>
           ))}
           {data?.failed_jobs === 0 && (
-            <p className="text-[10px] text-gray-600">No failed jobs found in this run.</p>
+            <p className="text-[10px] text-gray-400">No failed jobs found in this run.</p>
           )}
         </div>
       )}
@@ -86,19 +86,19 @@ function PRPanel({ prs }: { prs: any }) {
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer hover:bg-surface-2 transition-colors"
+        className="flex items-center justify-between px-3.5 py-2.5 border-b border-border card-head cursor-pointer hover:bg-surface-2 transition-colors"
         onClick={() => nav('/prs')}
       >
         <div className="flex items-center gap-2">
-          <GitPullRequest size={14} className="text-accent-blue" />
+          <GitPullRequest size={14} className="text-neutral-400" />
           <span className="text-xs font-semibold text-gray-300">Open PRs</span>
-          <span className="text-[10px] bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25 px-1.5 py-0.5 rounded-full">{prs.open}</span>
+          <span className="text-[10px] bg-surface-2 text-neutral-400 ring-1 ring-border px-1.5 py-0.5 rounded-full">{prs.open}</span>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-gray-500">
           <span className="text-accent-green">{prs.ready} ready</span>
-          <span className="text-gray-600">{prs.draft} draft</span>
+          <span className="text-gray-400">{prs.draft} draft</span>
           {prs.review_requested > 0 && (
-            <span className="text-accent-yellow flex items-center gap-0.5">
+            <span className="text-neutral-400 flex items-center gap-0.5">
               <Users size={9} /> {prs.review_requested} need review
             </span>
           )}
@@ -108,11 +108,11 @@ function PRPanel({ prs }: { prs: any }) {
       {/* PR list */}
       <div className="divide-y divide-border/40">
         {attention.slice(0, 6).map((pr: any) => (
-          <div key={pr.number} className="px-4 py-2.5 flex items-start gap-3 hover:bg-surface-2/50 transition-colors">
+          <div key={pr.number} className="px-3.5 py-2 flex items-start gap-3 hover:bg-surface-2/50 transition-colors">
             <img src={pr.avatar} className="w-5 h-5 rounded-full flex-shrink-0 mt-0.5" alt={pr.author} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] text-gray-600 font-mono">#{pr.number}</span>
+                <span className="text-[10px] text-gray-400 font-mono">#{pr.number}</span>
                 {pr.draft && (
                   <span className="text-[9px] px-1 py-0.5 rounded bg-gray-800 text-gray-400">DRAFT</span>
                 )}
@@ -124,31 +124,31 @@ function PRPanel({ prs }: { prs: any }) {
                 href={pr.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-gray-200 hover:text-accent-blue truncate block"
+                className="text-xs text-gray-200 hover:text-neutral-100 truncate block"
               >
                 {pr.title}
               </a>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600">
-                <span className="text-accent-blue font-mono truncate max-w-[120px]">{pr.branch}</span>
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
+                <span className="text-neutral-500 font-mono truncate max-w-[120px]">{pr.branch}</span>
                 <span>→ {pr.base}</span>
                 {pr.reviewers_requested > 0 && (
-                  <span className="text-accent-yellow">⟳ {pr.reviewers_requested} reviewer{pr.reviewers_requested > 1 ? 's' : ''}</span>
+                  <span className="text-neutral-400">⟳ {pr.reviewers_requested} reviewer{pr.reviewers_requested > 1 ? 's' : ''}</span>
                 )}
                 <span>{pr.updated_at && formatDistanceToNow(new Date(pr.updated_at), { addSuffix: true })}</span>
               </div>
             </div>
             <a href={pr.url} target="_blank" rel="noreferrer" className="flex-shrink-0">
-              <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+              <ExternalLink size={10} className="text-gray-400 hover:text-neutral-200" />
             </a>
           </div>
         ))}
         {attention.length === 0 && (
-          <p className="px-4 py-3 text-xs text-gray-600">No open PRs.</p>
+          <p className="px-4 py-3 text-xs text-gray-400">No open PRs.</p>
         )}
       </div>
 
       <div
-        className="px-4 py-2 border-t border-border text-[10px] text-gray-600 hover:text-accent-blue cursor-pointer transition-colors"
+        className="px-3.5 py-1.5 border-t border-border text-[10px] text-gray-400 hover:text-neutral-200 cursor-pointer transition-colors"
         onClick={() => nav('/prs')}
       >
         View all {prs.open} PRs →
@@ -175,20 +175,20 @@ function BuildPanel({ builds }: { builds: any }) {
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer hover:bg-surface-2 transition-colors"
+        className="flex items-center justify-between px-3.5 py-2.5 border-b border-border card-head cursor-pointer hover:bg-surface-2 transition-colors"
         onClick={() => nav('/builds')}
       >
         <div className="flex items-center gap-2">
-          <Container size={14} className="text-accent-purple" />
+          <Container size={14} className="text-neutral-400" />
           <span className="text-xs font-semibold text-gray-300">Build Runs</span>
-          <span className="text-[10px] bg-purple-950 text-accent-purple px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] bg-surface-2 text-neutral-400 ring-1 ring-border px-1.5 py-0.5 rounded-full">
             {builds.total?.toLocaleString()}
           </span>
         </div>
         <div className="flex items-center gap-3 text-[10px]">
           <span className={clsx(rateColor, 'font-semibold')}>{successRate ?? '—'}% success</span>
           {builds.in_progress > 0 && (
-            <span className="text-accent-blue animate-pulse flex items-center gap-0.5">
+            <span className="text-nvidia animate-pulse flex items-center gap-0.5">
               <Zap size={9} /> {builds.in_progress} running
             </span>
           )}
@@ -203,15 +203,15 @@ function BuildPanel({ builds }: { builds: any }) {
           </p>
           <div className="divide-y divide-border/40">
             {failures.slice(0, 5).map((b: any) => (
-              <div key={b.id} className="px-4 py-2.5">
+              <div key={b.id} className="px-3.5 py-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-accent-red flex-shrink-0" />
-                      <span className="text-[10px] text-gray-600 font-mono truncate max-w-[120px]">{b.branch}</span>
-                      <span className="text-[10px] text-gray-600">{b.workflow}</span>
+                      <span className="text-[10px] text-gray-400 font-mono truncate max-w-[120px]">{b.branch}</span>
+                      <span className="text-[10px] text-gray-400">{b.workflow}</span>
                       {b.duration_label && (
-                        <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                        <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
                           <Clock size={8} /> {b.duration_label}
                         </span>
                       )}
@@ -220,11 +220,11 @@ function BuildPanel({ builds }: { builds: any }) {
                       href={b.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-gray-200 hover:text-accent-blue block truncate"
+                      className="text-xs text-gray-200 hover:text-neutral-100 block truncate"
                     >
                       {b.title || b.branch}
                     </a>
-                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-600">
+                    <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
                       {b.actor_avatar && (
                         <img src={b.actor_avatar} className="w-3 h-3 rounded-full" alt="" />
                       )}
@@ -237,7 +237,7 @@ function BuildPanel({ builds }: { builds: any }) {
                     <FailureDetail runId={b.id} />
                   </div>
                   <a href={b.url} target="_blank" rel="noreferrer" className="flex-shrink-0 mt-0.5">
-                    <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                    <ExternalLink size={10} className="text-gray-400 hover:text-neutral-200" />
                   </a>
                 </div>
               </div>
@@ -250,14 +250,14 @@ function BuildPanel({ builds }: { builds: any }) {
       {failures.length === 0 && (
         <div className="divide-y divide-border/40">
           {recent.slice(0, 5).map((b: any) => (
-            <div key={b.id} className="px-4 py-2.5 flex items-center gap-3">
+            <div key={b.id} className="px-3.5 py-2 flex items-center gap-3">
               <StatusBadge status={b.status} />
               <span className="text-xs text-gray-300 truncate flex-1">{b.title || b.branch}</span>
-              <span className="text-[10px] text-gray-600 flex-shrink-0">
+              <span className="text-[10px] text-gray-400 flex-shrink-0">
                 {b.created_at && formatDistanceToNow(new Date(b.created_at), { addSuffix: true })}
               </span>
               <a href={b.url} target="_blank" rel="noreferrer">
-                <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                <ExternalLink size={10} className="text-gray-400 hover:text-neutral-200" />
               </a>
             </div>
           ))}
@@ -265,7 +265,7 @@ function BuildPanel({ builds }: { builds: any }) {
       )}
 
       <div
-        className="px-4 py-2 border-t border-border text-[10px] text-gray-600 hover:text-accent-blue cursor-pointer transition-colors"
+        className="px-3.5 py-1.5 border-t border-border text-[10px] text-gray-400 hover:text-neutral-200 cursor-pointer transition-colors"
         onClick={() => nav('/builds')}
       >
         View all builds →
@@ -285,15 +285,10 @@ function NightlyPanel({ nightly }: { nightly: any }) {
   const isCritical = fails >= 3
 
   return (
-    <div className={clsx(
-      'rounded-xl border overflow-hidden',
-      isCritical ? 'border-red-800 bg-red-950/20' :
-      isHealthy ? 'border-green-800 bg-green-950/10' :
-      'border-yellow-800 bg-yellow-950/10',
-    )}>
+    <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer hover:bg-surface-2/50 transition-colors"
+        className="flex items-center justify-between px-3.5 py-2.5 border-b border-border card-head cursor-pointer hover:bg-surface-2/50 transition-colors"
         onClick={() => nav('/nightly')}
       >
         <div className="flex items-center gap-2">
@@ -330,12 +325,12 @@ function NightlyPanel({ nightly }: { nightly: any }) {
                 </p>
                 {j.url && (
                   <a href={j.url} target="_blank" rel="noreferrer">
-                    <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                    <ExternalLink size={10} className="text-gray-400 hover:text-neutral-200" />
                   </a>
                 )}
               </div>
               {j.failed_steps?.map((step: string, si: number) => (
-                <p key={si} className="text-[10px] text-orange-400 mt-1 pl-5 flex items-center gap-1">
+                <p key={si} className="text-[10px] text-neutral-400 mt-1 pl-5 flex items-center gap-1">
                   <AlertTriangle size={8} /> {step}
                 </p>
               ))}
@@ -353,7 +348,7 @@ function NightlyPanel({ nightly }: { nightly: any }) {
       )}
 
       <div
-        className="px-4 py-2 border-t border-border text-[10px] text-gray-600 hover:text-accent-blue cursor-pointer transition-colors"
+        className="px-3.5 py-1.5 border-t border-border text-[10px] text-gray-400 hover:text-neutral-200 cursor-pointer transition-colors"
         onClick={() => nav('/nightly')}
       >
         View nightly matrix →
@@ -373,11 +368,11 @@ function RunnersPanel({ runners }: { runners: any }) {
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer hover:bg-surface-2 transition-colors"
+        className="flex items-center justify-between px-3.5 py-2.5 border-b border-border card-head cursor-pointer hover:bg-surface-2 transition-colors"
         onClick={() => nav('/infra')}
       >
         <div className="flex items-center gap-2">
-          <Server size={14} className="text-accent-orange" />
+          <Server size={14} className="text-neutral-400" />
           <span className="text-xs font-semibold text-gray-300">Runners</span>
           <span className={clsx(
             'text-[10px] px-1.5 py-0.5 rounded-full',
@@ -388,7 +383,7 @@ function RunnersPanel({ runners }: { runners: any }) {
           </span>
         </div>
         {runners.busy > 0 && (
-          <span className="text-[10px] text-accent-blue animate-pulse flex items-center gap-0.5">
+          <span className="text-[10px] text-nvidia animate-pulse flex items-center gap-0.5">
             <Zap size={9} /> {runners.busy} busy
           </span>
         )}
@@ -397,15 +392,15 @@ function RunnersPanel({ runners }: { runners: any }) {
       {list.length > 0 ? (
         <div className="divide-y divide-border/40">
           {list.map((r: any) => (
-            <div key={r.name} className="px-4 py-2 flex items-center gap-3">
+            <div key={r.name} className="px-3.5 py-1.5 flex items-center gap-3">
               <div className={clsx(
                 'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                r.status === 'online' && r.busy ? 'bg-accent-blue' :
-                r.status === 'online' ? 'bg-accent-green' : 'bg-gray-600',
+                r.status === 'online' && r.busy ? 'bg-nvidia' :
+                r.status === 'online' ? 'bg-nvidia' : 'bg-gray-600',
               )} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-300 truncate">{r.name}</p>
-                <div className="flex items-center gap-2 text-[10px] text-gray-600">
+                <div className="flex items-center gap-2 text-[10px] text-gray-400">
                   <span>{r.os}</span>
                   {r.labels.slice(0, 2).map((l: string) => (
                     <span key={l} className="bg-surface-3 px-1 rounded">{l}</span>
@@ -414,8 +409,8 @@ function RunnersPanel({ runners }: { runners: any }) {
               </div>
               <span className={clsx(
                 'text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0',
-                r.busy ? 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25' :
-                r.status === 'online' ? 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25' : 'bg-surface-3 text-gray-500',
+                r.busy ? 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25' :
+                r.status === 'online' ? 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25' : 'bg-surface-3 text-gray-500',
               )}>
                 {r.busy ? 'busy' : r.status}
               </span>
@@ -423,16 +418,16 @@ function RunnersPanel({ runners }: { runners: any }) {
           ))}
         </div>
       ) : (
-        <div className="px-4 py-4 text-xs text-gray-600 text-center">
+        <div className="px-4 py-4 text-xs text-gray-400 text-center">
           {accessDenied
-            ? <><span className="text-gray-500">PAT lacks <code className="text-[10px] bg-surface-3 px-1 rounded">manage_runners:repo</code> scope</span><p className="mt-1 text-gray-700">Visit Infra page for job-history runner data.</p></>
-            : <><span>No self-hosted runners registered.</span><p className="text-[10px] mt-1 text-gray-700">GitHub-hosted runners are used.</p></>
+            ? <><span className="text-gray-500">PAT lacks <code className="text-[10px] bg-surface-3 px-1 rounded">manage_runners:repo</code> scope</span><p className="mt-1 text-gray-400">Visit Infra page for job-history runner data.</p></>
+            : <><span>No self-hosted runners registered.</span><p className="text-[10px] mt-1 text-gray-400">GitHub-hosted runners are used.</p></>
           }
         </div>
       )}
 
       <div
-        className="px-4 py-2 border-t border-border text-[10px] text-gray-600 hover:text-accent-blue cursor-pointer transition-colors"
+        className="px-3.5 py-1.5 border-t border-border text-[10px] text-gray-400 hover:text-neutral-200 cursor-pointer transition-colors"
         onClick={() => nav('/infra')}
       >
         View infra →
@@ -448,8 +443,8 @@ function RepoCard({ repo }: { repo: any }) {
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Repository</span>
-        <a href={`https://github.com/${repo.name}`} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-accent-blue">
+        <span className="text-sm font-bold text-white">Repository</span>
+        <a href={`https://github.com/${repo.name}`} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-neutral-200">
           <ExternalLink size={12} />
         </a>
       </div>
@@ -463,12 +458,12 @@ function RepoCard({ repo }: { repo: any }) {
           <div key={label} className="bg-surface-2 rounded-lg p-2 text-center">
             <Icon size={11} className="mx-auto text-gray-500 mb-1" />
             <p className="text-sm font-semibold text-white">{val ?? '—'}</p>
-            <p className="text-[9px] text-gray-600">{label}</p>
+            <p className="text-[9px] text-gray-400">{label}</p>
           </div>
         ))}
       </div>
       {repo.updated_at && (
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-[10px] text-gray-400 mt-2">
           Updated {formatDistanceToNow(new Date(repo.updated_at), { addSuffix: true })}
         </p>
       )}
@@ -482,33 +477,33 @@ function ActivityFeed({ items }: { items: any[] }) {
   if (!items?.length) return null
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Activity size={13} className="text-accent-blue" />
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Activity</span>
+      <div className="section-head">
+        <Activity size={13} className="text-neutral-400 flex-shrink-0" />
+        Recent Activity
       </div>
       <div className="space-y-0">
         {items.map((item, i) => (
           <div key={i} className="flex items-center gap-3 py-2 border-b border-border/40 last:border-0">
             <span className={clsx(
               'text-[9px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0',
-              item.type === 'build' ? 'bg-purple-950 text-accent-purple' : 'bg-blue-500/[.07] text-blue-400 ring-1 ring-blue-500/25'
+              'bg-surface-2 text-neutral-500 ring-1 ring-border'
             )}>
               {item.type}
             </span>
             <StatusBadge status={item.status} />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-300 truncate">{item.title}</p>
-              {item.branch && <p className="text-[10px] text-accent-blue font-mono truncate">{item.branch}</p>}
+              {item.branch && <p className="text-[10px] text-neutral-500 font-mono truncate">{item.branch}</p>}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {item.at && (
-                <span className="text-[10px] text-gray-600">
+                <span className="text-[10px] text-gray-400">
                   {formatDistanceToNow(new Date(item.at), { addSuffix: true })}
                 </span>
               )}
               {item.url && (
                 <a href={item.url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                  <ExternalLink size={10} className="text-gray-400 hover:text-neutral-200" />
                 </a>
               )}
             </div>
@@ -523,7 +518,7 @@ function ActivityFeed({ items }: { items: any[] }) {
 
 export default function Overview() {
   const nav = useNavigate()
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['overview'],
     queryFn: getOverviewSummary,
     refetchInterval: 60_000,
@@ -540,11 +535,11 @@ export default function Overview() {
   const buildHealthy = (builds?.success_rate_last10 ?? 100) >= 70
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Zap size={18} className="text-accent-blue" />
+          <Zap size={18} className="text-neutral-400" />
           <h1 className="text-lg font-semibold">Control Plane</h1>
           <span className="text-[10px] text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
             {repoSlug}
@@ -563,7 +558,14 @@ export default function Overview() {
         <div className="text-center py-16 text-gray-500 text-sm">Loading dashboard…</div>
       )}
 
-      {!isLoading && (
+      {!isLoading && isError && (
+        <div className="text-center py-12 text-[12px] text-gray-500">
+          Dashboard data unavailable —{' '}
+          <button onClick={() => refetch()} className="text-neutral-300 hover:underline">retry</button>
+        </div>
+      )}
+
+      {!isLoading && !isError && (
         <>
           {/* Alert banners */}
           {isCritical && (
@@ -586,15 +588,15 @@ export default function Overview() {
             </div>
           )}
           {!buildHealthy && builds?.recent_failures?.length > 0 && (
-            <div className="flex items-center gap-3 bg-orange-950/30 border border-orange-800/60 rounded-xl px-4 py-2.5">
-              <XCircle size={13} className="text-orange-400 flex-shrink-0" />
-              <p className="text-xs text-orange-300">
+            <div className="flex items-center gap-3 bg-accent-yellow/[.05] border border-accent-yellow/20 rounded-xl px-4 py-2.5">
+              <XCircle size={13} className="text-accent-yellow flex-shrink-0" />
+              <p className="text-xs text-neutral-300">
                 Build success rate: <span className="font-semibold">{builds.success_rate_last10}%</span> (last 10 runs) ·{' '}
                 {builds.recent_failures.length} recent failure{builds.recent_failures.length > 1 ? 's' : ''}
               </p>
               <button
                 onClick={() => nav('/builds')}
-                className="ml-auto text-xs text-orange-400 border border-orange-800 px-2.5 py-1 rounded hover:bg-orange-950 transition-colors flex-shrink-0"
+                className="ml-auto text-xs text-accent-yellow border border-accent-yellow/30 px-2.5 py-1 rounded hover:bg-accent-yellow/10 transition-colors flex-shrink-0"
               >
                 View builds →
               </button>
@@ -602,19 +604,19 @@ export default function Overview() {
           )}
 
           {/* Main grid: PRs + Builds side-by-side */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <PRPanel prs={prs} />
             <BuildPanel builds={builds} />
           </div>
 
           {/* Nightly + Runners */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <NightlyPanel nightly={nightly} />
             <RunnersPanel runners={runners} />
           </div>
 
           {/* Repo + Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <RepoCard repo={repo} />
             <div className="lg:col-span-2">
               <ActivityFeed items={data?.recent_activity ?? []} />
@@ -623,24 +625,24 @@ export default function Overview() {
 
           {/* Quick actions */}
           <div className="bg-surface-1 border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap size={13} className="text-accent-yellow" />
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quick Actions</span>
+            <div className="section-head">
+              <Zap size={13} className="text-neutral-400 flex-shrink-0" />
+              Quick Actions
             </div>
             <div className="flex flex-wrap gap-2">
               {[
-                { label: 'PR Hub', path: '/prs', color: 'text-blue-400 ring-1 ring-blue-500/25 hover:bg-blue-500/[.07]' },
-                { label: 'Builds', path: '/builds', color: 'text-accent-purple border-purple-800 hover:bg-purple-950' },
-                { label: 'Nightly', path: '/nightly', color: 'text-amber-400 ring-1 ring-amber-500/25 hover:bg-amber-500/[.07]' },
-                { label: 'Analytics', path: '/analytics', color: 'text-emerald-400 ring-1 ring-emerald-500/25 hover:bg-emerald-500/[.07]' },
-                { label: 'Logs', path: '/logs', color: 'text-gray-400 border-gray-700 hover:bg-surface-2' },
-                { label: 'Infra', path: '/infra', color: 'text-accent-orange border-orange-800 hover:bg-orange-950' },
-                { label: 'Registry', path: '/registry', color: 'text-accent-purple border-purple-800 hover:bg-purple-950' },
-              ].map(({ label, path, color }) => (
+                { label: 'PR Hub', path: '/prs' },
+                { label: 'Builds', path: '/builds' },
+                { label: 'Nightly', path: '/nightly' },
+                { label: 'Analytics', path: '/analytics' },
+                { label: 'Logs', path: '/logs' },
+                { label: 'Infra', path: '/infra' },
+                { label: 'Registry', path: '/registry' },
+              ].map(({ label, path }) => (
                 <button
                   key={label}
                   onClick={() => nav(path)}
-                  className={clsx('px-3 py-1.5 rounded border text-xs transition-colors', color)}
+                  className="px-3 py-1.5 rounded border border-border text-xs text-neutral-400 bg-surface-2 hover:bg-surface-3 hover:text-neutral-200 transition-colors"
                 >
                   {label}
                 </button>

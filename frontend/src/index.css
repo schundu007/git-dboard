@@ -21,8 +21,8 @@
   --color-green:  #76b900;   /* NVIDIA green */
   --color-blue:   #0a66c2;   /* info blue */
   --color-red:    #b24020;   /* error red */
-  --color-yellow: #d4d4d4;   /* neutral warning */
-  --color-lime:   #E0FF4F;   /* primary brand accent */
+  --color-yellow: #d97706;   /* amber warning */
+  --color-lime:   #76b900;   /* aliased to NVIDIA green — lime retired */
 
   /* Surface/border channel values (r g b) for Tailwind CSS var colors */
   --sfc:    9   9  11;   /* zinc-950 #09090b */
@@ -36,6 +36,9 @@
   --bdr-x: 113 113 122;  /* #71717a */
 }
 
+/* ── Dark-mode native color scheme (scrollbars, inputs) ───────────────────── */
+:root { color-scheme: dark; }
+
 /* ── Base reset ────────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -43,18 +46,20 @@
 }
 
 html {
-  font-size: 16.8px;
+  font-size: 16px;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   background-color: rgb(var(--sfc));
   color: var(--color-text);
-  font-family: 'Plus Jakarta Sans', 'Inter var', 'Inter', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  font-size: 0.875rem;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
 }
 
 /* ── Typography ────────────────────────────────────────────────────────────── */
@@ -63,23 +68,26 @@ code, pre, .font-mono, [data-mono] {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.025em;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
 }
 
-h1 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.025em; line-height: 1.4; }
-h2 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.4; }
-h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 1.3125rem; font-weight: 700; letter-spacing: -0.025em; line-height: 1.3;  }
+h2 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.35; }
+h3 { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em;  line-height: 1.4;  }
+h4 { font-size: 0.875rem;  font-weight: 600; letter-spacing: -0.005em; }
+h5 { font-size: 0.8125rem; font-weight: 600; }
+h6 { font-size: 0.75rem;   font-weight: 600; }
 
 /* ── Selection ─────────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(224, 255, 79, 0.2);
+  background-color: rgba(118, 185, 0, 0.18);
   color: #ffffff;
 }
 
 /* ── Focus ─────────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(224, 255, 79, 0.6);
+  outline: 2px solid rgba(118, 185, 0, 0.5);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -99,11 +107,11 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   border-collapse: collapse;
 }
 .data-table thead th {
-  padding: 0.4375rem 0.875rem;
+  padding: 0.5rem 1rem;
   text-align: left;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #909090;
   border-bottom: 1px solid #2a2a2a;
@@ -116,8 +124,8 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table tbody tr:hover { background-color: rgba(255,255,255,0.03); }
 .data-table td {
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
+  padding: 0.5625rem 1rem;
+  font-size: 0.875rem;
   color: #c0c0c0;
   vertical-align: middle;
 }
@@ -132,16 +140,16 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 
 /* ── Section header pattern ────────────────────────────────────────────────── */
 .section-label {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(224, 255, 79, 0.45);
+  color: #52525b;
 }
 
 /* ── Natural section title (no uppercase mechanical look) ─────────────────── */
 .section-title {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #71717a;
   letter-spacing: 0;
@@ -154,7 +162,7 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   display: block;
   width: 2.5px;
   height: 0.875rem;
-  background: #E0FF4F;
+  background: #3f3f46;
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -162,18 +170,24 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 
 /* ── Stat number ───────────────────────────────────────────────────────────── */
 .stat-value {
-  font-size: 1.625rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #fafafa;
-  font-family: 'Sora', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
+/* ── Amber warning variants (dark mode — now that accent-yellow = #d97706) ── */
+.bg-accent-yellow\/10  { background-color: rgba(217,119,6,0.10) !important; }
+.bg-accent-yellow\/15  { background-color: rgba(217,119,6,0.15) !important; }
+.border-accent-yellow\/20 { border-color: rgba(217,119,6,0.20) !important; }
+.border-accent-yellow\/30 { border-color: rgba(217,119,6,0.30) !important; }
+
 /* ── Log lines ─────────────────────────────────────────────────────────────── */
 .log-line {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-all;
@@ -219,7 +233,7 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   border-bottom: 1px solid #3f3f46;
   color: #fafafa;
   outline: none;
-  caret-color: #E0FF4F;
+  caret-color: #76b900;
 }
 [cmdk-input]::placeholder { color: #71717a; }
 
@@ -234,7 +248,7 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(224, 255, 79, 0.45);
+  color: #52525b;
   padding: 0.625rem 0.75rem 0.25rem;
 }
 
@@ -251,7 +265,7 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 }
 [cmdk-item]:hover,
 [cmdk-item][aria-selected='true'] {
-  background: rgba(224, 255, 79, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   color: #fafafa;
 }
 
@@ -308,26 +322,62 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   border-right: none !important;
 }
 
+/* ── Card header — transparent, border-b provides structure ───────────────── */
+.card-head { background: transparent; }
+[data-theme="light"] .card-head { background: transparent; }
+
 /* ── Interactive card ──────────────────────────────────────────────────────── */
 .card-interactive {
-  transition: border-color 300ms cubic-bezier(0.4,0,0.2,1), box-shadow 300ms cubic-bezier(0.4,0,0.2,1), background-color 300ms, transform 300ms cubic-bezier(0.4,0,0.2,1);
+  transition: border-color 150ms, background-color 150ms;
 }
 .card-interactive:hover {
   border-color: #52525b;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
-  transform: translateY(-2px);
 }
 
-/* ── Hover lift — physical micro-interaction for cards ────────────────────── */
-.hover-lift {
-  transition: transform 300ms cubic-bezier(0.4,0,0.2,1), box-shadow 300ms cubic-bezier(0.4,0,0.2,1), border-color 150ms;
+/* ── Hover lift — removed, use border-color only ─────────────────────────── */
+.hover-lift { transition: border-color 150ms; }
+.hover-lift:hover { border-color: #52525b; }
+
+/* ── NVIDIA document aesthetic — structural rounding → near-zero ─────────── */
+.rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 3px !important; }
+.rounded-lg { border-radius: 3px !important; }
+.rounded-md, .rounded, .rounded-sm { border-radius: 2px !important; }
+.recharts-default-tooltip { border-radius: 3px !important; }
+/* Floating overlays retain rounding */
+[cmdk-root]      { border-radius: 10px !important; }
+[cmdk-item]      { border-radius: 4px !important; }
+.tooltip-content { border-radius: 4px !important; }
+
+/* ── Section heading — plain underlined label, no chip chrome ────────────── */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0 0.375rem 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #52525b;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgb(var(--bdr) / 0.4);
+  margin-bottom: 0.75rem;
 }
-.hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-[data-theme="light"] .hover-lift:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
-  border-color: rgba(0,0,0,0.10) !important;
+.section-head-flush { margin-inline: 0; }
+[data-theme="light"] .section-head {
+  color: #71717a;
+  background: none;
+  border-bottom-color: rgba(0,0,0,0.10);
 }
+
+/* ── Elite health ring glow — only when score ≥ 95 ───────────────────────── */
+@keyframes ring-glow {
+  0%, 100% { filter: drop-shadow(0 0 1px rgba(118, 185, 0, 0.0)); }
+  50%       { filter: drop-shadow(0 0 6px rgba(118, 185, 0, 0.4)); }
+}
+.ring-elite-glow { animation: ring-glow 2.5s ease-in-out infinite; }
 
 /* ── Card entrance animations ─────────────────────────────────────────────── */
 @keyframes card-appear {
@@ -335,6 +385,13 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .card-appear   { animation: card-appear 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 .card-appear-1 { animation-delay: 0.04s; }
 .card-appear-2 { animation-delay: 0.08s; }
 .card-appear-3 { animation-delay: 0.12s; }
@@ -342,11 +399,11 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 .card-appear-5 { animation-delay: 0.20s; }
 .card-appear-6 { animation-delay: 0.24s; }
 
-/* ── Emerald → lime (live indicators use emerald-* classes) ─────────────── */
-.bg-emerald-400, .bg-emerald-500 { background-color: #E0FF4F !important; }
-.text-emerald-400, .text-emerald-500 { color: #E0FF4F !important; }
-.ring-emerald-500\/20 { --tw-ring-color: rgba(224,255,79,0.2) !important; }
-.bg-emerald-500\/\[\.07\] { background-color: rgba(224,255,79,0.07) !important; }
+/* ── Emerald → NVIDIA green (live/success indicators use emerald-* classes) ── */
+.bg-emerald-400, .bg-emerald-500 { background-color: #76b900 !important; }
+.text-emerald-400, .text-emerald-500 { color: #76b900 !important; }
+.ring-emerald-500\/20, .ring-emerald-500\/25 { --tw-ring-color: rgba(118,185,0,0.2) !important; }
+.bg-emerald-500\/\[\.07\] { background-color: rgba(118,185,0,0.07) !important; }
 
 /* ── Light theme — warm ivory (sudhakarchundu.org inspired) ──────────────── */
 [data-theme="light"] {
@@ -456,6 +513,21 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 [data-theme="light"] .text-rose-400    { color: #b24020; }
 [data-theme="light"] .text-lime-400    { color: #057642; }
 
+/* nvidia / accent-green text — parrot green #76b900 is unreadable on white -- */
+[data-theme="light"] .text-nvidia       { color: #3d6b00; }   /* 7:1 contrast on white */
+[data-theme="light"] .text-emerald-300  { color: #065f46; }
+[data-theme="light"] .text-emerald-500  { color: #065f46; }
+[data-theme="light"] .text-emerald-600  { color: #065f46; }
+[data-theme="light"] .text-emerald-700  { color: #065f46; }
+[data-theme="light"] .text-emerald-800  { color: #1a3a00; }
+
+/* StatusBadge + active-badge: white bg in light mode, ring provides color cue */
+[data-theme="light"] .bg-emerald-500\/\[\.07\]  { background-color: #ffffff; }
+[data-theme="light"] .ring-emerald-500\/25       { --tw-ring-color: rgba(6,95,70,0.40); }
+[data-theme="light"] .bg-\[\#76b900\]\/\[\.07\] { background-color: #ffffff; }
+[data-theme="light"] .ring-\[\#76b900\]\/25      { --tw-ring-color: rgba(61,107,0,0.35); }
+[data-theme="light"] .bg-emerald-50             { background-color: #ffffff; }
+
 /* Section label, stat value ------------------------------------------------- */
 [data-theme="light"] .section-label { color: #65a30d; font-weight: 700; }
 [data-theme="light"] .stat-value    { color: #1a1a1a; }
@@ -527,9 +599,7 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 
 /* Interactive card ---------------------------------------------------------- */
 [data-theme="light"] .card-interactive:hover {
-  border-color: rgba(0,0,0,0.10);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
-  transform: translateY(-2px);
+  border-color: rgba(0,0,0,0.15);
 }
 
 /* Recharts ------------------------------------------------------------------ */
@@ -545,10 +615,10 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 
 /* Focus & selection --------------------------------------------------------- */
 [data-theme="light"] :focus-visible {
-  outline-color: rgba(132,204,22,0.6);   /* lime focus ring */
+  outline-color: rgba(118,185,0,0.5);
 }
 [data-theme="light"] *::selection {
-  background-color: rgba(132,204,22,0.18);
+  background-color: rgba(118,185,0,0.15);
   color: #1a1a1a;
 }
 
@@ -662,9 +732,9 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
   color: #71717a;
   border-bottom-color: rgba(0,0,0,0.06);
   background-color: #F9F8F4;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
   text-transform: none;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 [data-theme="light"] .data-table tbody tr        { border-bottom-color: rgba(0,0,0,0.05); }
@@ -698,10 +768,10 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 [data-theme="light"] .hover\:bg-nvidia\/25:hover { background-color: rgba(101,163,13,0.25) !important; }
 
 /* ── Remove mechanical all-caps tracking from section labels globally ────────
-   tracking-wider is used purely for visual decoration on small section labels;
-   LinkedIn-style uses natural-case weight instead.
-   Exception: tracking-widest (priority/status badges) is intentional.         */
-[data-theme="light"] .uppercase.tracking-wider {
+   tracking-wider / tracking-widest on small section labels → natural case.
+   Exception: explicit badge labels (severity, status) are intentional.         */
+[data-theme="light"] .uppercase.tracking-wider,
+[data-theme="light"] .uppercase.tracking-widest {
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
@@ -732,3 +802,40 @@ h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: -0.01em; }
 [data-theme="light"] .text-yellow-300,
 [data-theme="light"] .text-yellow-400 { color: #7c5a02 !important; }
 [data-theme="light"] .text-yellow-500 { color: #915907 !important; }
+
+/* ── Code editor — hardcoded dark bg, always needs light text ────────────── */
+/* The editor container uses bg-[#0d0d0f] regardless of theme, so text and   */
+/* placeholder must stay light even when data-theme="light" overrides colors. */
+.code-editor {
+  color: #e8e8e8 !important;
+}
+.code-editor::placeholder {
+  color: #8a8a8a !important;
+  opacity: 1 !important;
+}
+
+/* ── Dark-surface scope — always-dark containers (modals, overlays) ──────── */
+/* Counters [data-theme="light"] text overrides inside hardcoded dark panels. */
+[data-theme="light"] .dark-surface .text-white,
+[data-theme="light"] .dark-surface .text-neutral-50,
+[data-theme="light"] .dark-surface .text-neutral-100,
+[data-theme="light"] .dark-surface .text-neutral-200,
+[data-theme="light"] .dark-surface .text-neutral-300 { color: #e8e8e8 !important; }
+[data-theme="light"] .dark-surface .text-neutral-400,
+[data-theme="light"] .dark-surface .text-neutral-500 { color: #a0a0a0 !important; }
+
+/* ── Light mode: white/[.0N] hover effects are invisible — override to black ─ */
+[data-theme="light"] .hover\:bg-white\/\[\.02\]:hover { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .hover\:bg-white\/\[\.03\]:hover { background-color: rgba(0,0,0,0.04) !important; }
+[data-theme="light"] .hover\:bg-white\/\[\.04\]:hover { background-color: rgba(0,0,0,0.05) !important; }
+[data-theme="light"] .hover\:bg-white\/\[\.05\]:hover { background-color: rgba(0,0,0,0.06) !important; }
+
+/* ── Enterprise type-scale — +1px lift on sub-12px sizes for density+legibility */
+.text-\[8px\]     { font-size: 9.5px !important; line-height: 1.4  !important; }
+.text-\[9px\]     { font-size: 10px  !important; line-height: 1.4  !important; }
+.text-\[9\.5px\]  { font-size: 10px  !important; line-height: 1.4  !important; }
+.text-\[10px\]    { font-size: 11px  !important; line-height: 1.45 !important; }
+.text-\[10\.5px\] { font-size: 11.5px !important; line-height: 1.45 !important; }
+.text-\[11px\]    { font-size: 12px  !important; line-height: 1.5  !important; }
+.text-\[11\.5px\] { font-size: 12.5px !important; line-height: 1.5  !important; }
+.text-\[12px\]    { font-size: 13px  !important; line-height: 1.5  !important; }

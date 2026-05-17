@@ -60,21 +60,26 @@ def _dora_rating(metric: str, value: float) -> str:
 
 
 @router.get("/dora")
-async def dora_metrics():
+async def dora_metrics(days: int = 14):
     """DORA metrics: Deployment Frequency, Lead Time for Changes, MTTR, Change Failure Rate."""
+    days = min(max(days, 1), 365)
     now = datetime.now(timezone.utc)
-    since_30d = (now - timedelta(days=30)).isoformat()
+    since_30d = (now - timedelta(days=days)).isoformat()
 
     wf = await gh.get_primary_workflows()
-    ci_wf = wf["ci"]
-    deployments_raw, postmerge_runs = await asyncio.gather(
+    ci_wf = wf.get("ci")
+    nightly_wf = wf.get("nightly")
+    deployments_raw, ci_runs_raw, nightly_runs_raw = await asyncio.gather(
         gh.get_deployments(per_page=100),
         gh.get_workflow_runs(ci_wf, per_page=100) if ci_wf else asyncio.sleep(0),
+        gh.get_workflow_runs(nightly_wf, per_page=100) if nightly_wf else asyncio.sleep(0),
         return_exceptions=True,
     )
     deployments = deployments_raw if isinstance(deployments_raw, list) else []
-    wf_data = postmerge_runs if isinstance(postmerge_runs, dict) else {}
+    wf_data = ci_runs_raw if isinstance(ci_runs_raw, dict) else {}
     workflow_runs = wf_data.get("workflow_runs", [])
+    nightly_wf_data = nightly_runs_raw if isinstance(nightly_runs_raw, dict) else {}
+    nightly_all_runs = nightly_wf_data.get("workflow_runs", [])
 
     # ── 1. Deployment Frequency ──────────────────────────────────────────────
     recent_deploys = [d for d in deployments if (d.get("created_at") or "") >= since_30d]
@@ -160,11 +165,24 @@ async def dora_metrics():
             "passed": pass_by_day.get(day, 0),
         })
 
+    # ── 5. CI Pass Rate (actual, not derived) ────────────────────────────────
+    passed_run_count = len(total_completed) - len(failed_runs)
+    ci_pass_rate = round(passed_run_count / len(total_completed) * 100, 1) if total_completed else None
+
+    # ── 6. Nightly Pass Rate (last 30 days) ───────────────────────────────────
+    nightly_recent = [
+        r for r in nightly_all_runs
+        if (r.get("run_started_at") or "") >= since_30d and r.get("status") == "completed"
+    ]
+    nightly_passed = [r for r in nightly_recent if r.get("conclusion") == "success"]
+    nightly_pass_rate = round(len(nightly_passed) / len(nightly_recent) * 100, 1) if nightly_recent else None
+
     return {
-        "period_days": 30,
+        "period_days": days,
         "deployment_frequency": {
             "per_day": round(deploy_freq, 3),
             "per_week": round(deploy_freq * 7, 1),
+            "total_in_period": len(recent_deploys),
             "total_30d": len(recent_deploys),
             "rating": _dora_rating("deploy_freq_per_day", deploy_freq),
             "chart": chart_14d,
@@ -189,6 +207,8 @@ async def dora_metrics():
             "rating": _dora_rating("cfr_pct", cfr),
             "trend": failure_trend,
         },
+        "ci_pass_rate": ci_pass_rate,
+        "nightly_pass_rate": nightly_pass_rate,
     }
 
 

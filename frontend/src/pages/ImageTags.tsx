@@ -21,7 +21,7 @@ function CopyTag({ value }: { value: string }) {
       <code className="text-[11px] text-gray-300 font-mono break-all">{value}</code>
       {copied
         ? <Check size={11} className="text-accent-green flex-shrink-0" />
-        : <Copy size={11} className="text-gray-600 group-hover:text-gray-400 flex-shrink-0" />
+        : <Copy size={11} className="text-gray-400 group-hover:text-gray-400 flex-shrink-0" />
       }
     </div>
   )
@@ -54,7 +54,7 @@ function MatrixSection() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-white">Build Matrix</h2>
+        <h2 className="text-base font-bold text-white">Build Status</h2>
         <span className="text-[11px] text-gray-500 font-mono">
           {data?.total_valid ?? 0} valid · {data?.total_skipped ?? 0} skipped
         </span>
@@ -87,7 +87,7 @@ function MatrixSection() {
                         <span className="inline-block text-accent-green" title={cell?.cell_slug}>✅</span>
                       ) : (
                         <span
-                          className="inline-block text-gray-600 cursor-help"
+                          className="inline-block text-gray-400 cursor-help"
                           title={cell?.unsupported_reason ?? 'Not supported'}
                         >
                           ❌
@@ -102,7 +102,7 @@ function MatrixSection() {
         </table>
       </div>
 
-      <p className="mt-2 text-[10px] text-gray-600">
+      <p className="mt-2 text-[10px] text-gray-400">
         ❌ = ngc-slim pre-built container not yet published by NVIDIA for this Isaac Sim version
       </p>
     </div>
@@ -150,7 +150,7 @@ function TagCalculator() {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-3">Tag Calculator</h2>
+      <div className="section-head">Tag Calculator</div>
 
       {/* Controls */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
@@ -229,7 +229,7 @@ function TagCalculator() {
             {!data.supported && (
               <span className="text-[11px] text-gray-500">{data.unsupported_reason}</span>
             )}
-            {isFetching && <span className="text-[10px] text-gray-600">computing…</span>}
+            {isFetching && <span className="text-[10px] text-gray-400">computing…</span>}
           </div>
 
           {/* Tag groups */}
@@ -294,7 +294,7 @@ function LifecycleSection() {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-3">Lifecycle Policy</h2>
+      <div className="section-head">Lifecycle Policy</div>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>
@@ -364,7 +364,7 @@ function OciLabels({ repoSlug }: { repoSlug: string }) {
   const labels = buildOciLabels(repoSlug)
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-3">OCI Labels</h2>
+      <div className="section-head">OCI Labels</div>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>
@@ -385,7 +385,7 @@ function OciLabels({ repoSlug }: { repoSlug: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[10px] text-gray-600">
+      <p className="mt-2 text-[10px] text-gray-400">
         All six labels are validated by <code className="font-mono">verify-push.py</code> after every push.
       </p>
     </div>
@@ -407,7 +407,7 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
   const repo = repoSlug.split('/')[1] ?? 'isaaclab'
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-3">Registry Comparison</h2>
+      <div className="section-head">Registry Comparison</div>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>
@@ -432,12 +432,12 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">NGC</p>
           <code className="text-gray-400 font-mono">nvcr.io/nvidia/{repo.toLowerCase().replace(/_/g, '-')}</code>
-          <p className="text-gray-600 mt-0.5">Auth: NGC_API_KEY</p>
+          <p className="text-gray-400 mt-0.5">Auth: NGC_API_KEY</p>
         </div>
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">GHCR</p>
           <code className="text-gray-400 font-mono">ghcr.io/{owner.toLowerCase()}/{repo.toLowerCase()}</code>
-          <p className="text-gray-600 mt-0.5">Auth: GITHUB_TOKEN / PAT</p>
+          <p className="text-gray-400 mt-0.5">Auth: GITHUB_TOKEN / PAT</p>
         </div>
       </div>
     </div>
@@ -449,7 +449,7 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
 function PromotionFlow() {
   return (
     <div>
-      <h2 className="text-sm font-semibold text-white mb-3">Promotion Flow</h2>
+      <div className="section-head">Promotion Flow</div>
       <div className="bg-surface-2 border border-border rounded p-3 font-mono text-[11px] text-gray-400 whitespace-pre leading-relaxed">
         {`nightly-build.yaml
   │ builds & smoke-tests all 10 cells
@@ -467,7 +467,7 @@ release-image.yaml  (triggered by git tag v{semver})
   ▼
 verify-push.py validates all 6 OCI labels`}
       </div>
-      <p className="mt-2 text-[10px] text-gray-600">
+      <p className="mt-2 text-[10px] text-gray-400">
         Release images are <strong className="text-gray-400">identical bits</strong> to the tested nightly — no rebuild risk.
       </p>
     </div>
@@ -492,7 +492,7 @@ export default function ImageTags() {
           </div>
         ) : (
           <div className="bg-surface-1 border border-border rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-white mb-2">Tag Calculator</h2>
+            <div className="section-head">Tag Calculator</div>
             <p className="text-[12px] text-gray-500">
               The Isaac Sim tag naming scheme (<code className="font-mono text-gray-400">nightly-{'{date}'}-{'{ext}'}-sim{'{M.m}'}</code>) is
               specific to the IsaacLab publishing pipeline and does not apply to <span className="text-gray-300">{repoSlug}</span>.

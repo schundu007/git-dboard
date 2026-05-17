@@ -8,11 +8,13 @@ import {
 import {
   TrendingUp, Users, GitCommit, Clock, AlertTriangle,
   ExternalLink, RefreshCw, BarChart2, Calendar, Trophy,
-  GitMerge, Zap, Star, DollarSign, Lightbulb,
+  GitMerge, Zap, Star, DollarSign, Lightbulb, Eye, GitFork, Code, AlertCircle,
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, fromUnixTime, format } from 'date-fns'
 import {
   getOverviewSummary, getUserMetrics, getActiveRepo, getBuildPerformance,
+  getInsightsPulse, getInsightsParticipation, getInsightsContributors,
+  getInsightsCodeFrequency, getInsightsForks, getInsightsCommitActivity,
 } from '../lib/api'
 import clsx from 'clsx'
 
@@ -35,8 +37,6 @@ const usePRVelocity = () =>
 const useCommits = () =>
   useQuery({ queryKey: ['commits'], queryFn: () => req('/analytics/commits?per_page=30'), staleTime: 120_000 })
 
-const useContributors = () =>
-  useQuery({ queryKey: ['contributors'], queryFn: () => req('/analytics/contributors'), staleTime: 600_000 })
 
 const useErrorPatterns = () =>
   useQuery({ queryKey: ['error-patterns'], queryFn: () => req('/analytics/error-patterns'), staleTime: 120_000 })
@@ -45,9 +45,9 @@ const useErrorPatterns = () =>
 
 function SectionTitle({ icon: Icon, title, color }: { icon: React.ElementType; title: string; color: string }) {
   return (
-    <div className="flex items-center gap-2 mb-3">
-      <Icon size={13} className={color} />
-      <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</h2>
+    <div className="section-head">
+      <Icon size={13} className={clsx('flex-shrink-0', color)} />
+      {title}
     </div>
   )
 }
@@ -74,7 +74,7 @@ function StatRow({ items }: { items: { label: string; value: string | number; co
         <Card key={label}>
           <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
           <p className={clsx('text-2xl font-semibold tabular-nums', color ?? 'text-white')}>{value}</p>
-          {sub && <p className="text-[10px] text-gray-600 mt-0.5">{sub}</p>}
+          {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
         </Card>
       ))}
     </div>
@@ -84,8 +84,8 @@ function StatRow({ items }: { items: { label: string; value: string | number; co
 // ── Commit activity chart ─────────────────────────────────────────────────────
 
 function CommitActivityChart() {
-  const [days, setDays] = useState(30)
-  const { data, isLoading } = useCommitActivity(days)
+  const [days, setDays] = useState(14)
+  const { data, isLoading, isError } = useCommitActivity(days)
   const series = data?.series ?? []
   const nonZero = series.filter((d: any) => d.commits > 0)
   const maxVal = Math.max(...series.map((d: any) => d.commits), 1)
@@ -95,7 +95,7 @@ function CommitActivityChart() {
       <div className="flex items-center justify-between mb-3">
         <SectionTitle icon={GitCommit} title="Commit Activity" color="text-accent-blue" />
         <div className="flex items-center gap-1 text-[10px]">
-          {[14, 30, 60, 90].map((d) => (
+          {[1, 3, 7, 14, 130].map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
@@ -107,7 +107,9 @@ function CommitActivityChart() {
         </div>
       </div>
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
+      ) : isError ? (
+        <p className="text-[12px] text-gray-500 text-center py-6">Failed to load — <button onClick={() => window.location.reload()} className="text-accent-blue hover:underline">retry</button></p>
       ) : (
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={series} barSize={8}>
@@ -132,7 +134,7 @@ function CommitActivityChart() {
         </ResponsiveContainer>
       )}
       {!isLoading && (
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className="text-[10px] text-gray-400 mt-1">
           {data?.total_commits ?? 0} commits total · {nonZero.length} active days
         </p>
       )}
@@ -143,7 +145,7 @@ function CommitActivityChart() {
 // ── Build success trend ───────────────────────────────────────────────────────
 
 function BuildTrendChart() {
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState(14)
   const { data, isLoading } = useBuildTrends(days)
   const series = (data?.series ?? []).filter((d: any) => d.total > 0)
   const summary = data?.summary
@@ -153,7 +155,7 @@ function BuildTrendChart() {
       <div className="flex items-center justify-between mb-3">
         <SectionTitle icon={TrendingUp} title="Build Success Rate Trend" color="text-accent-green" />
         <div className="flex items-center gap-1 text-[10px]">
-          {[14, 30, 60].map((d) => (
+          {[1, 3, 7, 14, 130].map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
@@ -172,9 +174,9 @@ function BuildTrendChart() {
         </div>
       )}
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
       ) : series.length === 0 ? (
-        <p className="text-gray-600 text-sm text-center py-6">No build data in this window.</p>
+        <p className="text-gray-400 text-sm text-center py-6">No build data in this window.</p>
       ) : (
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={series}>
@@ -234,9 +236,9 @@ function FailureRateChart() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6">Loading — fetching {runs} runs' job data…</p>
+        <p className="text-gray-400 text-sm text-center py-6">Loading — fetching {runs} runs' job data…</p>
       ) : jobs.length === 0 ? (
-        <p className="text-gray-600 text-sm text-center py-6">No data.</p>
+        <p className="text-gray-400 text-sm text-center py-6">No data.</p>
       ) : (
         <>
           <ResponsiveContainer width="100%" height={Math.max(jobs.length * 36, 120)}>
@@ -280,7 +282,7 @@ function FailureRateChart() {
                   )}>
                     {j.failure_rate}%
                   </span>
-                  <span className="text-gray-600">{j.failed}/{j.total} runs</span>
+                  <span className="text-gray-400">{j.failed}/{j.total} runs</span>
                   {j.consecutive_failures > 0 && (
                     <span className="text-accent-red">streak: {j.consecutive_failures}</span>
                   )}
@@ -317,7 +319,7 @@ function PRVelocityCard() {
     <Card>
       <SectionTitle icon={Clock} title="PR Velocity & Merge Time" color="text-accent-purple" />
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
       ) : (
         <div className="space-y-4">
           {/* Summary stats */}
@@ -374,56 +376,103 @@ function PRVelocityCard() {
   )
 }
 
-// ── Top contributors ──────────────────────────────────────────────────────────
+// ── Computing notice ──────────────────────────────────────────────────────────
+
+function ComputingNotice() {
+  return (
+    <div className="text-center py-8 space-y-1">
+      <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+        <span className="inline-block w-2 h-2 rounded-full bg-nvidia animate-pulse" />
+        GitHub is computing stats — auto-retrying…
+      </div>
+      <p className="text-[11px] text-gray-500">Can take up to 60 seconds for large repos</p>
+    </div>
+  )
+}
+
+// ── Top contributors (enhanced with sparklines) ───────────────────────────────
 
 function ContributorsCard() {
-  const { data, isLoading } = useContributors()
+  const [sortBy, setSortBy] = useState<'total' | 'recent'>('total')
+  const { data, isLoading } = useQuery({
+    queryKey: ['insights-contributors'],
+    queryFn: getInsightsContributors,
+    staleTime: 300_000,
+    refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
+  })
+
   const contributors: any[] = data?.contributors ?? []
+  const sorted = [...contributors].sort((a, b) => {
+    if (sortBy === 'recent') {
+      const aR = (a.weeks ?? []).slice(-4).reduce((s: number, w: any) => s + w.c, 0)
+      const bR = (b.weeks ?? []).slice(-4).reduce((s: number, w: any) => s + w.c, 0)
+      return bR - aR
+    }
+    return b.total - a.total
+  })
 
   return (
     <Card className="h-full flex flex-col">
-      <SectionTitle icon={Users} title="Top Contributors" color="text-accent-orange" />
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
+        <SectionTitle icon={Users} title="Top Contributors" color="text-accent-orange" />
+        <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-0.5">
+          {([['total', 'All time'], ['recent', '4w']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setSortBy(key)}
+              className={clsx('px-2 py-0.5 rounded text-[10px] transition-colors',
+                sortBy === key ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6 flex-1">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-6 flex-1">Loading…</p>
+      ) : data?.computing ? (
+        <ComputingNotice />
       ) : (
         <div className="flex-1 overflow-y-auto space-y-2">
-          {contributors.slice(0, 10).map((c, i) => {
-            const max = contributors[0]?.total ?? 1
-            const pct = Math.round((c.total / max) * 100)
+          {!data?.has_weekly && (
+            <span className="flex items-center gap-1 text-[10px] text-neutral-400 mb-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
+              weekly data computing…
+            </span>
+          )}
+          {sorted.slice(0, 15).map((c, idx) => {
+            const hasWeekly = c.weeks && c.weeks.length > 0
+            const recentCommits = hasWeekly ? c.weeks.slice(-4).reduce((s: number, w: any) => s + w.c, 0) : 0
+            const chartData = hasWeekly ? c.weeks.map((w: any, i: number) => ({ w: i, c: w.c })) : []
+            const maxContrib = Math.max(1, ...sorted.slice(0, 1).map((x: any) => x.total))
+            const pct = Math.round((c.total / maxContrib) * 100)
             return (
               <div key={c.login} className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-600 w-4 text-right">{i + 1}</span>
-                {c.avatar ? (
-                  <img src={c.avatar} alt="" className="w-5 h-5 rounded-full" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-surface-3 flex items-center justify-center text-[8px] text-gray-400">
-                    {c.login[0]?.toUpperCase()}
-                  </div>
-                )}
+                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">#{idx + 1}</span>
+                {c.avatar_url && <img src={c.avatar_url} className="w-5 h-5 rounded-full flex-shrink-0" alt="" />}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
-                    <a
-                      href={c.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-gray-300 hover:text-accent-blue truncate"
-                    >
-                      {c.login}
-                    </a>
-                    <span className="text-[10px] text-gray-500 flex-shrink-0 ml-2">{c.total}</span>
+                    <span className="text-xs text-gray-300 truncate">{c.login}</span>
+                    <div className="flex items-center gap-2 text-[10px] flex-shrink-0 ml-1">
+                      <span className="text-gray-500">{c.total}</span>
+                      {recentCommits > 0 && <span className="text-accent-green">+{recentCommits}</span>}
+                    </div>
                   </div>
-                  <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-accent-orange"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
+                    <div className="h-full bg-nvidia rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
+                {hasWeekly && (
+                  <div className="w-14 h-5 flex-shrink-0">
+                    <ResponsiveContainer width="100%" height={20}>
+                      <BarChart data={chartData} barSize={2}>
+                        <Bar dataKey="c" fill="#0b5cff" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
             )
           })}
           {data?.source === 'raw_commits_90d' && (
-            <p className="text-[9px] text-gray-700 mt-2">Based on last 90 days of commits (GitHub stats API warming up)</p>
+            <p className="text-[9px] text-gray-400 mt-2">Based on last 90 days of commits</p>
           )}
         </div>
       )}
@@ -444,7 +493,7 @@ function RecentCommitsCard() {
     <Card className="h-full flex flex-col">
       <SectionTitle icon={GitCommit} title="Recent Commits" color="text-accent-blue" />
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-6 flex-1">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-6 flex-1">Loading…</p>
       ) : (
         <>
           <div className="flex-1 overflow-y-auto space-y-0">
@@ -467,7 +516,7 @@ function RecentCommitsCard() {
                   </div>
                 </div>
                 <a href={c.url} target="_blank" rel="noreferrer" className="flex-shrink-0 mt-0.5">
-                  <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                  <ExternalLink size={10} className="text-gray-400 hover:text-accent-blue" />
                 </a>
               </div>
             ))}
@@ -483,7 +532,7 @@ function RecentCommitsCard() {
           {!hasMore && commits.length > 6 && (
             <button
               onClick={() => setLimit(6)}
-              className="mt-2 w-full text-center text-[10px] text-gray-600 hover:text-gray-400 py-1"
+              className="mt-2 w-full text-center text-[10px] text-gray-400 hover:text-gray-400 py-1"
             >
               Collapse
             </button>
@@ -504,7 +553,7 @@ function ErrorPatternsCard() {
     return (
       <Card>
         <SectionTitle icon={AlertTriangle} title="Error Patterns" color="text-accent-red" />
-        <p className="text-gray-600 text-sm text-center py-4">
+        <p className="text-gray-400 text-sm text-center py-4">
           No errors in log store yet. Ingest a GHA run from the Logs page.
         </p>
       </Card>
@@ -515,7 +564,7 @@ function ErrorPatternsCard() {
     <Card>
       <SectionTitle icon={AlertTriangle} title={`Top Error Patterns (${data?.total_errors ?? 0} total errors)`} color="text-accent-red" />
       {isLoading ? (
-        <p className="text-gray-600 text-sm text-center py-4">Loading…</p>
+        <p className="text-gray-400 text-sm text-center py-4">Loading…</p>
       ) : (
         <div className="space-y-2">
           {patterns.map((p, i) => (
@@ -526,7 +575,7 @@ function ErrorPatternsCard() {
                   ×{p.count}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-600">
+              <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-400">
                 <span>sources: {(p.sources as string[]).join(', ')}</span>
                 {p.last_seen && <span>last: {p.last_seen.slice(0, 10)}</span>}
               </div>
@@ -575,7 +624,7 @@ function UserMetricsCard() {
         <SectionTitle icon={Trophy} title="User Activity Leaderboard" color="text-accent-yellow" />
         <div className="flex items-center gap-1">
           <Calendar size={11} className="text-gray-500" />
-          {[7, 14, 30, 60, 90].map((d) => (
+          {[1, 3, 7, 14, 130].map((d) => (
             <button
               key={d}
               onClick={() => { setDays(d); setLimit(8) }}
@@ -588,15 +637,15 @@ function UserMetricsCard() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-600 text-sm flex-1">Loading user data…</div>
+        <div className="text-center py-8 text-gray-400 text-sm flex-1">Loading user data…</div>
       ) : users.length === 0 ? (
-        <div className="text-center py-8 text-gray-600 text-sm flex-1">No activity data in this window.</div>
+        <div className="text-center py-8 text-gray-400 text-sm flex-1">No activity data in this window.</div>
       ) : (
         <div className="flex gap-4 flex-1 min-h-0">
           {/* Leaderboard table */}
           <div className="flex-1 min-w-0 flex flex-col">
             {/* Header */}
-            <div className="grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem_4rem] gap-2 text-[9px] text-gray-600 uppercase tracking-wider px-2 pb-1 border-b border-border flex-shrink-0">
+            <div className="grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem_4rem] gap-2 text-[9px] text-gray-400 uppercase tracking-wider px-2 pb-1 border-b border-border flex-shrink-0">
               <span>#</span>
               <span>User</span>
               <span className="text-center flex items-center justify-center gap-0.5"><GitCommit size={8} /> Commits</span>
@@ -618,30 +667,30 @@ function UserMetricsCard() {
                     )}
                   >
                     <span className="text-[10px] text-gray-500 text-center">
-                      {MEDAL[i] ?? <span className="text-gray-600">{i + 1}</span>}
+                      {MEDAL[i] ?? <span className="text-gray-400">{i + 1}</span>}
                     </span>
                     <div className="flex items-center gap-2 min-w-0">
                       {u.avatar ? (
                         <img src={u.avatar} alt={u.login} className="w-5 h-5 rounded-full flex-shrink-0" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full bg-surface-3 flex-shrink-0 flex items-center justify-center text-[8px] text-gray-400">
+                        <div className="w-5 h-5 rounded-full bg-surface-3 flex-shrink-0 flex items-center justify-center text-[9px] text-gray-400">
                           {u.login[0]?.toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0">
                         <p className="text-xs text-gray-200 truncate">{u.login}</p>
                         {u.avg_merge_hours != null && (
-                          <p className="text-[9px] text-gray-600">avg merge {u.avg_merge_hours}h</p>
+                          <p className="text-[9px] text-gray-400">avg merge {u.avg_merge_hours}h</p>
                         )}
                       </div>
                     </div>
-                    <span className={clsx('text-center text-xs tabular-nums', u.commits > 0 ? 'text-accent-blue' : 'text-gray-700')}>
+                    <span className={clsx('text-center text-xs tabular-nums', u.commits > 0 ? 'text-accent-blue' : 'text-gray-400')}>
                       {u.commits}
                     </span>
-                    <span className={clsx('text-center text-xs tabular-nums', u.prs_merged > 0 ? 'text-accent-green' : 'text-gray-700')}>
+                    <span className={clsx('text-center text-xs tabular-nums', u.prs_merged > 0 ? 'text-accent-green' : 'text-gray-400')}>
                       {u.prs_merged}
                     </span>
-                    <span className={clsx('text-center text-xs tabular-nums', u.ci_triggers > 0 ? 'text-accent-purple' : 'text-gray-700')}>
+                    <span className={clsx('text-center text-xs tabular-nums', u.ci_triggers > 0 ? 'text-accent-purple' : 'text-gray-400')}>
                       {u.ci_triggers}
                     </span>
                     <div className="flex items-center gap-1">
@@ -667,7 +716,7 @@ function UserMetricsCard() {
                   Load more ({users.length - limit} remaining)
                 </button>
               ) : (
-                <p className="text-[9px] text-gray-700 py-1 px-2">
+                <p className="text-[9px] text-gray-400 py-1 px-2">
                   Score = commits×3 + PRs merged×5 + CI triggers · {data?.total_users ?? 0} contributors
                 </p>
               )}
@@ -681,7 +730,7 @@ function UserMetricsCard() {
                 <img src={selectedUser.avatar} alt="" className="w-5 h-5 rounded-full" />
                 <span className="text-xs text-gray-300 truncate">{selectedUser.login}</span>
                 <a href={selectedUser.url} target="_blank" rel="noreferrer">
-                  <ExternalLink size={10} className="text-gray-600 hover:text-accent-blue" />
+                  <ExternalLink size={10} className="text-gray-400 hover:text-accent-blue" />
                 </a>
               </div>
               <ResponsiveContainer width="100%" height={140}>
@@ -779,7 +828,7 @@ function PipelineCostAnalytics() {
     return (
       <Card>
         <SectionTitle icon={DollarSign} title="Pipeline Cost Estimate" color="text-accent-yellow" />
-        <p className="text-gray-600 text-sm text-center py-6">No workflow performance data available.</p>
+        <p className="text-gray-400 text-sm text-center py-6">No workflow performance data available.</p>
       </Card>
     )
   }
@@ -805,12 +854,12 @@ function PipelineCostAnalytics() {
             </div>
             {topWorkflow && (
               <div className="pt-1 border-t border-border flex justify-between">
-                <span className="text-gray-600 truncate max-w-[160px]">Costliest: {topWorkflow.workflow}</span>
+                <span className="text-gray-400 truncate max-w-[160px]">Costliest: {topWorkflow.workflow}</span>
                 <span className="text-accent-red font-mono font-semibold">${topWorkflow.monthlyCostGH.toFixed(2)}</span>
               </div>
             )}
           </div>
-          <p className="text-[9px] text-gray-700 mt-3">
+          <p className="text-[9px] text-gray-400 mt-3">
             Assumes ubuntu-latest @ $0.008/min · actual costs vary by runner type and billing plan
           </p>
         </Card>
@@ -838,7 +887,7 @@ function PipelineCostAnalytics() {
                       <p className={clsx('font-medium truncate max-w-[180px]', i === 0 ? 'text-white' : 'text-gray-300')}>
                         {row.workflow}
                       </p>
-                      <p className="text-[9px] text-gray-600 font-mono">{row.file}</p>
+                      <p className="text-[9px] text-gray-400 font-mono">{row.file}</p>
                     </td>
                     <td className="py-2 text-right font-mono text-gray-300">
                       {row.avgDurationMin}m
@@ -880,6 +929,263 @@ function PipelineCostAnalytics() {
         </div>
       </Card>
     </div>
+  )
+}
+
+// ── Repository Pulse ──────────────────────────────────────────────────────────
+
+function RepoPulseCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['insights-pulse'],
+    queryFn: getInsightsPulse,
+    staleTime: 120_000,
+    refetchInterval: 300_000,
+  })
+  const { data: participation } = useQuery({
+    queryKey: ['insights-participation'],
+    queryFn: getInsightsParticipation,
+    staleTime: 300_000,
+  })
+
+  const partData = (participation?.all ?? []).map((v: number, i: number) => ({
+    week: `W${26 - i}`,
+    all: v,
+    owner: (participation?.owner ?? [])[i] ?? 0,
+  })).reverse()
+
+  if (isLoading || !data) return null
+
+  return (
+    <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-4">
+      <SectionTitle icon={Zap} title="Repository Pulse" color="text-nvidia" />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        {[
+          { label: 'Stars',        value: (data.stars        ?? 0).toLocaleString(), icon: Star,        color: 'text-neutral-400' },
+          { label: 'Forks',        value: (data.forks        ?? 0).toLocaleString(), icon: GitFork,     color: 'text-neutral-300' },
+          { label: 'Watchers',     value: (data.watchers     ?? 0).toLocaleString(), icon: Eye,         color: 'text-neutral-400' },
+          { label: 'Open Issues',  value: (data.open_issues  ?? 0).toLocaleString(), icon: AlertCircle, color: 'text-accent-green' },
+          { label: 'Commits (4w)', value: data.recent_commits ?? 0,                  icon: GitCommit,   color: 'text-white'        },
+          { label: 'Opened (30d)', value: data.new_issues_30d   ?? 0,                icon: AlertCircle, color: 'text-accent-red'   },
+          { label: 'Closed (30d)', value: data.closed_issues_30d ?? 0,               icon: AlertCircle, color: 'text-accent-green' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="bg-surface-2 border border-border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">{label}</p>
+              <Icon size={10} className={color} />
+            </div>
+            <p className={clsx('text-xl font-semibold tabular-nums', color)}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {data.description && (
+        <div className="flex items-center gap-2 text-sm text-gray-300 flex-wrap">
+          {data.language && <span className="text-[10px] bg-surface-2 px-2 py-0.5 rounded text-gray-400 flex-shrink-0">{data.language}</span>}
+          <p className="flex-1 min-w-0 leading-relaxed">{data.description}</p>
+          {data.size_kb && <span className="text-[10px] text-gray-500 flex-shrink-0">{(data.size_kb / 1024).toFixed(1)} MB</span>}
+        </div>
+      )}
+
+      {partData.length > 0 && (
+        <div>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Commit Participation — Last 26 Weeks</p>
+          <ResponsiveContainer width="100%" height={90}>
+            <BarChart data={partData} barSize={6}>
+              <XAxis dataKey="week" tick={{ fill: '#86939e', fontSize: 8 }} interval={4} />
+              <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={25} />
+              <Tooltip {...TOOLTIP_STYLE} />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Bar dataKey="all"   name="All commits" fill="#0b5cff" opacity={0.6} />
+              <Bar dataKey="owner" name="Owner"        fill="#76b900" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── 52-week commit history ────────────────────────────────────────────────────
+
+function WeeklyCommitCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['insights-commit-activity'],
+    queryFn: getInsightsCommitActivity,
+    staleTime: 300_000,
+    refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
+  })
+
+  const weeks: any[] = data?.weeks ?? []
+  const chartData = weeks.slice(-52).map((w: any) => ({
+    label: format(fromUnixTime(w.week), 'MMM d'),
+    total: w.total,
+  }))
+  const totalYear  = chartData.reduce((s, w) => s + w.total, 0)
+  const maxWeek    = Math.max(...chartData.map((w) => w.total), 0)
+  const avgWeek    = chartData.length ? Math.round(totalYear / chartData.length) : 0
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionTitle icon={GitCommit} title="52-Week Commit History" color="text-accent-blue" />
+        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+          <span><span className="text-white font-semibold">{totalYear.toLocaleString()}</span> total</span>
+          <span><span className="text-neutral-300 font-semibold">{avgWeek}</span> avg/wk</span>
+          <span><span className="text-accent-green font-semibold">{maxWeek}</span> best</span>
+        </div>
+      </div>
+      {isLoading ? (
+        <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
+      ) : data?.computing ? (
+        <ComputingNotice />
+      ) : chartData.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center py-6">No data yet.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={120}>
+          <BarChart data={chartData} barSize={7}>
+            <XAxis dataKey="label" tick={{ fill: '#86939e', fontSize: 8 }} interval={7} />
+            <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={30} />
+            <Tooltip {...TOOLTIP_STYLE} formatter={(v: any) => [v, 'Commits']} />
+            <Bar dataKey="total" fill="#0b5cff" radius={[2, 2, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  )
+}
+
+// ── Code frequency ────────────────────────────────────────────────────────────
+
+function CodeFrequencyCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['insights-code-frequency'],
+    queryFn: getInsightsCodeFrequency,
+    staleTime: 300_000,
+    refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
+  })
+
+  const weeks: any[] = data?.weeks ?? []
+  const chartData = weeks.slice(-52).map((w: any) => ({
+    label:     format(fromUnixTime(w.week), 'MMM d'),
+    additions: w.additions,
+    deletions: -w.deletions,
+  }))
+  const totalAdded   = weeks.reduce((s: number, w: any) => s + w.additions, 0)
+  const totalDeleted = weeks.reduce((s: number, w: any) => s + w.deletions, 0)
+  const netChange    = totalAdded - totalDeleted
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionTitle icon={Code} title="Code Frequency (52w)" color="text-accent-teal" />
+        <div className="flex items-center gap-3 text-[10px]">
+          <span className="text-accent-green">+{totalAdded.toLocaleString()}</span>
+          <span className="text-accent-red">-{totalDeleted.toLocaleString()}</span>
+          <span className={clsx('font-semibold', netChange >= 0 ? 'text-accent-green' : 'text-accent-red')}>
+            {netChange >= 0 ? '+' : ''}{netChange.toLocaleString()} net
+          </span>
+        </div>
+      </div>
+      {isLoading ? (
+        <p className="text-gray-400 text-sm text-center py-6">Loading…</p>
+      ) : data?.computing ? (
+        <ComputingNotice />
+      ) : chartData.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center py-6">No data yet.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={120}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <XAxis dataKey="label" tick={{ fill: '#86939e', fontSize: 8 }} interval={7} />
+            <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={45}
+              tickFormatter={(v) => {
+                const abs = Math.abs(v)
+                return abs >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+              }} />
+            <Tooltip {...TOOLTIP_STYLE}
+              formatter={(v: any, name: string) => [
+                Math.abs(v).toLocaleString(),
+                name === 'additions' ? 'Added' : 'Deleted',
+              ]} />
+            <Area type="monotone" dataKey="additions" name="additions" stroke="#76b900" fill="#76b900" fillOpacity={0.3} strokeWidth={1.5} />
+            <Area type="monotone" dataKey="deletions" name="deletions" stroke="#ff1b2d" fill="#ff1b2d" fillOpacity={0.3} strokeWidth={1.5} />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  )
+}
+
+// ── Forks ─────────────────────────────────────────────────────────────────────
+
+function ForksCard() {
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'stargazers' | 'watchers'>('newest')
+  const [page, setPage] = useState(1)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['insights-forks', sort, page],
+    queryFn: () => getInsightsForks(sort, page),
+    staleTime: 120_000,
+  })
+
+  const forks: any[] = data?.forks ?? []
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionTitle icon={GitFork} title="Repository Forks" color="text-neutral-400" />
+        <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-0.5">
+          {(['newest', 'oldest', 'stargazers', 'watchers'] as const).map((key) => (
+            <button key={key} onClick={() => { setSort(key); setPage(1) }}
+              className={clsx('px-2 py-0.5 rounded text-[10px] capitalize transition-colors',
+                sort === key ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
+              {key}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {isLoading && <p className="text-gray-500 text-sm text-center py-6">Loading forks…</p>}
+      {isError  && <p className="text-accent-red text-sm text-center py-6">Failed to load forks.</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+        {forks.map((f) => (
+          <div key={f.id} className="flex items-center gap-2 px-3 py-2 bg-surface-2 border border-border rounded-lg hover:border-gray-600 transition-colors">
+            <img src={f.owner.avatar_url} className="w-6 h-6 rounded-full flex-shrink-0" alt="" />
+            <div className="flex-1 min-w-0">
+              <a href={f.html_url} target="_blank" rel="noreferrer"
+                className="text-[11px] font-medium text-white hover:text-neutral-300 truncate block">
+                {f.full_name}
+              </a>
+              <div className="flex items-center gap-2 text-[9px] text-gray-400">
+                <span className="flex items-center gap-0.5"><Star size={7} /> {f.stars}</span>
+                <span className="flex items-center gap-0.5"><GitFork size={7} /> {f.forks}</span>
+                {f.pushed_at && (
+                  <span>{formatDistanceToNow(new Date(f.pushed_at), { addSuffix: true })}</span>
+                )}
+              </div>
+            </div>
+            <a href={f.html_url} target="_blank" rel="noreferrer">
+              <ExternalLink size={9} className="text-gray-400 hover:text-neutral-300 flex-shrink-0" />
+            </a>
+          </div>
+        ))}
+      </div>
+
+      {(forks.length === 30 || page > 1) && (
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+            className="px-3 py-1.5 rounded text-xs bg-surface-2 text-gray-300 hover:bg-surface-3 disabled:opacity-40">
+            ← Prev
+          </button>
+          <span className="text-xs text-gray-500">Page {page}</span>
+          <button onClick={() => setPage((p) => p + 1)} disabled={forks.length < 30}
+            className="px-3 py-1.5 rounded text-xs bg-surface-2 text-gray-300 hover:bg-surface-3 disabled:opacity-40">
+            Next →
+          </button>
+        </div>
+      )}
+    </Card>
   )
 }
 
@@ -940,16 +1246,25 @@ export default function Analytics() {
       {/* Key metrics */}
       <StatRow items={statItems} />
 
-      {/* Charts row 1 */}
+      {/* Repository Pulse */}
+      <RepoPulseCard />
+
+      {/* Charts row 1: daily commit activity + build trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CommitActivityChart />
         <BuildTrendChart />
       </div>
 
-      {/* Charts row 2 */}
+      {/* Charts row 2: failure rates + PR velocity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <FailureRateChart />
         <PRVelocityCard />
+      </div>
+
+      {/* GitHub Stats: 52-week commit history + code frequency */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <WeeklyCommitCard />
+        <CodeFrequencyCard />
       </div>
 
       {/* Leaderboard + Contributors + Recent Commits — single row, equal height */}
@@ -965,14 +1280,17 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Error patterns */}
-      <ErrorPatternsCard />
+      {/* Error patterns + Forks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ErrorPatternsCard />
+        <ForksCard />
+      </div>
 
       {/* Pipeline Cost Analytics */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <DollarSign size={13} className="text-accent-yellow" />
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pipeline Cost Estimate</h2>
+        <div className="section-head">
+          <DollarSign size={13} className="text-accent-yellow flex-shrink-0" />
+          Pipeline Cost Estimate
         </div>
         <PipelineCostAnalytics />
       </div>

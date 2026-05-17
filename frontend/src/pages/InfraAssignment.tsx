@@ -62,7 +62,7 @@ function RunnerCard({ runner }: { runner: Runner }) {
             </span>
           ))}
           {systemLabels.length > 4 && (
-            <span className="text-gray-600 text-[9px]">+{systemLabels.length - 4}</span>
+            <span className="text-gray-400 text-[9px]">+{systemLabels.length - 4}</span>
           )}
         </div>
       )}
@@ -106,7 +106,7 @@ function NodeCard({ node }: { node: ClusterNode }) {
           <Cpu size={9} className="flex-shrink-0" />
           <span>{node.cpus} CPUs</span>
           {node.memory_mb && (
-            <span className="text-gray-600">· {Math.round(Number(node.memory_mb) / 1024)} GB</span>
+            <span className="text-gray-400">· {Math.round(Number(node.memory_mb) / 1024)} GB</span>
           )}
         </div>
         {gpuModel && (
@@ -115,7 +115,7 @@ function NodeCard({ node }: { node: ClusterNode }) {
             <span>{gpuModel}</span>
           </div>
         )}
-        <div className="text-gray-600">{node.partition}</div>
+        <div className="text-gray-400">{node.partition}</div>
       </div>
     </div>
   )
@@ -155,7 +155,7 @@ function ClusterJobRow({
       <td className="px-3 py-2 text-gray-500 font-mono whitespace-nowrap">
         {job.time} / {job.time_limit}
       </td>
-      <td className="px-3 py-2 text-gray-600 text-[10px] max-w-[120px]">
+      <td className="px-3 py-2 text-gray-400 text-[10px] max-w-[120px]">
         {isPending && job.reason && (
           <span className="truncate block" title={job.reason}>{job.reason}</span>
         )}
@@ -203,7 +203,7 @@ function OutputModal({ jobId, output, onClose }: { jobId: string; output: string
         style={{ maxHeight: '80vh' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head flex-shrink-0">
           <div>
             <span className="text-sm font-medium text-white">Job output</span>
             <span className="ml-2 font-mono text-xs text-gray-500">{jobId}</span>
@@ -216,7 +216,7 @@ function OutputModal({ jobId, output, onClose }: { jobId: string; output: string
               <tbody>
                 {lines.map((line, i) => (
                   <tr key={i} className="hover:bg-surface-2/30">
-                    <td className="pl-3 pr-2 py-0.5 text-gray-700 text-right select-none w-10 tabular-nums">
+                    <td className="pl-3 pr-2 py-0.5 text-gray-400 text-right select-none w-10 tabular-nums">
                       {i + 1}
                     </td>
                     <td className="pr-4 py-0.5 text-gray-300 whitespace-pre-wrap break-all">{line}</td>
@@ -225,7 +225,7 @@ function OutputModal({ jobId, output, onClose }: { jobId: string; output: string
               </tbody>
             </table>
           ) : (
-            <p className="text-gray-600 text-sm text-center py-8">No output available.</p>
+            <p className="text-gray-400 text-sm text-center py-8">No output available.</p>
           )}
         </div>
       </div>
@@ -242,7 +242,7 @@ function StatCard({ label, value, sub, accent }: {
     <div className="bg-surface-1 border border-border rounded-lg px-4 py-3">
       <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
       <p className={clsx('text-xl font-semibold mt-1 tabular-nums', accent ?? 'text-white')}>{value}</p>
-      {sub && <p className="text-[10px] text-gray-600 mt-0.5">{sub}</p>}
+      {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -421,15 +421,16 @@ export default function InfraAssignment() {
         />
       </div>
 
-      {/* Live CI Activity */}
-      <LiveActivitySection runs={liveRuns} loading={liveRunsLoading} />
+      {/* Live CI Activity + Runner Analysis — side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <LiveActivitySection runs={liveRuns} loading={liveRunsLoading} />
+        <RunnerAnalysisSection runners={runners} />
+      </div>
 
       {/* GitHub Runners */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            GitHub Runners
-          </h2>
+          <h2 className="text-sm font-bold text-white">GitHub Runners</h2>
           <div className="flex items-center gap-2 text-[10px]">
             {onlineRunners.length > 0 && (
               <span className="text-accent-green flex items-center gap-1">
@@ -447,12 +448,12 @@ export default function InfraAssignment() {
         {runnersLoading && <p className="text-gray-500 text-sm">Loading runners…</p>}
 
         {runners.length === 0 && !runnersLoading && !useHistoryFallback && (
-          <p className="text-gray-600 text-sm">No self-hosted runners configured for this repo.</p>
+          <p className="text-gray-400 text-sm">No self-hosted runners configured for this repo.</p>
         )}
 
         {useHistoryFallback && (
           <div className="space-y-2">
-            <p className="text-[10px] text-gray-600 flex items-center gap-1.5">
+            <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-600 flex-shrink-0" />
               Showing runners from recent job history — live status requires <span className="font-mono text-gray-500 ml-1">manage_runners:repo</span> PAT scope
             </p>
@@ -476,10 +477,10 @@ export default function InfraAssignment() {
                         ))}
                       </div>
                     )}
-                    <p className="text-[9px] text-gray-600 truncate">{r.last_job}</p>
+                    <p className="text-[9px] text-gray-400 truncate">{r.last_job}</p>
                     {r.last_run_url && (
                       <a href={r.last_run_url} target="_blank" rel="noreferrer"
-                        className="text-[9px] text-gray-600 hover:text-accent-blue flex items-center gap-1">
+                        className="text-[9px] text-gray-400 hover:text-accent-blue flex items-center gap-1">
                         <ExternalLink size={9} /> {r.last_run_date}
                       </a>
                     )}
@@ -515,7 +516,7 @@ export default function InfraAssignment() {
             {/* Offline */}
             {offlineRunners.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[9px] text-gray-600 uppercase tracking-wider font-semibold">Offline</p>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Offline</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {offlineRunners.map((r) => <RunnerCard key={r.id} runner={r} />)}
                 </div>
@@ -545,7 +546,7 @@ export default function InfraAssignment() {
                   <div key={partition} className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-medium text-gray-400">{partition}</span>
-                      <span className="text-[9px] text-gray-600">{pnodes.length} nodes</span>
+                      <span className="text-[9px] text-gray-400">{pnodes.length} nodes</span>
                       {idle > 0 && <span className="text-[9px] text-accent-green">{idle} idle</span>}
                       {alloc > 0 && <span className="text-[9px] text-yellow-400">{alloc} busy</span>}
                     </div>
@@ -563,7 +564,7 @@ export default function InfraAssignment() {
       {/* Cluster queue */}
       <div className="space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cluster Queue</h2>
+          <h2 className="text-sm font-bold text-white">Cluster Queue</h2>
 
           {/* Scheduler toggle */}
           <div className="flex rounded overflow-hidden border border-border text-[10px]">
@@ -610,7 +611,7 @@ export default function InfraAssignment() {
                 value={queueSearch}
                 onChange={(e) => setQueueSearch(e.target.value)}
                 placeholder="Search job / user…"
-                className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue"
+                className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-40 text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue"
               />
             </div>
           )}
@@ -644,8 +645,8 @@ export default function InfraAssignment() {
               </tbody>
             </table>
             {!queueLoading && filteredJobs.length === 0 && (
-              <div className="text-center text-gray-600 text-sm py-8 flex flex-col items-center gap-1">
-                <Clock size={24} className="text-gray-700 mb-1" />
+              <div className="text-center text-gray-400 text-sm py-8 flex flex-col items-center gap-1">
+                <Clock size={24} className="text-gray-400 mb-1" />
                 {allJobs.length === 0 ? 'No jobs in queue.' : 'No jobs match the current filter.'}
               </div>
             )}
@@ -656,8 +657,6 @@ export default function InfraAssignment() {
         )}
       </div>
 
-      {/* Runner Analysis Section */}
-      <RunnerAnalysisSection runners={runners} />
     </div>
   )
 }
@@ -676,10 +675,10 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
   if (loading) {
     return (
       <div className="space-y-2">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-          <Activity size={12} />Live CI Activity
-        </h2>
-        <div className="text-gray-600 text-sm">Loading…</div>
+        <div className="section-head">
+          <Activity size={12} className="flex-shrink-0" />Live CI Activity
+        </div>
+        <div className="text-gray-400 text-sm">Loading…</div>
       </div>
     )
   }
@@ -695,12 +694,10 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse flex-shrink-0" />
-          Live CI Activity
-        </h2>
-        <span className="text-[10px] text-gray-600">{runs.length} workflow{runs.length !== 1 ? 's' : ''} in progress</span>
+      <div className="section-head">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse flex-shrink-0" />
+        Live CI Activity
+        <span className="text-xs text-gray-500 font-normal ml-1">{runs.length} workflow{runs.length !== 1 ? 's' : ''} in progress</span>
       </div>
 
       <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
@@ -735,7 +732,7 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
                         GPU
                       </span>
                     )}
-                    <span className="text-[10px] text-gray-600 font-mono ml-auto flex-shrink-0">
+                    <span className="text-[10px] text-gray-400 font-mono ml-auto flex-shrink-0">
                       {elapsed(run.created_at)} ago
                     </span>
                   </div>
@@ -745,7 +742,7 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
                       <span className="text-[10px] text-gray-500 font-mono truncate">{run.branch}</span>
                     )}
                     {run.actor && (
-                      <span className="text-[10px] text-gray-600">by {run.actor}</span>
+                      <span className="text-[10px] text-gray-400">by {run.actor}</span>
                     )}
                     {run.active_jobs?.length > 0 && (
                       <span className="text-[10px] text-accent-blue">
@@ -770,7 +767,7 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
                   href={run.html_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-shrink-0 text-gray-600 hover:text-accent-blue transition-colors mt-0.5"
+                  className="flex-shrink-0 text-gray-400 hover:text-accent-blue transition-colors mt-0.5"
                 >
                   <ExternalLink size={11} />
                 </a>
@@ -780,7 +777,7 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
         </div>
 
         {/* Summary footer */}
-        <div className="px-4 py-2 border-t border-border bg-surface-2/30 flex items-center gap-4 text-[10px] text-gray-600">
+        <div className="px-4 py-2 border-t border-border bg-surface-2/30 flex items-center gap-4 text-[10px] text-gray-400">
           {selfHostedRuns.length > 0 && (
             <span className="text-yellow-500">{selfHostedRuns.length} on self-hosted</span>
           )}
@@ -825,15 +822,15 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Runner Analysis</h2>
-        <span className="text-[9px] text-gray-600 bg-surface-1 border border-border px-2 py-0.5 rounded-full">
+        <h2 className="text-sm font-bold text-white">Runner Analysis</h2>
+        <span className="text-[9px] text-gray-400 bg-surface-1 border border-border px-2 py-0.5 rounded-full">
           Recommendations by PR type
         </span>
       </div>
 
       {gpuRunners.length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">GPU Runner Utilization</p>
+          <div className="section-head">GPU Runner Utilization</div>
           <div className="flex gap-4 items-center">
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
@@ -854,11 +851,11 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
             <div className="flex gap-3 text-[10px]">
               <span className="text-accent-green">{gpuIdle} idle</span>
               <span className="text-yellow-400">{gpuBusy} busy</span>
-              <span className="text-gray-600">{gpuRunners.filter(r => r.status !== 'online').length} offline</span>
+              <span className="text-gray-400">{gpuRunners.filter(r => r.status !== 'online').length} offline</span>
             </div>
           </div>
           {gpuIdle > 0 && (
-            <p className="text-[10px] text-gray-600 border-t border-border pt-2">
+            <p className="text-[10px] text-gray-400 border-t border-border pt-2">
               <AlertTriangle size={9} className="inline mr-1 text-yellow-500" />
               {gpuIdle} GPU runner{gpuIdle > 1 ? 's' : ''} idle — route docs/ci/tests PRs to hosted runners to free GPU capacity
             </p>
@@ -868,8 +865,8 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
 
       {Object.keys(recommendations).length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-[11px] font-semibold text-white">Runner Assignment by PR Type</p>
+          <div className="px-4 py-3 border-b border-border card-head">
+            <p className="text-sm font-bold text-white">Runner Assignment by PR Type</p>
             <p className="text-[10px] text-gray-500 mt-0.5">Optimal runner selection reduces CI costs and queue wait time</p>
           </div>
           <div className="divide-y divide-border">
@@ -909,7 +906,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
 
       {bestPractices.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Best Practices</p>
+          <div className="section-head">Best Practices</div>
           {bestPractices.map((bp: any, i: number) => (
             <div key={i} className="bg-surface-1 border border-border rounded-lg px-4 py-3 flex items-start gap-3">
               <CheckCircle size={12} className="text-accent-green mt-0.5 flex-shrink-0" />
@@ -920,7 +917,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
                   <span className="text-[9px] bg-surface-2 text-gray-400 border border-border px-2 py-0.5 rounded-full font-mono">
                     {bp.classification}
                   </span>
-                  <span className="text-[9px] text-gray-600">→</span>
+                  <span className="text-[9px] text-gray-400">→</span>
                   <span className="text-[9px] font-mono text-accent-blue bg-accent-blue/10 border border-accent-blue/20 px-2 py-0.5 rounded-full">
                     {bp.runner}
                   </span>

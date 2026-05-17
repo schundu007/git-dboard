@@ -88,7 +88,7 @@ const SEVERITY_BADGE: Record<string, string> = {
   critical: 'bg-accent-red/10 text-accent-red border-accent-red/30',
   high:     'bg-orange-500/10 text-orange-400 border-orange-500/30',
   medium:   'bg-surface-2 text-neutral-400 border-border',
-  low:      'bg-surface-2 text-neutral-600 border-border',
+  low:      'bg-surface-2 text-neutral-400 border-border',
 }
 
 const PRIORITY_BADGE: Record<string, string> = {
@@ -119,9 +119,9 @@ function SectionDivider() {
 
 function SectionTitle({ icon: Icon, title, iconCls }: { icon: React.ElementType; title: string; iconCls?: string }) {
   return (
-    <div className="flex items-center gap-2 mb-4">
+    <div className="section-head">
       <Icon size={14} className={clsx('flex-shrink-0', iconCls ?? 'text-neutral-400')} />
-      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">{title}</h2>
+      {title}
     </div>
   )
 }
@@ -242,7 +242,7 @@ function CheckRow({ check }: { check: ComplianceCheck }) {
         </div>
         <p className="text-[11px] text-neutral-500 leading-relaxed">{check.details}</p>
       </div>
-      <span className="text-[10px] font-mono text-neutral-600 flex-shrink-0 mt-0.5">{check.id}</span>
+      <span className="text-[10px] font-mono text-neutral-400 flex-shrink-0 mt-0.5">{check.id}</span>
     </div>
   )
 }
@@ -308,7 +308,7 @@ const VULN_SEV_COLORS: Record<string, string> = {
 
 function SeverityBar({ counts }: { counts: { critical: number; high: number; medium: number; low: number } }) {
   const total = counts.critical + counts.high + counts.medium + counts.low
-  if (total === 0) return <p className="text-[11px] text-neutral-600">No alerts</p>
+  if (total === 0) return <p className="text-[11px] text-neutral-400">No alerts</p>
 
   return (
     <div className="space-y-1.5 mt-2">
@@ -337,7 +337,7 @@ function DependabotCard({ dep }: { dep: SecurityData['dependabot'] }) {
     <div className="bg-surface-1 border border-border rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className={dep.enabled ? 'text-accent-yellow' : 'text-neutral-600'} />
+          <ShieldAlert size={14} className={dep.enabled ? 'text-accent-yellow' : 'text-neutral-500'} />
           <span className="text-[13px] font-semibold text-neutral-200">Dependabot</span>
         </div>
         <span className={clsx(
@@ -398,7 +398,7 @@ function CodeScanningCard({ cs }: { cs: SecurityData['code_scanning'] }) {
     <div className="bg-surface-1 border border-border rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Eye size={14} className={cs.enabled ? 'text-accent-blue' : 'text-neutral-600'} />
+          <Eye size={14} className={cs.enabled ? 'text-accent-blue' : 'text-neutral-500'} />
           <span className="text-[13px] font-semibold text-neutral-200">Code Scanning</span>
         </div>
         <span className={clsx(
@@ -432,7 +432,7 @@ function CodeScanningCard({ cs }: { cs: SecurityData['code_scanning'] }) {
       )}
 
       {!cs.enabled && (
-        <p className="text-[11px] text-neutral-600 italic">
+        <p className="text-[11px] text-neutral-400 italic">
           Enable code scanning to detect vulnerabilities in your codebase.
         </p>
       )}
@@ -445,7 +445,7 @@ function SecretScanningCard({ ss }: { ss: SecurityData['secret_scanning'] }) {
     <div className="bg-surface-1 border border-border rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Key size={14} className={ss.enabled ? 'text-accent-green' : 'text-neutral-600'} />
+          <Key size={14} className={ss.enabled ? 'text-accent-green' : 'text-neutral-500'} />
           <span className="text-[13px] font-semibold text-neutral-200">Secret Scanning</span>
         </div>
         <span className={clsx(
@@ -477,7 +477,7 @@ function SecretScanningCard({ ss }: { ss: SecurityData['secret_scanning'] }) {
       )}
 
       {!ss.enabled && (
-        <p className="text-[11px] text-neutral-600 italic">
+        <p className="text-[11px] text-neutral-400 italic">
           Enable secret scanning to detect committed credentials.
         </p>
       )}
@@ -504,10 +504,10 @@ function BranchRow({ bp }: { bp: BranchProtection }) {
   const isGreen = bp.enabled && !bp.allow_force_push && bp.required_approvals > 0 && bp.require_status_checks
   const isRed   = !bp.enabled
   const rowCls = isRed
-    ? 'bg-accent-red/5 border-l-2 border-l-accent-red'
+    ? 'bg-accent-red/5 ring-1 ring-accent-red/20'
     : isGreen
-    ? 'bg-accent-green/5 border-l-2 border-l-accent-green'
-    : 'bg-accent-yellow/5 border-l-2 border-l-accent-yellow'
+    ? 'bg-accent-green/5 ring-1 ring-accent-green/20'
+    : 'bg-accent-yellow/5 ring-1 ring-accent-yellow/20'
 
   function Bool({ val, invert = false }: { val: boolean; invert?: boolean }) {
     const ok = invert ? !val : val
@@ -565,7 +565,7 @@ function BranchProtectionSection({ branches }: { branches: BranchProtection[] })
             </tbody>
           </table>
           {branches.length === 0 && (
-            <div className="px-4 py-8 text-center text-[12px] text-neutral-600">
+            <div className="px-4 py-8 text-center text-[12px] text-neutral-400">
               No branch protection rules found.
             </div>
           )}
@@ -609,7 +609,7 @@ function WorkflowTile({
       <div>
         <p className="text-[20px] font-bold font-display text-neutral-100 leading-none">{value}</p>
         <p className="text-[11px] text-neutral-400 mt-0.5">{label}</p>
-        {sub && <p className="text-[10px] text-neutral-600 mt-0.5">{sub}</p>}
+        {sub && <p className="text-[10px] text-neutral-400 mt-0.5">{sub}</p>}
       </div>
     </div>
   )
@@ -700,7 +700,7 @@ function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
       <div className="relative">
-        <Shield size={36} className="text-neutral-700" />
+        <Shield size={36} className="text-neutral-500" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-10 h-10 rounded-full border-2 border-accent-blue/40 border-t-accent-blue animate-spin" />
         </div>
@@ -715,7 +715,7 @@ function ErrorState({ message }: { message?: string }) {
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
       <ShieldX size={32} className="text-accent-red opacity-60" />
       <p className="text-[14px] font-semibold text-neutral-300">Unable to load security data</p>
-      <p className="text-[12px] text-neutral-600 max-w-sm text-center">
+      <p className="text-[12px] text-neutral-400 max-w-sm text-center">
         {message ?? 'The security overview endpoint returned an error. Check that the backend is running and the repository is configured.'}
       </p>
     </div>

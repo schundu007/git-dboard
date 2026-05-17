@@ -1,26 +1,55 @@
-import { Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, Component } from 'react'
+import type { ReactNode } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getActiveRepo, getRepos } from './lib/api'
 import Layout from './components/Layout'
 import RepoWelcome from './components/RepoWelcome'
-import ControlPlane from './pages/ControlPlane'
-import PRHub from './pages/PRHub'
-import BuildPipeline from './pages/BuildPipeline'
-import NightlyMonitor from './pages/NightlyMonitor'
-import LogMonitor from './pages/LogMonitor'
-import InfraAssignment from './pages/InfraAssignment'
-import RegistryManager from './pages/RegistryManager'
-import BranchMonitor from './pages/BranchMonitor'
-import IssueHub from './pages/IssueHub'
-import RepoInsights from './pages/RepoInsights'
-import Analytics from './pages/Analytics'
-import HealthAnalysis from './pages/HealthAnalysis'
-import ImprovementPlan from './pages/ImprovementPlan'
-import ImageTags from './pages/ImageTags'
-import ErrorMonitor from './pages/ErrorMonitor'
-import Settings from './pages/Settings'
-import SecurityAudit from './pages/SecurityAudit'
+
+const Home            = lazy(() => import('./pages/Home'))
+const ControlPlane    = lazy(() => import('./pages/ControlPlane'))
+const PRHub           = lazy(() => import('./pages/PRHub'))
+const BuildPipeline   = lazy(() => import('./pages/BuildPipeline'))
+const InfraAssignment = lazy(() => import('./pages/InfraAssignment'))
+const RegistryManager = lazy(() => import('./pages/RegistryManager'))
+const ImprovementPlan = lazy(() => import('./pages/ImprovementPlan'))
+const ErrorMonitor    = lazy(() => import('./pages/ErrorMonitor'))
+const Analytics       = lazy(() => import('./pages/Analytics'))
+const SecurityAudit   = lazy(() => import('./pages/SecurityAudit'))
+const Settings        = lazy(() => import('./pages/Settings'))
+const InterviewPrep      = lazy(() => import('./pages/InterviewPrep'))
+const ScriptPlayground   = lazy(() => import('./pages/ScriptPlayground'))
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center h-48">
+      <span className="w-5 h-5 rounded-full border-2 border-border border-t-accent-green animate-spin" />
+    </div>
+  )
+}
+
+class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-48 gap-3 text-center">
+          <p className="text-[13px] font-semibold text-accent-red">Page failed to load</p>
+          <p className="text-[11px] text-gray-500 font-mono max-w-sm truncate">{(this.state.error as Error).message}</p>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="text-[11px] text-gray-400 hover:text-white border border-border rounded-lg px-3 py-1.5 hover:bg-surface-2 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function RepoChangeWatcher() {
   const qc = useQueryClient()
@@ -81,25 +110,34 @@ export default function App() {
   return (
     <Layout>
       <RepoChangeWatcher />
-      <Routes>
-        <Route path="/" element={<ControlPlane />} />
-        <Route path="/prs" element={<PRHub />} />
-        <Route path="/builds" element={<BuildPipeline />} />
-        <Route path="/nightly" element={<NightlyMonitor />} />
-        <Route path="/branches" element={<BranchMonitor />} />
-        <Route path="/issues" element={<IssueHub />} />
-        <Route path="/insights" element={<RepoInsights />} />
-        <Route path="/logs" element={<LogMonitor />} />
-        <Route path="/infra" element={<InfraAssignment />} />
-        <Route path="/registry" element={<RegistryManager />} />
-        <Route path="/health" element={<HealthAnalysis />} />
-        <Route path="/improvement" element={<ImprovementPlan />} />
-        <Route path="/tags" element={<ImageTags />} />
-        <Route path="/monitoring" element={<ErrorMonitor />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/security" element={<SecurityAudit />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+      <PageErrorBoundary>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/"            element={<Home />} />
+          <Route path="/dashboard"   element={<ControlPlane />} />
+          <Route path="/prs"         element={<PRHub />} />
+          <Route path="/builds"      element={<BuildPipeline />} />
+          <Route path="/action-plan" element={<ImprovementPlan />} />
+          <Route path="/infra"       element={<InfraAssignment />} />
+          <Route path="/registry"    element={<RegistryManager />} />
+          <Route path="/monitoring"  element={<ErrorMonitor />} />
+          <Route path="/analytics"   element={<Analytics />} />
+          <Route path="/security"    element={<SecurityAudit />} />
+          <Route path="/settings"    element={<Settings />} />
+          <Route path="/scripts"     element={<InterviewPrep />} />
+          <Route path="/playground"  element={<ScriptPlayground />} />
+          {/* Legacy redirects */}
+          <Route path="/improvement" element={<Navigate to="/action-plan" replace />} />
+          <Route path="/health"      element={<Navigate to="/dashboard" replace />} />
+          <Route path="/nightly"     element={<Navigate to="/builds" replace />} />
+          <Route path="/branches"    element={<Navigate to="/prs" replace />} />
+          <Route path="/issues"      element={<Navigate to="/prs" replace />} />
+          <Route path="/insights"    element={<Navigate to="/analytics" replace />} />
+          <Route path="/logs"        element={<Navigate to="/monitoring" replace />} />
+          <Route path="/tags"        element={<Navigate to="/registry" replace />} />
+        </Routes>
+      </Suspense>
+      </PageErrorBoundary>
     </Layout>
   )
 }

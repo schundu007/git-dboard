@@ -11,3 +11,4 @@ docker==7.1.0
 pydantic-settings==2.6.1
 websockets==14.1
 python-multipart==0.0.17
+anthropic>=0.40.0

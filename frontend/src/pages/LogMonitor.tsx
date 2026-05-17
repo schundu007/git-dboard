@@ -19,9 +19,9 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; ms: number }[] = [
 ]
 
 const LEVEL_BG: Record<string, string> = {
-  ERROR: 'border-l-2 border-accent-red/40 bg-accent-red/[.04]',
-  WARNING: 'border-l-2 border-amber-500/40 bg-amber-500/[.04]',
-  INFO: '',
+  ERROR:   'bg-accent-red/[.05] ring-1 ring-accent-red/15',
+  WARNING: 'bg-amber-500/[.05] ring-1 ring-amber-500/15',
+  INFO:    '',
 }
 const LEVEL_BADGE: Record<string, string> = {
   ERROR: 'bg-accent-red/10 text-accent-red ring-1 ring-accent-red/25',
@@ -47,7 +47,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
-      className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-surface-3 text-gray-600 hover:text-gray-300 transition-opacity"
+      className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-surface-3 text-gray-400 hover:text-gray-300 transition-opacity"
     >
       {copied
         ? <Check size={9} className="text-accent-green" />
@@ -72,7 +72,7 @@ function LogRow({
         LEVEL_BG[entry.level] ?? '',
       )}
     >
-      <td className="px-3 py-1.5 text-gray-600 whitespace-nowrap text-[10px] font-mono align-top pt-2">
+      <td className="px-3 py-1.5 text-gray-400 whitespace-nowrap text-[10px] font-mono align-top pt-2">
         {entry.timestamp?.slice(0, 19).replace('T', ' ')}
       </td>
       <td className="px-2 py-1.5 align-top pt-2">
@@ -127,7 +127,7 @@ function JobItem({
         <span className={clsx('text-[10px] font-medium truncate', selected ? 'text-white' : 'text-gray-300', color !== 'text-gray-400' && !selected && color)}>
           {label}
         </span>
-        <span className="text-[9px] text-gray-600 flex-shrink-0 tabular-nums">{count}</span>
+        <span className="text-[9px] text-gray-400 flex-shrink-0 tabular-nums">{count}</span>
       </div>
       {(errors > 0 || warns > 0) && (
         <div className="flex items-center gap-2 mt-0.5">
@@ -206,9 +206,9 @@ function EmptyState({ onIngested }: { onIngested: (id: number) => void }) {
   return (
     <div className="flex flex-col items-center justify-start pt-8 px-4 space-y-6">
       <div className="text-center space-y-2">
-        <ScrollText size={40} className="mx-auto text-gray-700" />
+        <ScrollText size={40} className="mx-auto text-gray-400" />
         <p className="text-gray-400 font-medium">No logs ingested yet</p>
-        <p className="text-gray-600 text-sm max-w-md">
+        <p className="text-gray-400 text-sm max-w-md">
           The backend auto-ingests completed GHA runs every 5 minutes.
           To pull a specific run immediately, click below or enter a run ID above.
         </p>
@@ -218,12 +218,12 @@ function EmptyState({ onIngested }: { onIngested: (id: number) => void }) {
           <Zap size={12} className="text-accent-blue" />
           <p className="text-xs text-gray-400 font-medium">Recent runs — click to ingest</p>
         </div>
-        {isLoading && <p className="text-xs text-gray-600 text-center py-4">Loading recent runs…</p>}
+        {isLoading && <p className="text-xs text-gray-400 text-center py-4">Loading recent runs…</p>}
         {runs.map((r) => (
           <RunIngestCard key={r.id} run={r} onIngested={onIngested} />
         ))}
       </div>
-      <p className="text-[10px] text-gray-700">Ingested logs are stored in local SQLite and persist across sessions</p>
+      <p className="text-[10px] text-gray-400">Ingested logs are stored in local SQLite and persist across sessions</p>
     </div>
   )
 }
@@ -246,7 +246,7 @@ export default function LogMonitor() {
   if (level) params.level = level
   if (search) params.search = search
 
-  const { data = [], isLoading, refetch } = useQuery({
+  const { data = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['logs', params],
     queryFn: () => getLogs({ ...params, limit: 2000 }),
     refetchInterval: 15_000,
@@ -352,7 +352,7 @@ export default function LogMonitor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-[9px] text-gray-600 bg-surface-2 px-2 py-0.5 rounded-full" title="Auto-ingests completed GHA runs every 5 minutes">
+          <span className="flex items-center gap-1 text-[9px] text-gray-400 bg-surface-2 px-2 py-0.5 rounded-full" title="Auto-ingests completed GHA runs every 5 minutes">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
             auto
           </span>
@@ -416,7 +416,7 @@ export default function LogMonitor() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search logs…"
-            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-44 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue"
+            className="bg-surface-2 border border-border rounded-md pl-5 pr-2 py-1 text-[10px] w-44 text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue"
           />
         </div>
 
@@ -466,7 +466,7 @@ export default function LogMonitor() {
             value={ingestId}
             onChange={(e) => setIngestId(e.target.value)}
             placeholder="GHA run ID"
-            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-[10px] w-28 text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue"
+            className="bg-surface-2 border border-border rounded-md px-2 py-1 text-[10px] w-28 text-white placeholder-gray-500 focus:outline-none focus:border-accent-blue"
           />
           <button
             onClick={() => ingestId && ingest()}
@@ -483,6 +483,11 @@ export default function LogMonitor() {
       {isLoading ? (
         <div className="flex items-center justify-center py-16 text-gray-500 text-sm">
           Loading logs…
+        </div>
+      ) : isError ? (
+        <div className="flex items-center justify-center py-16 text-[12px] text-gray-500">
+          Failed to load logs —{' '}
+          <button onClick={() => refetch()} className="text-accent-blue hover:underline ml-1">retry</button>
         </div>
       ) : !hasLogs ? (
         <div className="flex-1 bg-surface-1 border border-border rounded-xl overflow-y-auto">
@@ -534,7 +539,7 @@ export default function LogMonitor() {
                   ? <span className={clsx(jobColorMap.get(selectedJob))}>{selectedJob}</span>
                   : <span className="text-gray-400">All jobs</span>}
               </span>
-              <span className="text-[10px] text-gray-600">{entries.length} lines</span>
+              <span className="text-[10px] text-gray-400">{entries.length} lines</span>
               {errorCount > 0 && (
                 <span className="text-[10px] text-accent-red bg-accent-red/10 px-1.5 py-0.5 rounded">
                   {errorCount} errors
@@ -545,7 +550,7 @@ export default function LogMonitor() {
                   {warnCount} warnings
                 </span>
               )}
-              <div className="ml-auto flex items-center gap-2 text-[9px] text-gray-600">
+              <div className="ml-auto flex items-center gap-2 text-[9px] text-gray-400">
                 <span>timestamp</span>
                 <span>·</span>
                 <span>level</span>
@@ -557,7 +562,7 @@ export default function LogMonitor() {
 
             <div className="flex-1 overflow-y-auto font-mono">
               {entries.length === 0 ? (
-                <div className="text-center py-12 text-gray-600 text-sm">
+                <div className="text-center py-12 text-gray-400 text-sm">
                   No entries match the current filters.
                 </div>
               ) : (

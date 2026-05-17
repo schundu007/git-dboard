@@ -13,4 +13,16 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor:  ['react', 'react-dom', 'react-router-dom'],
+          query:   ['@tanstack/react-query'],
+          charts:  ['recharts'],
+          ui:      ['@radix-ui/react-dialog', '@radix-ui/react-tooltip', 'cmdk', 'sonner'],
+        },
+      },
+    },
+  },
 })

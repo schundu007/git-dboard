@@ -70,7 +70,7 @@ export default function RightSidebar() {
             )}
           </div>
         ) : (
-          <p className="text-[10px] text-gray-600">No repo active</p>
+          <p className="text-[10px] text-gray-400">No repo active</p>
         )}
       </div>
 
@@ -121,7 +121,7 @@ export default function RightSidebar() {
       </div>
 
       {pulse?.size_kb && (
-        <p className="px-3 pb-3 text-[9px] text-gray-600">
+        <p className="px-3 pb-3 text-[9px] text-gray-400">
           {(pulse.size_kb / 1024).toFixed(1)} MB repo size
         </p>
       )}
@@ -158,7 +158,7 @@ function StatRow({
           {counted.toLocaleString()}{suffix}
         </span>
       ) : (
-        <span className="text-[10px] text-gray-600">—</span>
+        <span className="text-[10px] text-gray-400">—</span>
       )}
     </div>
   )
