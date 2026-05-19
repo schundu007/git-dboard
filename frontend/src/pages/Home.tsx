@@ -1711,10 +1711,10 @@ function CIAnalysisSlides() {
 
 
 const SKILLS = [
-  { area: 'CI/CD & DevOps',     items: ['GitHub Actions', 'Docker', 'Kubernetes', 'ArgoCD', 'Helm', 'BuildKit'] },
-  { area: 'Cloud & Infra',      items: ['AWS ECR / S3 / IAM', 'NVIDIA NGC', 'Railway', 'Vercel', 'Terraform'] },
-  { area: 'Languages',          items: ['Python', 'TypeScript / React', 'Bash', 'C++', 'SQL'] },
-  { area: 'Robotics / AI',      items: ['Isaac Sim', 'IsaacLab', 'ROS 2', 'CUDA', 'PyTorch'] },
+  { area: 'CI/CD & DevOps',     items: ['GitLab CI', 'GitHub Actions', 'Jenkins', 'ArgoCD', 'FluxCD', 'Azure DevOps'] },
+  { area: 'Cloud & Infra',      items: ['AWS (EKS / ECR / S3)', 'Azure (AKS / DevOps)', 'GCP (GKE)', 'Terraform', 'Helm', 'Ansible'] },
+  { area: 'Containers & Linux', items: ['Docker', 'Kubernetes', 'Istio', 'RHEL / Ubuntu', 'multi-arch (ARM64)', 'QEMU buildx'] },
+  { area: 'Languages & Build',  items: ['Python', 'Bash', 'Groovy', 'CMake / Make / Bazel', 'C++', 'SQL'] },
 ]
 
 // Inline SVG logos for link cards
@@ -1765,9 +1765,7 @@ function ProfileSection() {
             </div>
             <div className="px-4 py-3">
               <p className="text-[10.5px] leading-[1.65] text-neutral-400">
-                12+ years CI/CD ownership. Targeting{' '}
-                <span className="text-nvidia font-semibold">NVIDIA JR2014821</span>.
-                Expert in GitLab CI, GitHub Actions, multi-arch Docker (x86-64 + ARM64), and ROS 2 workflows.
+                Senior DevOps Engineer specializing in end-to-end build, test, and release pipelines for robotics and hardware-accelerated workloads — Isaac ROS, IsaacLab, multi-arch Docker (x86-64 + ARM64), and GPU CI on GitHub Actions and GitLab CI. $8M+ in annual infrastructure savings. 99.97% deployment reliability. 95% deployment time reduction across 100+ pipelines.
               </p>
             </div>
           </div>
@@ -1805,7 +1803,7 @@ function ProfileSection() {
                 <span className="text-[9px] text-neutral-500 font-mono whitespace-nowrap">Santa Clara, CA</span>
               </div>
               <div className="text-[13px] font-bold text-white leading-tight">Senior DevOps Engineer — Robotics</div>
-              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Engineer, Sys SW · $184K–$356K</div>
+              <a href="https://jobs.nvidia.com/careers/job/893394392367" target="_blank" rel="noreferrer" className="text-[10px] text-neutral-500 font-mono mt-0.5 hover:underline hover:text-nvidia">Job Description</a>
             </div>
             <a href="https://jobs.nvidia.com/careers/job/893394392367" target="_blank" rel="noreferrer"
               className="flex-shrink-0 flex items-center gap-1 text-[10px] text-nvidia font-mono hover:underline pt-1">
@@ -1877,7 +1875,7 @@ function ProfileSection() {
               ))}
             </div>
             <div className="text-[9px] text-neutral-600 font-mono border-t border-border pt-2.5 leading-relaxed">
-              sbchundu@gmail.com · (513) 666-0099 · San Jose, CA · linkedin.com/in/schundu
+              chundubabu@gmail.com · (513) 666-0099 · San Jose, CA · linkedin.com/in/schundu
             </div>
           </div>
         </div>
@@ -1917,10 +1915,9 @@ function ProfileSection() {
           </div>
           <div className="p-4 flex flex-col gap-3">
             {[
-              { title: 'Isaac ROS CI/CD Patterns',  sub: 'Pre-merge validation, nightly testing, and release pipelines for ROS 2 — Isaac ROS and IsaacLab workflows' },
-              { title: 'Multi-arch Docker Builds',   sub: 'x86-64 + ARM64 (Jetson Orin/Thor) via QEMU buildx; registry-backed cache; CUDA arch list hardening' },
-              { title: 'ROS 2 Workflow Automation',  sub: 'Multi-repo colcon/vcstool builds, complex dependency graphs, platform-specific targets for embedded + cloud' },
-              { title: 'NVIDIA JR2014821 Interview', sub: 'Preparing for Senior DevOps Engineer — Robotics role at NVIDIA Santa Clara; targeting offer' },
+              { title: 'Multi-arch Docker Builds',         sub: 'x86-64 + ARM64 via QEMU buildx across 100+ pipelines; OCI artifact publishing to ECR, ACR, and JFrog Artifactory' },
+              { title: 'CI/CD Pipeline Reliability',       sub: '99.97% deployment reliability across AWS, Azure, and GCP; 95% cycle-time reduction; 80% reduction in pipeline flakiness' },
+              { title: 'Robotics Platform DevOps',         sub: 'Applying CI/CD, Linux systems, and multi-arch build expertise to hardware-accelerated and robotics workloads at NVIDIA' },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-2.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-nvidia flex-shrink-0 mt-1" />
