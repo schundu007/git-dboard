@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   ExternalLink, Clock, Activity, TrendingUp, BarChart2,
   GitPullRequest, Container, Moon, Server, Star, GitFork, AlertCircle,
-  CheckCircle2, XCircle, AlertTriangle, Zap,
+  CheckCircle2, XCircle, AlertTriangle, Zap, LayoutDashboard,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
@@ -1751,6 +1751,19 @@ function ProfileSection() {
   return (
     <div className="flex flex-col gap-3">
 
+      {/* Dashboard chip */}
+      <div className="flex items-center gap-2">
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-2 border border-border text-[12px] font-medium text-neutral-300 hover:border-nvidia/50 hover:text-white hover:bg-surface-3 transition-all"
+        >
+          <LayoutDashboard size={12} className="text-nvidia" />
+          Dashboard
+        </Link>
+        <span className="text-neutral-600 text-[12px]">/</span>
+        <span className="text-[12px] text-neutral-400">Profile</span>
+      </div>
+
       {/* ── Row 1: Bio | JD | Resume ── */}
       <div className="grid grid-cols-[280px_1fr_1fr] gap-3 items-start">
 
@@ -1938,7 +1951,7 @@ function ProfileSection() {
 // ── Main Home export ──────────────────────────────────────────────────────────
 
 export default function Home() {
-  const [tab, setTab] = useState<'dashboard' | 'profile'>('dashboard')
+  const [tab, setTab] = useState<'dashboard' | 'profile'>('profile')
   const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
   const repoSlug = data?.active?.slug ?? ''
   const isIsaacLab = repoSlug === 'isaac-sim/IsaacLab'

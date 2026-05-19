@@ -7,7 +7,6 @@ import { getActiveRepo, getRepos } from './lib/api'
 import Layout from './components/Layout'
 import RepoWelcome from './components/RepoWelcome'
 
-const Profile         = lazy(() => import('./pages/Profile'))
 const Home            = lazy(() => import('./pages/Home'))
 const ControlPlane    = lazy(() => import('./pages/ControlPlane'))
 const PRHub           = lazy(() => import('./pages/PRHub'))
@@ -122,9 +121,8 @@ export default function App() {
       <PageErrorBoundary>
       <Suspense fallback={<PageFallback />}>
         <Routes>
-          <Route path="/"            element={<Profile />} />
-          <Route path="/profile"     element={<Profile />} />
-          <Route path="/home"        element={<Home />} />
+          <Route path="/"            element={<Home />} />
+          <Route path="/profile"     element={<Home />} />
           <Route path="/dashboard"   element={<ControlPlane />} />
           <Route path="/prs"         element={<PRHub />} />
           <Route path="/builds"      element={<BuildPipeline />} />
