@@ -18,8 +18,9 @@ const ErrorMonitor    = lazy(() => import('./pages/ErrorMonitor'))
 const Analytics       = lazy(() => import('./pages/Analytics'))
 const SecurityAudit   = lazy(() => import('./pages/SecurityAudit'))
 const Settings        = lazy(() => import('./pages/Settings'))
-const InterviewPrep      = lazy(() => import('./pages/InterviewPrep'))
 const ScriptPlayground   = lazy(() => import('./pages/ScriptPlayground'))
+const ScriptLibrary      = lazy(() => import('./pages/ScriptLibrary'))
+const ScriptBrowser      = lazy(() => import('./pages/ScriptBrowser'))
 
 function PageFallback() {
   return (
@@ -103,6 +104,13 @@ function useShowWelcome() {
   return repos.length === 0 && activeData?.source === 'env'
 }
 
+function ScriptsPage() {
+  const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  if (!data) return null
+  if ((data?.active?.slug ?? '') === 'isaac-sim/IsaacLab') return <ScriptLibrary />
+  return <ScriptBrowser />
+}
+
 export default function App() {
   const showWelcome = useShowWelcome()
   if (showWelcome) return <RepoWelcome />
@@ -124,7 +132,7 @@ export default function App() {
           <Route path="/analytics"   element={<Analytics />} />
           <Route path="/security"    element={<SecurityAudit />} />
           <Route path="/settings"    element={<Settings />} />
-          <Route path="/scripts"     element={<InterviewPrep />} />
+          <Route path="/scripts"     element={<ScriptsPage />} />
           <Route path="/playground"  element={<ScriptPlayground />} />
           {/* Legacy redirects */}
           <Route path="/improvement" element={<Navigate to="/action-plan" replace />} />

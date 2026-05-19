@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { getActiveRepo, getBuildPerformance, getOverviewSummary } from '../lib/api'
+import { getActiveRepo, getBuildPerformance, getOverviewSummary, getIssueStats, getPRs } from '../lib/api'
 import GitPulseLogo from '../components/GitPulseLogo'
 import { TargetArchSVG } from '../components/CICDArchitectures'
 import StatusBadge from '../components/StatusBadge'
@@ -41,6 +41,15 @@ const FINDINGS = [
   { severity: 'WARN', stat: 'blind',  statColor: '#f59e0b',
     title: 'No Infra / Product Triage',
     sub: 'Runner environment failures and app build failures are indistinguishable in current logs. Ops cannot determine if a failure is infrastructure or developer code.' },
+  { severity: 'CRIT', stat: '429/500', statColor: '#ef4444',
+    title: 'Image Download Request Failures',
+    sub: 'Container registry pull requests hitting rate limits (HTTP 429) and intermittent server errors (HTTP 500) cause non-deterministic pipeline failures. No retry logic, exponential backoff, or pull-through cache to absorb burst traffic.' },
+  { severity: 'CRIT', stat: 'absent', statColor: '#ef4444',
+    title: 'No Multi-Stage Pipeline Orchestration',
+    sub: 'No cross-repo or monorepo-multiproject pipeline coordination. Multi-repo dependencies are resolved manually; monorepo subprojects share a single pipeline with no isolation between packages. Upstream artifact unavailability fails the entire graph silently.' },
+  { severity: 'WARN', stat: 'gaps',  statColor: '#f59e0b',
+    title: 'Infrastructure Best Practices',
+    sub: 'No Infrastructure-as-Code for runner environments, no config drift detection, no resource quotas or cost controls on ephemeral compute, and no network policy enforcement isolating build workloads from production traffic paths.' },
 ]
 
 const IMPACT = [
@@ -665,193 +674,259 @@ function ArchSVG() {
 
 // ── Generic repo home (shown when active repo is not IsaacLab) ───────────────
 
-function GenericRepoHome({ repoSlug }: { repoSlug: string }) {
-  const nav = useNavigate()
-  const { data, isLoading } = useQuery({
-    queryKey: ['overview'],
-    queryFn: getOverviewSummary,
-    staleTime: 60_000,
-  })
-
+function buildInsights(data: any, repoSlug: string) {
+  const findings: { severity: 'CRIT' | 'WARN'; stat: string; statColor: string; title: string; sub: string }[] = []
   const prs     = data?.prs
   const builds  = data?.builds
   const nightly = data?.nightly
   const runners = data?.runners
   const repo    = data?.repo
 
-  const buildRateColor =
-    (builds?.success_rate_last10 ?? 100) >= 80 ? 'text-nvidia' :
-    (builds?.success_rate_last10 ?? 100) >= 50 ? 'text-accent-yellow' : 'text-accent-red'
+  const failRate = builds?.success_rate_last10 != null ? Math.round(100 - builds.success_rate_last10) : null
+  if (failRate != null && failRate >= 30) {
+    findings.push({
+      severity: 'CRIT', stat: `${failRate}%`, statColor: '#ef4444',
+      title: 'CI Build Failure Rate',
+      sub: `${failRate}% of the last 10 workflow runs failed. Investigate flaky tests, dependency changes, or infrastructure instability on self-hosted runners.`,
+    })
+  } else if (failRate != null && failRate >= 10) {
+    findings.push({
+      severity: 'WARN', stat: `${failRate}%`, statColor: '#f59e0b',
+      title: 'CI Build Failure Rate',
+      sub: `${failRate}% failure rate over the last 10 runs. Monitor for regressions — consider adding required status checks to block merges on failure.`,
+    })
+  }
 
-  const nightlyColor =
-    nightly?.last_status === 'success' ? 'text-nvidia' :
-    nightly?.consecutive_failures > 0  ? 'text-accent-red' : 'text-neutral-400'
+  if (nightly?.consecutive_failures >= 3) {
+    findings.push({
+      severity: 'CRIT', stat: `${nightly.consecutive_failures}x`, statColor: '#ef4444',
+      title: 'Consecutive Nightly Failures',
+      sub: `The nightly build has failed ${nightly.consecutive_failures} times in a row. Nightly instability indicates unreleased breakage or environment drift not caught by pre-merge CI.`,
+    })
+  } else if (nightly?.consecutive_failures >= 1) {
+    findings.push({
+      severity: 'WARN', stat: `${nightly.consecutive_failures}x`, statColor: '#f59e0b',
+      title: 'Nightly Build Failing',
+      sub: `Nightly last ran as: ${nightly.last_status}. Recurring failures here suggest flaky scheduled jobs or untracked dependency updates.`,
+    })
+  }
+
+  if (prs?.review_requested > 5) {
+    findings.push({
+      severity: 'CRIT', stat: `${prs.review_requested}`, statColor: '#ef4444',
+      title: 'PRs Blocked on Review',
+      sub: `${prs.review_requested} open pull requests have review explicitly requested but no approval. Review queue depth slows down the development cycle.`,
+    })
+  } else if (prs?.review_requested > 0) {
+    findings.push({
+      severity: 'WARN', stat: `${prs.review_requested}`, statColor: '#f59e0b',
+      title: 'PRs Pending Review',
+      sub: `${prs.review_requested} PRs are waiting for reviewer attention. Consider assigning reviewers or using CODEOWNERS to auto-assign on open.`,
+    })
+  }
+
+  if (runners && !runners.access_denied && runners.total > 0) {
+    const offline = runners.total - runners.online
+    if (offline > 0) {
+      findings.push({
+        severity: offline > runners.total / 2 ? 'CRIT' : 'WARN',
+        stat: `${offline}/${runners.total}`, statColor: offline > runners.total / 2 ? '#ef4444' : '#f59e0b',
+        title: 'Self-Hosted Runners Offline',
+        sub: `${offline} of ${runners.total} registered runners are offline. Jobs may queue or fall back to GitHub-hosted runners with different environments.`,
+      })
+    }
+  }
+
+  if (builds?.in_progress > 3) {
+    findings.push({
+      severity: 'WARN', stat: `${builds.in_progress}`, statColor: '#f59e0b',
+      title: 'High Concurrent Build Load',
+      sub: `${builds.in_progress} workflow runs are currently in progress. Runner contention may cause queuing and longer wait times.`,
+    })
+  }
+
+  if (repo?.open_issues > 200) {
+    findings.push({
+      severity: 'WARN', stat: `${repo.open_issues}`, statColor: '#f59e0b',
+      title: 'Issue Backlog Growth',
+      sub: `${repo.open_issues} open issues — a large backlog may indicate triage is not keeping pace with incoming reports. Consider using automation or stale-issue management.`,
+    })
+  }
+
+  if (findings.length === 0) {
+    findings.push({
+      severity: 'WARN', stat: 'ok', statColor: '#76b900',
+      title: 'No Active Alerts',
+      sub: `All tracked health signals for ${repoSlug} are within normal thresholds. Continue monitoring build rate, PR queue depth, and nightly run stability.`,
+    })
+  }
+
+  return {
+    findings,
+    crits: findings.filter(f => f.severity === 'CRIT').length,
+    warns: findings.filter(f => f.severity === 'WARN').length,
+  }
+}
+
+function GenericRepoHome({ repoSlug }: { repoSlug: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['overview'],
+    queryFn: getOverviewSummary,
+    staleTime: 60_000,
+  })
+
+  const prs    = data?.prs
+  const builds = data?.builds
+  const repo   = data?.repo
+
+  const { findings, crits, warns } = data
+    ? buildInsights(data, repoSlug)
+    : { findings: [], crits: 0, warns: 0 }
+
+  const buildSuccessColor =
+    (builds?.success_rate_last10 ?? 100) >= 80 ? '#76b900' :
+    (builds?.success_rate_last10 ?? 100) >= 50 ? '#f59e0b' : '#ef4444'
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+    <div className="flex gap-4 items-start">
 
-      {/* Repo card */}
-      <div className="border border-border bg-surface-1 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-semibold text-neutral-300">Repository</span>
-          <a href={`https://github.com/${repoSlug}`} target="_blank" rel="noreferrer" className="text-neutral-500 hover:text-neutral-300">
-            <ExternalLink size={11} />
-          </a>
-        </div>
-        {isLoading ? (
-          <div className="text-[11px] text-neutral-600 font-mono">Loading…</div>
-        ) : repo ? (
-          <>
-            <p className="text-[13px] font-semibold text-white mb-3">{repo.name}</p>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {[
-                { icon: Star,        label: 'Stars',  val: repo.stars?.toLocaleString()       },
-                { icon: GitFork,     label: 'Forks',  val: repo.forks?.toLocaleString()       },
-                { icon: AlertCircle, label: 'Issues', val: repo.open_issues?.toLocaleString() },
-              ].map(({ icon: Icon, label, val }) => (
-                <div key={label} className="border border-border bg-surface-2 p-2 text-center">
-                  <Icon size={10} className="mx-auto text-neutral-500 mb-1" />
-                  <p className="text-[13px] font-semibold text-white">{val ?? '—'}</p>
-                  <p className="text-[9px] text-neutral-500">{label}</p>
+      {/* LEFT: Repo Insights + breakdown cards */}
+      <div className="w-[460px] flex-shrink-0 flex flex-col gap-3">
+        <div className="rounded-xl border border-border bg-surface-1">
+
+          {/* Panel header */}
+          <div className="px-4 py-2.5 border-b border-border bg-surface-2 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+              <span className="text-[11px] font-semibold text-white tracking-[0.18em] uppercase">Repo Insights</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {crits > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20">
+                  {crits} CRIT
+                </span>
+              )}
+              {warns > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20">
+                  {warns} WARN
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Scan target meta */}
+          <div className="px-4 py-1.5 border-b border-border/40 bg-surface-2/30 flex items-center gap-2 flex-shrink-0">
+            <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Target</span>
+            <span className="text-[9px] font-mono text-neutral-500">{repoSlug}</span>
+            <span className="ml-auto text-[9px] font-mono text-neutral-600">ci/cd · builds · prs · runners</span>
+          </div>
+
+          {/* Findings list */}
+          {isLoading ? (
+            <div className="px-4 py-8 flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full border-2 border-border border-t-nvidia animate-spin" />
+            </div>
+          ) : (
+            <div className="divide-y divide-border/40">
+              {findings.map((f) => (
+                <div key={f.title} className="px-4 py-3">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className={cn(
+                      'inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider flex-shrink-0',
+                      f.severity === 'CRIT'
+                        ? 'bg-[#ef4444]/10 text-[#ef4444]'
+                        : 'bg-[#f59e0b]/10 text-[#f59e0b]',
+                    )}>{f.severity}</span>
+                    <span className="text-[13px] font-semibold text-white leading-tight flex-1 min-w-0">{f.title}</span>
+                    <span className="text-[12px] font-bold tabular-nums font-mono flex-shrink-0"
+                      style={{ color: f.statColor }}>{f.stat}</span>
+                  </div>
+                  <p className="text-[11px] leading-[1.55] text-neutral-500">{f.sub}</p>
                 </div>
               ))}
             </div>
-            {repo.updated_at && (
-              <p className="text-[10px] text-neutral-600">
-                Updated {formatDistanceToNow(new Date(repo.updated_at), { addSuffix: true })}
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="text-[11px] text-neutral-600">No repo data</p>
-        )}
-
-        <div className="mt-4 pt-3 border-t border-border/40 flex flex-col gap-1">
-          {[
-            { label: 'Dashboard Overview', path: '/dashboard' },
-            { label: 'CI Pipeline',        path: '/builds'    },
-            { label: 'Pull Requests',      path: '/prs'       },
-            { label: 'Nightly Monitor',    path: '/nightly'   },
-            { label: 'Analytics',          path: '/analytics' },
-          ].map(({ label, path }) => (
-            <button
-              key={path}
-              onClick={() => nav(path)}
-              className="text-left text-[11px] text-neutral-500 hover:text-neutral-200 py-0.5 transition-colors"
-            >
-              {label} →
-            </button>
-          ))}
+          )}
         </div>
+
+        {/* Issue + PR breakdown cards */}
+        <IssueBreakdownCard repoSlug={repoSlug} />
+        <PRBreakdownCard repoSlug={repoSlug} />
       </div>
 
-      {/* Health tiles */}
-      <div className="xl:col-span-2 flex flex-col gap-3">
+      {/* RIGHT: Stats bar + Cross-Workflow Performance */}
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
 
-        {/* PRs + Builds */}
-        <div className="grid grid-cols-2 gap-3">
-          <div
-            className="border border-border bg-surface-1 p-4 cursor-pointer hover:bg-surface-2/40 transition-colors"
-            onClick={() => nav('/prs')}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <GitPullRequest size={13} className="text-neutral-500" />
-              <span className="text-[11px] font-semibold text-neutral-300">Open PRs</span>
-            </div>
-            {isLoading ? <div className="text-[11px] text-neutral-600 font-mono">…</div> : prs ? (
-              <>
-                <p className="text-[28px] font-bold font-mono leading-none text-neutral-100 mb-1">{prs.open}</p>
-                <p className="text-[10px] text-neutral-500">
-                  {prs.ready} ready · {prs.draft} draft
-                  {prs.review_requested > 0 && <span className="text-nvidia ml-2">{prs.review_requested} need review</span>}
-                </p>
-              </>
-            ) : <p className="text-[11px] text-neutral-600">—</p>}
+        {/* Stats bar */}
+        <div className="flex-shrink-0 rounded-lg border border-border bg-surface-1 flex items-stretch divide-x divide-border">
+
+          {/* Repo stats */}
+          <div className="flex items-center gap-5 pl-4 pr-5 py-3 flex-shrink-0">
+            <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-600 whitespace-nowrap">REPO</span>
+            {[
+              { label: 'stars',  value: repo?.stars  != null ? String(repo.stars)  : '—' },
+              { label: 'forks',  value: repo?.forks  != null ? String(repo.forks)  : '—' },
+              { label: 'issues', value: repo?.open_issues != null ? String(repo.open_issues) : '—' },
+            ].map(m => (
+              <div key={m.label} className="flex items-end gap-1">
+                <span className="text-[18px] font-black font-mono leading-none tabular-nums text-neutral-200">{m.value}</span>
+                <span className="text-[9px] text-neutral-600 leading-tight pb-[2px]">{m.label}</span>
+              </div>
+            ))}
           </div>
 
-          <div
-            className="border border-border bg-surface-1 p-4 cursor-pointer hover:bg-surface-2/40 transition-colors"
-            onClick={() => nav('/builds')}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Container size={13} className="text-neutral-500" />
-              <span className="text-[11px] font-semibold text-neutral-300">Build Health</span>
-            </div>
-            {isLoading ? <div className="text-[11px] text-neutral-600 font-mono">…</div> : builds ? (
-              <>
-                <p className={cn('text-[28px] font-bold font-mono leading-none mb-1', buildRateColor)}>
-                  {builds.success_rate_last10 ?? '—'}%
-                </p>
-                <p className="text-[10px] text-neutral-500">
-                  success rate · last 10 runs
-                  {builds.in_progress > 0 && (
-                    <span className="text-nvidia ml-2 animate-pulse">{builds.in_progress} running</span>
-                  )}
-                </p>
-              </>
-            ) : <p className="text-[11px] text-neutral-600">—</p>}
-          </div>
-        </div>
-
-        {/* Nightly + Runners */}
-        <div className="grid grid-cols-2 gap-3">
-          <div
-            className="border border-border bg-surface-1 p-4 cursor-pointer hover:bg-surface-2/40 transition-colors"
-            onClick={() => nav('/nightly')}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Moon size={13} className="text-neutral-500" />
-              <span className="text-[11px] font-semibold text-neutral-300">Nightly</span>
-            </div>
-            {isLoading ? <div className="text-[11px] text-neutral-600 font-mono">…</div> : nightly ? (
-              <>
-                <p className={cn('text-[14px] font-semibold font-mono mb-1', nightlyColor)}>
-                  {nightly.last_status ?? '—'}
-                </p>
-                {nightly.consecutive_failures > 0 ? (
-                  <p className="text-[10px] text-accent-red flex items-center gap-1">
-                    <AlertTriangle size={9} /> {nightly.consecutive_failures} consecutive failure{nightly.consecutive_failures > 1 ? 's' : ''}
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-neutral-500 flex items-center gap-1">
-                    <CheckCircle2 size={9} className="text-nvidia" /> All jobs passing
-                  </p>
-                )}
-                {nightly.last_date && <p className="text-[10px] text-neutral-600 mt-1">Last run: {nightly.last_date}</p>}
-              </>
-            ) : <p className="text-[11px] text-neutral-600">—</p>}
+          {/* CI health */}
+          <div className="flex-1 flex items-center gap-5 pl-5 pr-4 py-3 min-w-0">
+            <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-600 whitespace-nowrap">CI</span>
+            {[
+              {
+                label: 'build rate',
+                from: '100%',
+                to: builds?.success_rate_last10 != null ? `${builds.success_rate_last10}%` : '—',
+                color: buildSuccessColor,
+              },
+              {
+                label: 'open prs',
+                from: '0',
+                to: prs?.open != null ? String(prs.open) : '—',
+                color: '#e5e5e5',
+              },
+              {
+                label: 'need review',
+                from: '0',
+                to: prs?.review_requested != null ? String(prs.review_requested) : '—',
+                color: (prs?.review_requested ?? 0) > 0 ? '#f59e0b' : '#76b900',
+              },
+            ].map(m => (
+              <div key={m.label} className="flex flex-col gap-0.5 min-w-0 flex-shrink-0">
+                <span className="text-[9px] text-neutral-600 font-mono leading-none truncate">{m.label}</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[13px] font-bold font-mono leading-none whitespace-nowrap" style={{ color: m.color }}>{m.to}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div
-            className="border border-border bg-surface-1 p-4 cursor-pointer hover:bg-surface-2/40 transition-colors"
-            onClick={() => nav('/infra')}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Server size={13} className="text-neutral-500" />
-              <span className="text-[11px] font-semibold text-neutral-300">Runners</span>
+          {/* Live badge */}
+          <div className="flex-shrink-0 flex items-center px-4">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
+              <span className="text-[9px] font-mono font-semibold text-nvidia tracking-widest">LIVE</span>
             </div>
-            {isLoading ? <div className="text-[11px] text-neutral-600 font-mono">…</div> : runners ? (
-              <>
-                <p className="text-[28px] font-bold font-mono leading-none text-neutral-100 mb-1">
-                  {runners.access_denied ? '—' : `${runners.online}/${runners.total}`}
-                </p>
-                <p className="text-[10px] text-neutral-500">
-                  {runners.access_denied ? 'scope limited' : 'online'}
-                  {runners.busy > 0 && <span className="text-nvidia ml-2">{runners.busy} busy</span>}
-                </p>
-              </>
-            ) : <p className="text-[11px] text-neutral-600">—</p>}
           </div>
         </div>
+
+        {/* Cross-Workflow Performance */}
+        <CrossWorkflowPerf />
 
         {/* Recent builds */}
         {builds?.recent?.length > 0 && (
-          <div className="border border-border bg-surface-1">
-            <div className="px-4 py-2.5 border-b border-border">
+          <div className="rounded-xl border border-border bg-surface-1">
+            <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
               <span className="text-[11px] font-semibold text-neutral-300">Recent Runs</span>
             </div>
             <div className="divide-y divide-border/40">
-              {(builds.recent as any[]).slice(0, 5).map((b: any) => (
+              {(builds.recent as any[]).slice(0, 6).map((b: any) => (
                 <div key={b.id} className="px-4 py-2 flex items-center gap-3">
                   <StatusBadge status={b.status} />
                   <span className="text-[11px] text-neutral-300 flex-1 truncate">{b.title || b.branch}</span>
@@ -868,8 +943,8 @@ function GenericRepoHome({ repoSlug }: { repoSlug: string }) {
             </div>
           </div>
         )}
-      </div>
 
+      </div>
     </div>
   )
 }
@@ -884,6 +959,135 @@ const TABLE_TABS: { key: TableTab; label: string }[] = [
   { key: 'duration', label: 'Duration' },
   { key: 'runs',     label: 'Runs' },
 ]
+
+// ── Categorise labels into display buckets ────────────────────────────────
+function categoriseLabels(labels: { name: string; count: number; color?: string }[], mode: 'issues' | 'prs') {
+  const buckets = mode === 'issues'
+    ? [
+        { key: 'bugs',     label: 'Product Bugs',      color: '#f97316', terms: ['bug', 'defect', 'crash', 'regression', 'broken'] },
+        { key: 'infra',    label: 'Infrastructure',    color: '#eab308', terms: ['infra', 'ci', 'cd', 'docker', 'build', 'deploy', 'runner', 'pipeline'] },
+        { key: 'features', label: 'Feature Requests',  color: '#a855f7', terms: ['feature', 'enhancement', 'request', 'proposal', 'rfe'] },
+      ]
+    : [
+        { key: 'docs',     label: 'Documentation',     color: '#3b82f6', terms: ['doc', 'docs', 'readme', 'changelog', 'wiki'] },
+        { key: 'infra',    label: 'Infrastructure',    color: '#eab308', terms: ['infra', 'ci', 'cd', 'docker', 'build', 'deploy', 'runner', 'pipeline'] },
+        { key: 'bugs',     label: 'Bug Fixes',         color: '#f97316', terms: ['bug', 'fix', 'defect', 'crash', 'regression'] },
+        { key: 'features', label: 'Features',          color: '#a855f7', terms: ['feature', 'enhancement', 'proposal'] },
+        { key: 'refactor', label: 'Refactor / Deps',   color: '#6b7280', terms: ['refactor', 'deps', 'dependency', 'chore', 'maintenance', 'upgrade', 'cleanup'] },
+      ]
+
+  const totals: Record<string, number> = {}
+  for (const b of buckets) totals[b.key] = 0
+  let other = 0
+
+  for (const lbl of labels) {
+    const lower = lbl.name.toLowerCase()
+    const bucket = buckets.find(b => b.terms.some(t => lower.includes(t)))
+    if (bucket) totals[bucket.key] += lbl.count
+    else other += lbl.count
+  }
+
+  const rows = buckets
+    .map(b => ({ label: b.label, count: totals[b.key], color: b.color }))
+    .filter(r => r.count > 0)
+
+  if (mode === 'issues' && other > 0) rows.push({ label: 'Other', count: other, color: '#52525b' })
+  if (mode === 'prs' && other > 0) {
+    const refactorRow = rows.find(r => r.label === 'Refactor / Deps')
+    if (refactorRow) refactorRow.count += other
+    else rows.push({ label: 'Other', count: other, color: '#52525b' })
+  }
+
+  return rows
+}
+
+function BreakdownCard({
+  title, subtitle, githubUrl, rows, total,
+}: {
+  title: string; subtitle: string; githubUrl: string
+  rows: { label: string; count: number; color: string }[]; total: number
+}) {
+  const max = Math.max(...rows.map(r => r.count), 1)
+  return (
+    <div className="rounded-xl border border-border bg-surface-1">
+      <div className="px-4 py-3 border-b border-border/40 flex items-start justify-between">
+        <div>
+          <p className="text-[13px] font-semibold text-white">{title}</p>
+          <p className="text-[10px] font-mono text-neutral-500 mt-0.5">{subtitle}</p>
+        </div>
+        <a href={githubUrl} target="_blank" rel="noreferrer"
+          className="flex items-center gap-1 text-[10px] text-nvidia hover:underline font-mono mt-0.5 flex-shrink-0">
+          GitHub <ExternalLink size={9} />
+        </a>
+      </div>
+      <div className="px-4 py-3 flex flex-col gap-2.5">
+        {rows.map(row => (
+          <div key={row.label} className="flex items-center gap-2.5">
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: row.color }} />
+            <span className="text-[11px] text-neutral-400 w-[120px] flex-shrink-0 truncate">{row.label}</span>
+            <div className="flex-1 h-[5px] bg-surface-3 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${(row.count / max) * 100}%`, background: row.color }} />
+            </div>
+            <span className="text-[11px] font-mono text-neutral-300 w-6 text-right flex-shrink-0">{row.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function IssueBreakdownCard({ repoSlug }: { repoSlug: string }) {
+  const { data } = useQuery({ queryKey: ['issue-stats'], queryFn: getIssueStats, staleTime: 120_000 })
+  if (!data) return null
+  const rows = categoriseLabels(data.top_labels ?? [], 'issues')
+  const githubUrl = `https://github.com/${repoSlug}/issues`
+  const date = new Date().toISOString().slice(0, 10)
+  return (
+    <BreakdownCard
+      title={`${data.open_count} Open Issues`}
+      subtitle={`${repoSlug} · ${date}`}
+      githubUrl={githubUrl}
+      rows={rows}
+      total={data.open_count}
+    />
+  )
+}
+
+function PRBreakdownCard({ repoSlug }: { repoSlug: string }) {
+  const { data: prsData } = useQuery({
+    queryKey: ['prs-open'],
+    queryFn: () => getPRs('open', 1),
+    staleTime: 120_000,
+  })
+  const prs: any[] = Array.isArray(prsData) ? prsData : []
+  if (!prs.length) return null
+
+  // Aggregate labels across all open PRs
+  const labelMap: Record<string, number> = {}
+  for (const pr of prs) {
+    for (const lbl of (pr.labels ?? [])) {
+      labelMap[lbl.name] = (labelMap[lbl.name] ?? 0) + 1
+    }
+  }
+  const labels = Object.entries(labelMap).map(([name, count]) => ({ name, count }))
+  const rows = categoriseLabels(labels, 'prs')
+  // If no labels found, show by draft/ready
+  const displayRows = rows.length > 0 ? rows : [
+    { label: 'Ready', count: prs.filter(p => !p.draft).length, color: '#76b900' },
+    { label: 'Draft', count: prs.filter(p => p.draft).length, color: '#52525b' },
+  ]
+  const githubUrl = `https://github.com/${repoSlug}/pulls`
+  return (
+    <BreakdownCard
+      title={`${prs.length} Open PRs`}
+      subtitle="Active development breakdown"
+      githubUrl={githubUrl}
+      rows={displayRows}
+      total={prs.length}
+    />
+  )
+}
 
 function CrossWorkflowPerf() {
   const [timeWindow, setTimeWindow] = useState('14d')
@@ -1171,22 +1375,22 @@ export default function Home() {
       {!data ? null : isIsaacLab ? (
       <div className="flex gap-4 items-start">
 
-        {/* LEFT: Audit Findings */}
-        <div className="w-[460px] flex-shrink-0">
+        {/* LEFT: Improvements Requested + breakdown cards */}
+        <div className="w-[460px] flex-shrink-0 flex flex-col gap-3">
           <div className="rounded-xl border border-border bg-surface-1">
 
             {/* Panel header */}
             <div className="px-4 py-2.5 border-b border-border bg-surface-2 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
-                <span className="text-[11px] font-semibold text-white tracking-[0.18em] uppercase">Audit Findings</span>
+                <span className="text-[11px] font-semibold text-white tracking-[0.18em] uppercase">Improvements Requested</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20">
-                  5 CRIT
+                  7 CRIT
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20">
-                  3 WARN
+                  4 WARN
                 </span>
               </div>
             </div>
@@ -1218,6 +1422,10 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {/* Issue + PR breakdown cards */}
+          <IssueBreakdownCard repoSlug={repoSlug} />
+          <PRBreakdownCard repoSlug={repoSlug} />
         </div>
 
         {/* RIGHT: Stats + Architecture + Roadmap */}
@@ -1292,14 +1500,14 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Cross-workflow performance */}
+          <CrossWorkflowPerf />
+
         </div>
       </div>
       ) : (
         <GenericRepoHome repoSlug={repoSlug} />
       )}
-
-      {/* Cross-workflow performance */}
-      <CrossWorkflowPerf />
 
     </div>
   )

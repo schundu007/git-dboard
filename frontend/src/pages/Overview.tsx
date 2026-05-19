@@ -35,7 +35,7 @@ function FailureDetail({ runId }: { runId: number }) {
         {open ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
       </button>
       {open && (
-        <div className="mt-1.5 bg-black/40 rounded border border-red-900/40 p-2 space-y-2">
+        <div className="mt-1.5 bg-surface/40 rounded border border-red-900/40 p-2 space-y-2">
           {isLoading && <p className="text-[10px] text-gray-400">Fetching logs…</p>}
           {data?.summaries?.map((s: any, i: number) => (
             <div key={i} className="space-y-1">
@@ -49,7 +49,7 @@ function FailureDetail({ runId }: { runId: number }) {
                 </p>
               ))}
               {s.error_lines?.length > 0 && (
-                <div className="bg-black/60 rounded p-1.5 font-mono max-h-28 overflow-y-auto">
+                <div className="bg-surface/60 rounded p-1.5 font-mono max-h-28 overflow-y-auto">
                   {s.error_lines.map((line: string, li: number) => (
                     <p key={li} className={clsx(
                       'text-[9px] leading-4 break-all',

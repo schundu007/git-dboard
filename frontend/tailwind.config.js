@@ -79,9 +79,9 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        sans:    ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        mono:    ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'ui-monospace', 'monospace'],
+        display: ['Source Sans 3', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans:    ['Source Sans 3', 'system-ui', 'sans-serif'],
+        mono:    ['Source Code Pro', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.65rem',  { lineHeight: '1rem' }],

@@ -172,6 +172,38 @@ async def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
+@app.get("/proxy/tree")
+async def proxy_tree(owner: str, repo: str):
+    """Proxy GitHub repo tree fetch using the server-side PAT (supports private repos)."""
+    import httpx
+    headers = gh._headers()
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(
+            f"https://api.github.com/repos/{owner}/{repo}/git/trees/HEAD?recursive=1",
+            headers=headers,
+        )
+    if not r.is_success:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=r.status_code, detail=f"GitHub API {r.status_code}")
+    return r.json()
+
+
+@app.get("/proxy/content")
+async def proxy_content(owner: str, repo: str, path: str):
+    """Proxy GitHub file content fetch using the server-side PAT (supports private repos)."""
+    import httpx
+    headers = gh._headers()
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(
+            f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
+            headers=headers,
+        )
+    if not r.is_success:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=r.status_code, detail=f"GitHub API {r.status_code}")
+    return r.json()
+
+
 @app.post("/cache/clear")
 async def clear_cache():
     """Bust all server-side in-process caches. Called by frontend on repo switch."""

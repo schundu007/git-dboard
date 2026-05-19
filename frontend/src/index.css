@@ -7,7 +7,7 @@
   --sidebar-width: 220px;
   --sidebar-collapsed-width: 60px;
   --header-height: 52px;
-  --radius: 0.5rem;
+  --radius: 0px;
 
   /* Foundation — zinc-950 base (Nebius-inspired, not pure black) */
   --color-bg:        #09090b;   /* zinc-950 */
@@ -53,7 +53,7 @@ html {
 body {
   background-color: rgb(var(--sfc));
   color: var(--color-text);
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -64,11 +64,11 @@ body {
 
 /* ── Typography ────────────────────────────────────────────────────────────── */
 code, pre, .font-mono, [data-mono] {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  font-family: 'Source Code Pro', ui-monospace, monospace;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -144,7 +144,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #52525b;
+  color: #909090;
 }
 
 /* ── Natural section title (no uppercase mechanical look) ─────────────────── */
@@ -174,7 +174,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #fafafa;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Source Sans 3', sans-serif;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -191,7 +191,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   line-height: 1.65;
   white-space: pre-wrap;
   word-break: break-all;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Source Code Pro', monospace;
   padding: 0.0625rem 0.375rem;
   border-radius: 2px;
 }
@@ -226,7 +226,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 [cmdk-input] {
   width: 100%;
   font-size: 0.9375rem;
-  font-family: 'Plus Jakarta Sans', inherit;
+  font-family: 'Source Sans 3', inherit;
   padding: 0.9375rem 1.25rem;
   background: transparent;
   border: none;
@@ -248,7 +248,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #52525b;
+  color: #909090;
   padding: 0.625rem 0.75rem 0.25rem;
 }
 
@@ -300,7 +300,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .recharts-cartesian-axis-tick-value {
   fill: #a1a1aa !important;
   font-size: 11px !important;
-  font-family: 'JetBrains Mono', monospace !important;
+  font-family: 'Source Code Pro', monospace !important;
 }
 .recharts-tooltip-wrapper { outline: none !important; }
 .recharts-default-tooltip {
@@ -313,7 +313,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .recharts-legend-item-text { color: #a1a1aa !important; font-size: 11px !important; }
 
 /* ── Sidebar transition ────────────────────────────────────────────────────── */
-.sidebar-transition { transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1); }
+.sidebar-transition { transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* Light-mode sidebar — white with clean shadow separator */
 [data-theme="light"] .sidebar-transition {
@@ -338,15 +338,15 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .hover-lift { transition: border-color 150ms; }
 .hover-lift:hover { border-color: #52525b; }
 
-/* ── NVIDIA document aesthetic — structural rounding → near-zero ─────────── */
-.rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 3px !important; }
-.rounded-lg { border-radius: 3px !important; }
-.rounded-md, .rounded, .rounded-sm { border-radius: 2px !important; }
-.recharts-default-tooltip { border-radius: 3px !important; }
-/* Floating overlays retain rounding */
-[cmdk-root]      { border-radius: 10px !important; }
-[cmdk-item]      { border-radius: 4px !important; }
-.tooltip-content { border-radius: 4px !important; }
+/* ── Sharp borders — zero radius everywhere ────────────────────────────────── */
+.rounded-3xl, .rounded-2xl, .rounded-xl,
+.rounded-lg, .rounded-md, .rounded, .rounded-sm,
+.rounded-full { border-radius: 1px !important; }
+.recharts-default-tooltip { border-radius: 1px !important; }
+/* Floating overlays: minimal rounding to avoid visual glitch */
+[cmdk-root]      { border-radius: 4px !important; }
+[cmdk-item]      { border-radius: 2px !important; }
+.tooltip-content { border-radius: 2px !important; }
 
 /* ── Section heading — plain underlined label, no chip chrome ────────────── */
 .section-head {
@@ -357,7 +357,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   border-radius: 0;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: #52525b;
+  color: #909090;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: none;
@@ -405,24 +405,24 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .ring-emerald-500\/20, .ring-emerald-500\/25 { --tw-ring-color: rgba(118,185,0,0.2) !important; }
 .bg-emerald-500\/\[\.07\] { background-color: rgba(118,185,0,0.07) !important; }
 
-/* ── Light theme — warm ivory (sudhakarchundu.org inspired) ──────────────── */
+/* ── Light theme — bright white with sharp structure ────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
-  /* Warm ivory palette — clean, premium, slightly warm */
-  --sfc:   254 253 251;   /* page bg — warm ivory #FEFDFB                     */
+  /* Bright clean white palette — high contrast, crisp */
+  --sfc:   240 242 245;   /* page bg — cool light gray #F0F2F5                 */
   --sfc1:  255 255 255;   /* cards — pure white                                */
-  --sfc2:  249 248 244;   /* inner panels — #F9F8F4                            */
-  --sfc3:  243 242 236;   /* slightly deeper — #F3F2EC                         */
-  --sfc4:  228 227 220;
-  --sfc5:  216 215 208;
-  --bdr:   232 231 226;   /* warm border                                       */
-  --bdr-s: 243 242 236;   /* very subtle                                       */
-  --bdr-x: 196 194 186;   /* strong/focus border                               */
+  --sfc2:  247 248 250;   /* inner panels                                      */
+  --sfc3:  238 240 244;   /* section bg                                        */
+  --sfc4:  225 228 234;
+  --sfc5:  210 213 220;
+  --bdr:   200 202 208;   /* strong visible border                             */
+  --bdr-s: 220 222 228;   /* subtle                                            */
+  --bdr-x: 160 163 172;   /* focus border                                      */
 }
 
 [data-theme="light"] body {
-  color: #1a1a1a;            /* near-black primary text */
-  background: #FEFDFB;       /* warm ivory page background */
+  color: #1a1a1e;            /* near-black primary text */
+  background: #F0F2F5;       /* bright cool-gray page background */
 }
 
 /* Cards — white with shadow depth, subtle border for definition ------------- */

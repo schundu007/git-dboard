@@ -6044,7 +6044,7 @@ function ExplainTab({ script }: { script: Script }) {
         </ol>
       </div>
       <div>
-        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">JD skills covered</p>
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Key concepts</p>
         <div className="flex flex-wrap gap-1.5">
           {script.jdSkills.map(s => (
             <span key={s} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-border bg-surface-2 text-gray-400">
@@ -6061,7 +6061,7 @@ function ExplainTab({ script }: { script: Script }) {
 
 type Tab = 'code' | 'explain' | 'issues' | 'qa'
 
-export default function InterviewPrep() {
+export default function ScriptLibrary() {
   const [selectedId, setSelectedId] = useState(SCRIPTS[0].id)
   const [tab, setTab] = useState<Tab>('code')
   const [search, setSearch] = useState('')
@@ -6098,7 +6098,7 @@ export default function InterviewPrep() {
     { id: 'code',    label: 'Code',    icon: <Code2 size={11} /> },
     { id: 'explain', label: 'Explain', icon: <BookOpen size={11} /> },
     { id: 'issues',  label: 'Issues',  icon: <Bug size={11} />, count: script.issues.length },
-    { id: 'qa',      label: 'Q & A',   icon: <MessageSquare size={11} />, count: script.qa.length },
+    { id: 'qa',      label: 'Deep Dive', icon: <MessageSquare size={11} />, count: script.qa.length },
   ]
 
   return (
@@ -6109,7 +6109,7 @@ export default function InterviewPrep() {
         {/* Header */}
         <div className="px-3 pt-4 pb-3 border-b border-border">
           <p className="text-[12px] font-bold text-white mb-1">Scripts</p>
-          <p className="text-[10px] text-gray-500 leading-snug">Spot bugs · explain the code · prep Q&A</p>
+          <p className="text-[10px] text-gray-500 leading-snug">Browse · explain · review issues</p>
           <div className="relative mt-2.5">
             <Search size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -6177,11 +6177,7 @@ export default function InterviewPrep() {
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-2.5 border-t border-border">
-          <p className="text-[9px] text-gray-400 leading-snug">
-            Based on NVIDIA JR2014821 · Senior DevOps Engineer, Robotics
-          </p>
-        </div>
+        <div className="px-3 py-2.5 border-t border-border"></div>
       </div>
 
       {/* ── Right: Content ───────────────────────────────────────────────── */}

@@ -4,10 +4,10 @@ import { NavLink, useLocation, Link } from 'react-router-dom'
 import GitPulseLogo from './GitPulseLogo'
 import {
   LayoutDashboard, GitPullRequest, Container,
-  Server, Layers, GitBranch,
+  Server, Layers,
   Shield, BarChart2, Cpu, Lightbulb, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
-  Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, BookOpen, Terminal,
+  Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -51,15 +51,15 @@ const NAV: NavSection[] = [
   {
     label: 'Observability',
     items: [
-      { to: '/monitoring', icon: AlertTriangle, label: 'Diagnostics' },
+      { to: '/monitoring', icon: AlertTriangle, label: 'Error Monitor' },
       { to: '/analytics',  icon: BarChart2,     label: 'Analytics'   },
     ],
   },
   {
     label: 'Tools',
     items: [
-      { to: '/scripts',    icon: BookOpen, label: 'Scripts'    },
-      { to: '/playground', icon: Terminal, label: 'Playground' },
+      { to: '/scripts',    icon: BookOpen,  label: 'Scripts'    },
+      { to: '/playground', icon: Terminal,  label: 'Playground' },
     ],
   },
 ]
@@ -89,9 +89,10 @@ function SwitchingOverlay({ slug }: { slug: string }) {
   )
 }
 
-interface RepoSwitcherProps { collapsed: boolean }
+function RepoSwitcher() {
+  const { collapsed, mobileOpen } = useSidebar()
+  const showLabels = mobileOpen || !collapsed
 
-function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -127,7 +128,7 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
       setPanelStyle({
         position: 'fixed',
         top: rect.bottom + 6,
-        left: collapsed ? rect.right + 6 : rect.left,
+        left: !showLabels ? rect.right + 6 : rect.left,
         width: 292,
         zIndex: 100,
       })
@@ -220,14 +221,14 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
         onClick={open ? closePanel : openPanel}
         className={cn(
           'flex items-center border-b border-border flex-shrink-0 h-[52px] w-full transition-colors',
-          collapsed ? 'justify-center px-0' : 'gap-2.5 px-4',
+          !showLabels ? 'justify-center px-0' : 'gap-2.5 px-4',
           open ? 'bg-surface-2' : 'hover:bg-surface-2/60',
         )}
       >
         <div className="flex-shrink-0 w-[26px] h-[26px] rounded bg-nvidia dark:bg-[#76b900]/15 flex items-center justify-center">
           <Cpu size={12} className="text-[#0f1a00] dark:text-nvidia" />
         </div>
-        {!collapsed && (
+        {showLabels && (
           <>
             <div className="min-w-0 flex-1 text-left">
               <p className="text-[13px] font-semibold tracking-[-0.02em] text-neutral-900 dark:text-white leading-none truncate">
@@ -274,7 +275,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
           {/* Add form */}
           {showAddForm && (
             <div className="p-3 border-b border-border space-y-2.5 bg-surface-2/40">
-              {/* URL paste */}
               <div>
                 <label className="flex items-center gap-1 text-[9px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
                   <LinkIcon size={8} /> GitHub URL
@@ -299,7 +299,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                 )}
               </div>
 
-              {/* Manual owner/repo */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[9px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Owner *</label>
@@ -321,7 +320,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                 </div>
               </div>
 
-              {/* PAT toggle */}
               <div>
                 <button
                   onClick={() => setShowPat(v => !v)}
@@ -341,7 +339,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                 )}
               </div>
 
-              {/* Test result */}
               {testResult && (
                 <div className={cn(
                   'flex items-start gap-1.5 p-2 rounded-lg text-[10px]',
@@ -357,7 +354,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleTest}
@@ -379,7 +375,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
             </div>
           )}
 
-          {/* Repo search */}
           {allRepos.length > 5 && (
             <div className="px-3 pb-1 pt-0.5">
               <input
@@ -391,7 +386,6 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
             </div>
           )}
 
-          {/* Repo list */}
           <div className="max-h-[400px] overflow-y-auto">
             {repos.length === 0 && repoSearch && (
               <div className="px-3 py-4 text-center">
@@ -442,15 +436,11 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
                   {isActive && (
                     <Check size={12} className="text-nvidia flex-shrink-0" />
                   )}
-                  {!isActive && (
-                    <span className="text-[9px] text-gray-400 opacity-0 group-hover:opacity-100">Switch</span>
-                  )}
                 </button>
               )
             })}
           </div>
 
-          {/* Footer link */}
           <div className="px-3 py-2 border-t border-border">
             <Link
               to="/settings"
@@ -469,8 +459,10 @@ function RepoSwitcher({ collapsed }: RepoSwitcherProps) {
   )
 }
 
-function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+function NavItemRow({ item }: { item: NavItem }) {
   const location = useLocation()
+  const { collapsed, mobileOpen, closeMobile } = useSidebar()
+  const showLabels = mobileOpen || !collapsed
   const isActive = item.exact
     ? location.pathname === item.to
     : location.pathname.startsWith(item.to) && item.to !== '/'
@@ -479,10 +471,13 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
     <NavLink
       to={item.to}
       end={item.exact}
-      aria-label={collapsed ? item.label : undefined}
+      onClick={closeMobile}
+      aria-label={!showLabels ? item.label : undefined}
       className={cn(
         'group flex items-center gap-2.5 rounded-md transition-all duration-150 select-none',
-        collapsed ? 'justify-center h-7 w-7 mx-auto' : 'px-2.5 py-[6px] mx-2',
+        !showLabels
+          ? 'justify-center h-9 w-9 mx-auto'
+          : 'px-2.5 py-[10px] md:py-[6px] mx-2',
         isActive
           ? 'bg-surface-3 text-white dark:bg-surface-2 dark:text-white font-semibold'
           : 'text-neutral-400 dark:text-neutral-400 hover:bg-surface-2/60 hover:text-neutral-100 dark:hover:bg-surface-2 dark:hover:text-neutral-100',
@@ -497,12 +492,12 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
             : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-200 dark:group-hover:text-neutral-200',
         )}
       />
-      {!collapsed && (
+      {showLabels && (
         <span className={cn('text-[13px] truncate', isActive ? 'font-semibold' : 'font-normal')}>
           {item.label}
         </span>
       )}
-      {!collapsed && item.badge && (
+      {showLabels && item.badge && (
         <span className="ml-auto text-[10px] font-medium bg-surface-3 text-neutral-400 ring-1 ring-border rounded-full px-1.5 py-0.5 leading-none tabular-nums">
           {item.badge}
         </span>
@@ -510,7 +505,7 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
     </NavLink>
   )
 
-  if (collapsed) {
+  if (!showLabels) {
     return (
       <Tooltip content={item.label} side="right" delayDuration={80}>
         {linkContent}
@@ -522,34 +517,43 @@ function NavItemRow({ item, collapsed }: { item: NavItem; collapsed: boolean }) 
 }
 
 export default function Sidebar() {
-  const { collapsed, toggle } = useSidebar()
+  const { collapsed, toggle, mobileOpen, closeMobile } = useSidebar()
+  const showLabels = mobileOpen || !collapsed
   const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
   const repoSlug = activeRepoData?.active?.slug ?? ''
 
   return (
     <aside
       className={cn(
-        'sidebar-transition relative flex-shrink-0 flex flex-col',
-        'bg-surface-1 border-r border-border h-screen overflow-visible',
-        collapsed ? 'w-[60px]' : 'w-[220px]',
+        'sidebar-transition flex flex-col overflow-visible',
+        'bg-surface-1 border-r border-border',
+        // Always fixed — Layout.tsx has a spacer div for desktop offset
+        'fixed inset-y-0 left-0 z-50 h-screen',
+        // Mobile: 280px drawer, off-screen by default
+        'w-[280px]',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: always visible, width controlled by collapsed state
+        'md:translate-x-0',
+        collapsed ? 'md:w-[60px]' : 'md:w-[220px]',
       )}
     >
-      {/* App wordmark / icon — links to home */}
+      {/* App wordmark / icon */}
       <Link
         to="/"
+        onClick={closeMobile}
         className={cn(
           'flex items-center border-b border-border/40 hover:opacity-80 transition-opacity',
-          collapsed ? 'justify-center py-2 px-0' : 'px-3.5 py-2.5',
+          !showLabels ? 'justify-center py-2 px-0' : 'px-3.5 py-2.5',
         )}
       >
-        {collapsed
+        {!showLabels
           ? <GitPulseLogo size={20} className="text-nvidia" />
           : <GitPulseLogo size={18} withText textSize="text-[13px]" className="text-nvidia" />
         }
       </Link>
 
       {/* Repo Switcher */}
-      <RepoSwitcher collapsed={collapsed} />
+      <RepoSwitcher />
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 scrollbar-none">
@@ -559,9 +563,9 @@ export default function Sidebar() {
               {si > 0 && (
                 <div className="mx-3 my-1.5 h-px bg-border-subtle" />
               )}
-              <div className={cn('space-y-0.5', collapsed && 'flex flex-col items-center gap-0.5')}>
+              <div className={cn('space-y-0.5', !showLabels && 'flex flex-col items-center gap-0.5')}>
                 {section.items.map((item) => (
-                  <NavItemRow key={item.to} item={item} collapsed={collapsed} />
+                  <NavItemRow key={item.to} item={item} />
                 ))}
               </div>
             </div>
@@ -572,49 +576,56 @@ export default function Sidebar() {
       {/* Footer */}
       <div className={cn(
         'border-t border-border flex-shrink-0',
-        collapsed ? 'py-2 flex flex-col items-center gap-1.5' : 'px-3 py-2.5',
+        !showLabels ? 'py-2 flex flex-col items-center gap-1.5' : 'px-3 py-2.5',
       )}>
-        {!collapsed && (
+        {showLabels && (
           <div className="flex items-center gap-1.5 mb-2.5">
             <span className="w-1.5 h-1.5 rounded-full bg-nvidia flex-shrink-0" />
             <span className="text-[11px] text-neutral-400 font-mono truncate">{repoSlug}</span>
           </div>
         )}
-        {!collapsed && (
-          <div className="flex items-center gap-1.5 mb-2">
-            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-surface-2 ring-1 ring-border rounded text-neutral-400">⌘K</kbd>
-            <span className="text-[10px] text-neutral-400">command palette</span>
-          </div>
-        )}
-        <div className={cn('flex items-center', collapsed ? 'flex-col gap-1' : 'gap-1')}>
+        <div className={cn('flex items-center', !showLabels ? 'flex-col gap-1' : 'gap-1')}>
           <Tooltip content="Settings" side="right" delayDuration={80}>
             <Link
               to="/settings"
+              onClick={closeMobile}
               className={cn(
                 'flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
-                collapsed ? 'w-8 h-8' : 'w-8 h-7',
+                !showLabels ? 'w-8 h-8' : 'w-8 h-7',
               )}
             >
               <Settings size={13} />
             </Link>
           </Tooltip>
 
-          <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse'} side="right" delayDuration={80}>
+          {/* On mobile drawer: show close; on desktop: show collapse toggle */}
+          {mobileOpen ? (
             <button
-              onClick={toggle}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-expanded={!collapsed}
-              className={cn(
-                'flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
-                collapsed ? 'w-8 h-8' : 'flex-1 h-7 gap-1.5 px-2 text-[11px]',
-              )}
+              onClick={closeMobile}
+              aria-label="Close navigation"
+              className="flex-1 flex items-center justify-center gap-1.5 px-2 h-7 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150 text-[11px]"
             >
-              {collapsed
-                ? <ChevronRight size={13} />
-                : <><ChevronLeft size={11} /><span>Collapse</span></>
-              }
+              <X size={11} />
+              <span>Close</span>
             </button>
-          </Tooltip>
+          ) : (
+            <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse'} side="right" delayDuration={80}>
+              <button
+                onClick={toggle}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                aria-expanded={!collapsed}
+                className={cn(
+                  'flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-surface-2 transition-all duration-150',
+                  collapsed ? 'w-8 h-8' : 'flex-1 h-7 gap-1.5 px-2 text-[11px]',
+                )}
+              >
+                {collapsed
+                  ? <ChevronRight size={13} />
+                  : <><ChevronLeft size={11} /><span>Collapse</span></>
+                }
+              </button>
+            </Tooltip>
+          )}
         </div>
       </div>
     </aside>
