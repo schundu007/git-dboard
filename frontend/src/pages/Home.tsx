@@ -2030,14 +2030,15 @@ export default function Home() {
             </div>
 
             {/* Targets section */}
-            <div className="flex-1 flex items-center gap-0 overflow-hidden pl-5 pr-4 py-3 min-w-0">
-              <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-600 whitespace-nowrap mr-5">TARGETS</span>
+            <div className="flex-1 flex items-center overflow-x-auto pl-5 pr-4 py-3 min-w-0 gap-3"
+              style={{ scrollbarWidth: 'none' }}>
+              <span className="text-[9px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-600 whitespace-nowrap flex-shrink-0">TARGETS</span>
               {TECH_METRICS.map((m) => (
-                <div key={m.label} className="flex flex-col gap-0.5 min-w-0 flex-1">
-                  <span className="text-[9px] text-neutral-600 font-mono leading-none truncate">{m.label}</span>
-                  <div className="flex items-baseline gap-1">
+                <div key={m.label} className="flex flex-col gap-0.5 flex-shrink-0 min-w-[82px]">
+                  <span className="text-[9px] text-neutral-600 font-mono leading-none whitespace-nowrap">{m.label}</span>
+                  <div className="flex items-baseline gap-1 flex-wrap">
                     <span className="text-[9px] text-neutral-700 line-through font-mono whitespace-nowrap">{m.from}</span>
-                    <span className="text-[13px] font-bold font-mono leading-none whitespace-nowrap text-nvidia">{m.to}</span>
+                    <span className="text-[12px] font-bold font-mono leading-none whitespace-nowrap text-nvidia">{m.to}</span>
                   </div>
                 </div>
               ))}
