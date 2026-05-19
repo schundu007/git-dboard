@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-17T00:00:00Z",
+  "title": "Design System: GitPulse",
+  "extensions": {
+    "colorMeta": {
+      "pipeline-green":    { "role": "primary",   "displayName": "Pipeline Green",    "canonical": "oklch(69% 0.21 127)",  "tonalRamp": ["oklch(25% 0.08 127)", "oklch(35% 0.12 127)", "oklch(45% 0.16 127)", "oklch(55% 0.19 127)", "oklch(69% 0.21 127)", "oklch(78% 0.18 127)", "oklch(86% 0.13 127)", "oklch(93% 0.07 127)"] },
+      "signal-blue":       { "role": "secondary",  "displayName": "Signal Blue",       "canonical": "oklch(45% 0.18 264)",  "tonalRamp": ["oklch(20% 0.08 264)", "oklch(30% 0.12 264)", "oklch(38% 0.16 264)", "oklch(45% 0.18 264)", "oklch(55% 0.17 264)", "oklch(66% 0.14 264)", "oklch(78% 0.09 264)", "oklch(90% 0.04 264)"] },
+      "incident-red":      { "role": "tertiary",   "displayName": "Incident Red",      "canonical": "oklch(44% 0.18 32)",   "tonalRamp": ["oklch(20% 0.08 32)",  "oklch(30% 0.12 32)",  "oklch(38% 0.16 32)",  "oklch(44% 0.18 32)",  "oklch(55% 0.17 32)",  "oklch(65% 0.14 32)",  "oklch(76% 0.09 32)",  "oklch(88% 0.04 32)"] },
+      "amber-warn":        { "role": "tertiary",   "displayName": "Amber Warning",     "canonical": "oklch(64% 0.18 62)",   "tonalRamp": ["oklch(25% 0.08 62)",  "oklch(36% 0.12 62)",  "oklch(46% 0.16 62)",  "oklch(56% 0.18 62)",  "oklch(64% 0.18 62)",  "oklch(74% 0.15 62)",  "oklch(84% 0.10 62)",  "oklch(93% 0.05 62)"] },
+      "void":              { "role": "neutral",    "displayName": "Void",              "canonical": "oklch(10% 0.003 264)", "tonalRamp": ["oklch(10% 0.003 264)", "oklch(15% 0.003 264)", "oklch(20% 0.004 264)", "oklch(27% 0.004 264)", "oklch(35% 0.005 264)", "oklch(50% 0.005 264)", "oklch(65% 0.004 264)", "oklch(80% 0.003 264)"] },
+      "console-dark":      { "role": "neutral",    "displayName": "Console Dark",      "canonical": "oklch(15% 0.003 264)", "tonalRamp": ["oklch(10% 0.002 264)", "oklch(15% 0.003 264)", "oklch(20% 0.004 264)", "oklch(27% 0.004 264)", "oklch(35% 0.005 264)", "oklch(50% 0.005 264)", "oklch(65% 0.004 264)", "oklch(80% 0.003 264)"] },
+      "panel-mid":         { "role": "neutral",    "displayName": "Panel Mid",         "canonical": "oklch(20% 0.004 264)", "tonalRamp": ["oklch(10% 0.002 264)", "oklch(15% 0.003 264)", "oklch(20% 0.004 264)", "oklch(27% 0.004 264)", "oklch(35% 0.005 264)", "oklch(50% 0.005 264)", "oklch(65% 0.004 264)", "oklch(80% 0.003 264)"] },
+      "instrument-rim":    { "role": "neutral",    "displayName": "Instrument Rim",    "canonical": "oklch(29% 0.005 264)", "tonalRamp": ["oklch(10% 0.002 264)", "oklch(17% 0.003 264)", "oklch(22% 0.004 264)", "oklch(29% 0.005 264)", "oklch(38% 0.005 264)", "oklch(52% 0.005 264)", "oklch(67% 0.004 264)", "oklch(82% 0.003 264)"] },
+      "readout-white":     { "role": "neutral",    "displayName": "Readout White",     "canonical": "oklch(98% 0.002 264)", "tonalRamp": ["oklch(15% 0.002 264)", "oklch(30% 0.003 264)", "oklch(45% 0.004 264)", "oklch(58% 0.003 264)", "oklch(70% 0.003 264)", "oklch(82% 0.002 264)", "oklch(91% 0.002 264)", "oklch(98% 0.002 264)"] },
+      "secondary-readout": { "role": "neutral",    "displayName": "Secondary Readout", "canonical": "oklch(67% 0.004 264)", "tonalRamp": ["oklch(15% 0.002 264)", "oklch(28% 0.003 264)", "oklch(40% 0.004 264)", "oklch(52% 0.004 264)", "oklch(63% 0.004 264)", "oklch(67% 0.004 264)", "oklch(78% 0.003 264)", "oklch(90% 0.002 264)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display",  "purpose": "Page-level titles in the header. One per screen." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings, panel titles, dialog headers." },
+      "title":    { "displayName": "Title",    "purpose": "Card titles, sub-panel headers." },
+      "body":     { "displayName": "Body",     "purpose": "Reading text, descriptions, PR body previews." },
+      "label":    { "displayName": "Label",    "purpose": "Section labels, data table column headers. Uppercase only at this size." },
+      "mono":     { "displayName": "Mono",     "purpose": "All machine-readable values: hashes, IDs, paths, durations, log lines." }
+    },
+    "shadows": [
+      { "name": "card-ambient",  "value": "0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04)", "purpose": "Default card boundary. Extremely subtle, establishes surface without lifting it." },
+      { "name": "card-hover",    "value": "0 6px 24px rgba(0,0,0,0.11), 0 0 0 1px rgba(0,0,0,0.05)", "purpose": "Interactive card hover state." },
+      { "name": "floating",      "value": "0 8px 32px rgba(0,0,0,0.7)", "purpose": "Command palette and full overlays. High opacity deliberate on dark theme." },
+      { "name": "glow-green",    "value": "0 0 24px rgba(118,185,0,0.22)", "purpose": "Accent glow for live-state emphasis. Rare." },
+      { "name": "glow-red",      "value": "0 0 24px rgba(178,64,32,0.22)", "purpose": "Incident-state glow. Use only on critical failure callouts." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for state transitions (sidebar width, card hover)." },
+      { "name": "ease-expo-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Drawer/overlay slide-in. Exponential deceleration for overlay entrances." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover states, border transitions." },
+      { "name": "duration-std",  "value": "200ms", "purpose": "Fade transitions, content reveals." },
+      { "name": "duration-slow", "value": "300ms", "purpose": "Overlay entrances, sidebar expand." }
+    ],
+    "breakpoints": [
+      { "name": "sm",  "value": "640px",  "purpose": "Small tablets, large phones landscape." },
+      { "name": "md",  "value": "768px",  "purpose": "Tablet portrait. Sidebar switches from overlay drawer to static collapsed." },
+      { "name": "lg",  "value": "1024px", "purpose": "Desktop. Content width widens to 82% then 75%." },
+      { "name": "xl",  "value": "1280px", "purpose": "Wide laptop. Full desktop experience." },
+      { "name": "2xl", "value": "1536px", "purpose": "Large monitor. 75% content cap prevents over-stretching." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Pipeline actions: trigger CI, activate repo, run automation. Not for navigation.",
+      "html": "<button class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"5 3 19 12 5 21 5 3\"/></svg>Run Pipeline</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #76b900; color: #0f1a00; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 7px 12px; border: none; border-radius: 2px; box-shadow: 0 0 0 1px rgba(118,185,0,0.4); cursor: pointer; transition: background 0.15s, transform 0.1s; user-select: none; } .ds-btn-primary:hover { background: #82cf00; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(118,185,0,0.6), 0 0 0 3px #09090b; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default action variant for filters, configuration, and bulk operations.",
+      "html": "<button class=\"ds-btn-secondary\">View Details</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 6px; background: #27272a; color: #e8e8e8; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 7px 12px; border: none; border-radius: 2px; box-shadow: 0 0 0 1px #3f3f46; cursor: pointer; transition: background 0.15s, box-shadow 0.15s, transform 0.1s; } .ds-btn-secondary:hover { background: #343438; box-shadow: 0 0 0 1px #71717a; } .ds-btn-secondary:active { transform: scale(0.98); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(118,185,0,0.6), 0 0 0 3px #09090b; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "CI/CD state indicator. Dot + monospace label + tinted background ring. Never color alone.",
+      "html": "<span class=\"ds-badge ds-badge-success\"><span class=\"ds-badge-dot\"></span>success</span> <span class=\"ds-badge ds-badge-failed\"><span class=\"ds-badge-dot\"></span>failed</span> <span class=\"ds-badge ds-badge-running\"><span class=\"ds-badge-dot ds-badge-dot-pulse\"></span>in progress</span> <span class=\"ds-badge ds-badge-queued\"><span class=\"ds-badge-dot ds-badge-dot-pulse\"></span>queued</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 9999px; padding: 2px 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; box-shadow: 0 0 0 1px transparent; } .ds-badge-dot { width: 6px; height: 6px; border-radius: 9999px; flex-shrink: 0; } .ds-badge-dot-pulse { animation: badge-pulse 2s ease-in-out infinite; } @keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } } .ds-badge-success { color: #34d399; background: rgba(52,211,153,0.07); box-shadow: 0 0 0 1px rgba(52,211,153,0.25); } .ds-badge-success .ds-badge-dot { background: #34d399; } .ds-badge-failed { color: #f87171; background: rgba(248,113,113,0.07); box-shadow: 0 0 0 1px rgba(248,113,113,0.25); } .ds-badge-failed .ds-badge-dot { background: #f87171; } .ds-badge-running { color: #76b900; background: rgba(118,185,0,0.07); box-shadow: 0 0 0 1px rgba(118,185,0,0.25); } .ds-badge-running .ds-badge-dot { background: #76b900; } .ds-badge-queued { color: #b0b0b0; background: rgba(176,176,176,0.07); box-shadow: 0 0 0 1px rgba(176,176,176,0.20); } .ds-badge-queued .ds-badge-dot { background: #909090; }"
+    },
+    {
+      "name": "Card (default)",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Primary grouping container for data panels, metric groups, and log sections.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-label\">CI Pipeline Health</p><p class=\"ds-card-value\">97.3%</p><p class=\"ds-card-sub\">Last 14 days</p></div>",
+      "css": ".ds-card { background: #18181b; border-radius: 3px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04), 0 0 0 1px #3f3f46; transition: box-shadow 0.15s, border-color 0.15s; } .ds-card-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #52525b; margin-bottom: 6px; } .ds-card-value { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; color: #fafafa; letter-spacing: -0.02em; line-height: 1.2; } .ds-card-sub { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; color: #a1a1aa; margin-top: 4px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": null,
+      "description": "Form field for configuration, search, and data entry. Monospace for machine values.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\">GitHub URL</label><input class=\"ds-input\" type=\"text\" placeholder=\"https://github.com/owner/repo\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; } .ds-field-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6e6e6e; } .ds-input { background: #343438; border: 1px solid #3f3f46; border-radius: 3px; padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #fafafa; outline: none; transition: border-color 0.15s; width: 100%; box-sizing: border-box; } .ds-input::placeholder { color: #6e6e6e; } .ds-input:focus { border-color: rgba(118,185,0,0.5); } .ds-input:focus-visible { box-shadow: 0 0 0 2px rgba(118,185,0,0.15); }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Navigation link with icon and label. Active state uses surface elevation, not Pipeline Green.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\"/></svg><span>Dashboard</span></a><a class=\"ds-nav-item\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"18\" cy=\"18\" r=\"3\"/><circle cx=\"6\" cy=\"6\" r=\"3\"/><path d=\"M13 6h3a2 2 0 0 1 2 2v7\"/><line x1=\"6\" y1=\"9\" x2=\"6\" y2=\"21\"/></svg><span>CI Pipeline</span></a><a class=\"ds-nav-item\" href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.1 2.182a10 10 0 0 1 3.8 0\"/><path d=\"M13.9 21.818a10 10 0 0 1-3.8 0\"/><path d=\"M17.609 3.721a10 10 0 0 1 2.69 2.69\"/><path d=\"M6.391 20.279a10 10 0 0 1-2.69-2.69\"/><path d=\"M21.818 10.1a10 10 0 0 1 0 3.8\"/><path d=\"M2.182 13.9a10 10 0 0 1 0-3.8\"/><path d=\"M20.279 17.609a10 10 0 0 1-2.69 2.69\"/><path d=\"M3.721 6.391a10 10 0 0 1 2.69-2.69\"/></svg><span>Infrastructure</span></a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; } .ds-nav-item { display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin: 0 8px; border-radius: 4px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 400; color: #b0b0b0; text-decoration: none; transition: background 0.15s, color 0.15s; } .ds-nav-item:hover { background: rgba(39,39,42,0.6); color: #f5f5f5; } .ds-nav-active { background: #343438; color: #fafafa; font-weight: 600; } .ds-nav-active svg { color: #fafafa; } .ds-nav-item svg { flex-shrink: 0; color: #6e6e6e; transition: color 0.15s; } .ds-nav-item:hover svg { color: #e8e8e8; }"
+    },
+    {
+      "name": "Data Table Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Pipeline data rows: PR list, build runs, registry images. Mono for values, proportional for names.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Run</th><th>Branch</th><th>Status</th><th>Duration</th></tr></thead><tbody><tr><td><span class=\"ds-mono\">#4821</span></td><td><span class=\"ds-mono\">feat/auth-rework</span></td><td><span class=\"ds-badge ds-badge-success\"><span class=\"ds-badge-dot\"></span>success</span></td><td><span class=\"ds-mono\">2m 14s</span></td></tr><tr><td><span class=\"ds-mono\">#4820</span></td><td><span class=\"ds-mono\">main</span></td><td><span class=\"ds-badge ds-badge-running\"><span class=\"ds-badge-dot ds-badge-dot-pulse\"></span>in progress</span></td><td><span class=\"ds-mono\">1m 03s</span></td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font-family: 'Plus Jakarta Sans', sans-serif; } .ds-table thead th { padding: 8px 16px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #909090; border-bottom: 1px solid #2a2a2a; white-space: nowrap; } .ds-table tbody tr { border-bottom: 1px solid #1a1a1a; transition: background 0.1s; } .ds-table tbody tr:hover { background: rgba(255,255,255,0.03); } .ds-table td { padding: 9px 16px; font-size: 14px; color: #d4d4d4; vertical-align: middle; } .ds-mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Panel",
+    "overview": "GitPulse's visual language is built on one principle: every pixel is paid rent by the information it carries. The system draws from physical instrument panels, not from web software convention. Controls are where you expect them. Readouts are legible at a glance. Color is a signal, not a decoration.\n\nThe density is intentional. DevOps engineers read data tables for a living; they triage failures at 2am under pressure; they need to scan and dismiss, not be guided through flows. The UI trusts the user to be competent and returns that trust with information, not reassurance.\n\nThe sharp-edged aesthetic enforces authority. All UI surfaces use 2-3px corner radii, reflecting a deliberate technical-document aesthetic: the precision of a hardware specification sheet, not a consumer app.",
+    "keyCharacteristics": [
+      "Near-zero border-radius on all interactive surfaces (2-3px globally overridden)",
+      "Tonal surface layering as the primary depth mechanism; decorative shadows are prohibited",
+      "Pipeline Green is the sole accent; it appears only on live states, confirmations, and primary actions",
+      "Monospace type for all data values, IDs, hashes, paths, and machine-readable content",
+      "Status always carries dual indicators (dot plus label) independent of color"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule",       "body": "Pipeline Green appears on at most 10% of any given screen. It marks live activity, confirmations, and primary actions. Using it decoratively destroys its signal value.",        "section": "colors" },
+      { "name": "The Red Finds You Rule",   "body": "Incident Red is never used for branding, decoration, or information. It appears only when a failure state demands attention.",                                                         "section": "colors" },
+      { "name": "The Mono Rule",            "body": "Any value that could appear in a terminal uses monospace. Mixing proportional and monospace type within a data column creates misalignment.",                                             "section": "typography" },
+      { "name": "The Ring Rule",            "body": "Cards use ring-1 ring-border (1px structural outline) as the primary boundary. Border, outline, and box-shadow produce inconsistent results across layout contexts.",                      "section": "elevation" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. The card ambient shadow is 1-pixel grade; it establishes the surface plane without lifting it. Elevation is earned through interaction state, not assumed.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Pipeline Green only for live states, confirmed outcomes, and primary actions.",
+      "Do display all data values, hashes, timestamps, durations, IDs, and paths in JetBrains Mono.",
+      "Do use ring-1 ring-border as the canonical card boundary.",
+      "Do ensure every status color has a secondary indicator (dot, label, or icon) for color-blind users.",
+      "Do keep corner radii at 2-3px on all interactive surfaces.",
+      "Do compress information intelligently. Whitespace separates groups; it does not pad individual elements."
+    ],
+    "donts": [
+      "Don't replicate DataDog or Grafana's blue-grey enterprise grid aesthetic.",
+      "Don't use neon-on-black or RGB multi-accent schemes. Pipeline Green is the single accent.",
+      "Don't strip the UI to emptiness in the name of minimalism. Information density is a feature.",
+      "Don't use Notion or Linear visual language (pastel surfaces, soft rounding, consumer-app whitespace).",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe.",
+      "Don't use gradient text (background-clip: text with gradient background).",
+      "Don't add decorative charts or filler metric widgets.",
+      "Don't use modal dialogs as the first solution for any interaction.",
+      "Don't use success toasts or confirmation dialogs for routine actions."
+    ]
+  }
+}

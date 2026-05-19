@@ -60,3 +60,4 @@ backend/stats_cache.json
 # Misc
 *.bak
 *.tmp
+.vercel

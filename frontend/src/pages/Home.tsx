@@ -1709,12 +1709,6 @@ function CIAnalysisSlides() {
 
 // ── Profile / Portfolio section ───────────────────────────────────────────────
 
-const PROFILE_LINKS = [
-  { label: 'GitHub',    href: 'https://github.com/schundu007/',                          sub: 'schundu007 — open-source projects & contributions',   color: '#e5e5e5' },
-  { label: 'LinkedIn',  href: 'https://www.linkedin.com/in/schundu',                     sub: 'Professional profile & work history',                 color: '#0a66c2' },
-  { label: 'Portfolio', href: 'https://www.sudhakarchundu.org/',                          sub: 'Personal site — projects, blog, contact',              color: '#76b900' },
-  { label: 'DevOps Blog', href: 'https://www.sudhakarchundu.org/blog/NVIDIA_Isaac_ROS_DevOps.html', sub: 'NVIDIA Isaac ROS DevOps Reference — engineering guide', color: '#f59e0b' },
-]
 
 const SKILLS = [
   { area: 'CI/CD & DevOps',     items: ['GitHub Actions', 'Docker', 'Kubernetes', 'ArgoCD', 'Helm', 'BuildKit'] },
@@ -1723,55 +1717,177 @@ const SKILLS = [
   { area: 'Robotics / AI',      items: ['Isaac Sim', 'IsaacLab', 'ROS 2', 'CUDA', 'PyTorch'] },
 ]
 
+// Inline SVG logos for link cards
+const GithubLogo = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+  </svg>
+)
+const LinkedInLogo = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+  </svg>
+)
+const NvidiaLogo = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M8.985 2.596v1.09c-3.738.272-7.734 2.746-7.734 8.248 0 5.748 4.588 8.011 7.734 8.248v1.09C4.143 20.966 0 18.105 0 11.934 0 5.82 4.143 2.947 8.985 2.596zm1.03 0C15.008 2.947 19.15 5.82 19.15 11.934c0 6.17-4.14 9.032-9.135 9.338v-1.09c3.038-.238 7.734-2.5 7.734-8.248 0-5.502-4.096-7.976-7.734-8.248v-1.09zM9.05 6.688v3.23c-.672.127-1.157.528-1.157 1.3 0 .874.541 1.22 1.157 1.372v3.23C6.457 15.418 4.5 13.73 4.5 11.218c0-2.514 1.957-4.252 4.55-4.53zm.965 9.132v-3.23c.69-.127 1.157-.547 1.157-1.372 0-.753-.44-1.157-1.157-1.3v-3.23c2.638.278 4.55 2.016 4.55 4.53 0 2.513-1.912 4.2-4.55 4.602z"/>
+  </svg>
+)
+const GlobeLogo = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+  </svg>
+)
+
+const LINK_ITEMS = [
+  { label: 'GitHub',      href: 'https://github.com/schundu007/',    sub: 'schundu007 — open-source projects',          Logo: GithubLogo,  bg: '#161b22', color: '#e6edf3' },
+  { label: 'LinkedIn',    href: 'https://www.linkedin.com/in/schundu', sub: 'Professional profile & work history',       Logo: LinkedInLogo, bg: '#0a66c2', color: '#fff' },
+  { label: 'Portfolio',   href: 'https://www.sudhakarchundu.org/',    sub: 'sudhakarchundu.org — projects & blog',       Logo: GlobeLogo,   bg: '#18181b', color: '#76b900' },
+  { label: 'NVIDIA Blog', href: 'https://www.sudhakarchundu.org/blog/NVIDIA_Isaac_ROS_DevOps.html', sub: 'Isaac ROS DevOps Reference guide', Logo: NvidiaLogo, bg: '#1a2800', color: '#76b900' },
+]
+
 function ProfileSection() {
   return (
-    <div className="flex gap-4 items-start">
+    <div className="flex flex-col gap-3">
 
-      {/* LEFT: Bio + links */}
-      <div className="w-[380px] flex-shrink-0 flex flex-col gap-3">
+      {/* ── Row 1: Bio | JD | Resume ── */}
+      <div className="grid grid-cols-[280px_1fr_1fr] gap-3 items-start">
 
-        {/* Bio card */}
-        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-          <div className="bg-[#0d0d0f] px-4 py-3">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-600 mb-1">Engineer Profile</div>
-            <div className="text-[18px] font-black text-white leading-tight">Sudhakar Babu <span className="text-nvidia">Chundu</span></div>
-            <div className="text-[9px] text-neutral-500 mt-1">Senior DevOps Engineer · Robotics CI/CD · Platform Infrastructure</div>
+        {/* Col 1 — Bio + Links */}
+        <div className="flex flex-col gap-3">
+          {/* Bio */}
+          <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+            <div className="bg-[#0d0d0f] px-4 py-3 border-b border-border">
+              <div className="text-[9px] font-semibold uppercase tracking-[0.16em] text-neutral-600 mb-1">Engineer Profile</div>
+              <div className="text-[16px] font-black text-white leading-tight">Sudhakar <span className="text-nvidia">Chundu</span></div>
+              <div className="text-[9px] text-neutral-500 mt-1 leading-relaxed">Senior DevOps Engineer · Robotics CI/CD</div>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-[10.5px] leading-[1.65] text-neutral-400">
+                12+ years CI/CD ownership. Targeting{' '}
+                <span className="text-nvidia font-semibold">NVIDIA JR2014821</span>.
+                Expert in GitLab CI, GitHub Actions, multi-arch Docker (x86-64 + ARM64), and ROS 2 workflows.
+              </p>
+            </div>
           </div>
-          <div className="px-4 py-3">
-            <p className="text-[11px] leading-[1.7] text-neutral-400">
-              12+ years of CI/CD infrastructure ownership across multi-cloud and hardware-accelerated workloads.
-              Targeting <span className="text-nvidia font-semibold">NVIDIA Senior DevOps Engineer — Robotics (JR2014821)</span>.
-              Deep expertise in GitLab CI, GitHub Actions, multi-arch Docker (x86-64 + ARM64), release engineering,
-              and ROS 2 development workflow automation.
-            </p>
+
+          {/* Links with real logos */}
+          <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+            <div className="px-4 py-2 border-b border-border bg-surface-2/60">
+              <span className="text-[10px] font-semibold text-neutral-300">Links</span>
+            </div>
+            <div className="divide-y divide-border/40">
+              {LINK_ITEMS.map(link => (
+                <a key={link.label} href={link.href} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-2/50 transition-colors group">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: link.bg, color: link.color, border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <link.Logo />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-semibold text-neutral-200 group-hover:text-white">{link.label}</div>
+                    <div className="text-[9px] text-neutral-600 truncate">{link.sub}</div>
+                  </div>
+                  <ExternalLink size={9} className="text-neutral-700 group-hover:text-neutral-400 flex-shrink-0" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Links */}
-        <div className="rounded-xl border border-border bg-surface-1">
-          <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-neutral-300">Links</span>
+        {/* Col 2 — JD card */}
+        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-[#0d1a00] flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono bg-nvidia/10 border border-nvidia/25 px-2 py-0.5 rounded whitespace-nowrap">NVIDIA · JR2014821</span>
+                <span className="text-[9px] text-neutral-500 font-mono whitespace-nowrap">Santa Clara, CA</span>
+              </div>
+              <div className="text-[13px] font-bold text-white leading-tight">Senior DevOps Engineer — Robotics</div>
+              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Engineer, Sys SW · $184K–$356K</div>
+            </div>
+            <a href="https://jobs.nvidia.com/careers/job/893394392367" target="_blank" rel="noreferrer"
+              className="flex-shrink-0 flex items-center gap-1 text-[10px] text-nvidia font-mono hover:underline pt-1">
+              View <ExternalLink size={9} />
+            </a>
           </div>
-          <div className="divide-y divide-border/40">
-            {PROFILE_LINKS.map(link => (
-              <a key={link.label} href={link.href} target="_blank" rel="noreferrer"
-                className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/40 transition-colors group">
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: link.color }} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-semibold text-neutral-200 group-hover:text-white transition-colors">{link.label}</div>
-                  <div className="text-[10px] text-neutral-500 truncate">{link.sub}</div>
+          <div className="p-4 grid grid-cols-2 gap-4 text-[11px]">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2">What You'll Be Doing</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-1.5"><span className="text-nvidia flex-shrink-0 mt-px">→</span><span>Build &amp; operate CI/CD for Isaac ROS — pre-merge, nightly, release</span></li>
+                <li className="flex gap-1.5"><span className="text-nvidia flex-shrink-0 mt-px">→</span><span>Triage CI failures — infrastructure vs. product issues</span></li>
+                <li className="flex gap-1.5"><span className="text-nvidia flex-shrink-0 mt-px">→</span><span>Streamline ROS 2 workflows — multi-repo builds, dependency graphs</span></li>
+                <li className="flex gap-1.5"><span className="text-nvidia flex-shrink-0 mt-px">→</span><span>Improve observability — automation, metrics, logging</span></li>
+              </ul>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-green-500 font-mono mb-2">Requirements</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-1.5"><span className="text-green-400 flex-shrink-0">✓</span><span>8+ yrs DevOps/SRE; 3+ yrs senior CI ownership</span></li>
+                <li className="flex gap-1.5"><span className="text-green-400 flex-shrink-0">✓</span><span>GitLab CI &amp; GitHub Actions; strong Git workflows</span></li>
+                <li className="flex gap-1.5"><span className="text-green-400 flex-shrink-0">✓</span><span>Strong Linux — networking, storage, security</span></li>
+                <li className="flex gap-1.5"><span className="text-green-400 flex-shrink-0">✓</span><span>Docker; Kubernetes; AWS / cloud CI</span></li>
+                <li className="flex gap-1.5"><span className="text-green-400 flex-shrink-0">✓</span><span>C++ &amp; Python build/test on Linux</span></li>
+              </ul>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-yellow-500 font-mono mb-2 mt-3">Stand Out</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-1.5"><span className="text-yellow-400 flex-shrink-0">★</span><span>ROS 2 / Isaac ROS direct experience</span></li>
+                <li className="flex gap-1.5"><span className="text-yellow-400 flex-shrink-0">★</span><span>Multi-arch CI — embedded + ARM64 workloads</span></li>
+                <li className="flex gap-1.5"><span className="text-yellow-400 flex-shrink-0">★</span><span>Release engineering — branching, OCI, CDN</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Col 3 — Resume card */}
+        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-[#0a1929] flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-400 font-mono bg-blue-400/10 border border-blue-400/25 px-2 py-0.5 rounded">Resume · NVIDIA Target</span>
+              </div>
+              <div className="text-[13px] font-bold text-white leading-tight">Sudhakar Chundu</div>
+              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Senior DevOps Engineer · Robotics CI/CD</div>
+            </div>
+            <a href="/Sudhakar_Chundu_NVIDIA_Robotics_DevOps.docx" download
+              className="flex-shrink-0 flex items-center gap-1.5 text-[10px] font-bold font-mono bg-nvidia text-black px-2.5 py-1.5 rounded hover:bg-nvidia/90 transition-colors whitespace-nowrap">
+              ⬇ Download
+            </a>
+          </div>
+          <div className="p-4 text-[11px]">
+            <p className="text-neutral-400 leading-relaxed mb-3 text-[10.5px]">
+              12+ years CI/CD ownership across multi-cloud and hardware-accelerated workloads.
+              Deep expertise in GitLab CI, GitHub Actions, multi-arch Docker, Kubernetes, and release engineering.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {[
+                { label: '12+ yrs CI/CD',        sub: 'GitLab CI · GH Actions · Jenkins' },
+                { label: '100+ pipelines',        sub: '50+ daily deploys · 99.97% SLA' },
+                { label: 'Multi-arch Docker',     sub: 'x86-64 + ARM64 · QEMU buildx' },
+                { label: '$8M+ saved',            sub: '73% cost reduction · 95% faster' },
+                { label: 'Release Engineering',   sub: 'Semantic ver · OCI/ECR · CDN' },
+                { label: 'C++ / Python CI',       sub: 'CMake · ASan/TSan · clang-tidy' },
+              ].map(m => (
+                <div key={m.label} className="bg-surface-2 border border-border rounded px-2.5 py-2">
+                  <div className="text-[10.5px] font-semibold text-white">{m.label}</div>
+                  <div className="text-[9px] text-neutral-600 font-mono mt-0.5 leading-tight">{m.sub}</div>
                 </div>
-                <ExternalLink size={10} className="text-neutral-600 group-hover:text-neutral-400 flex-shrink-0" />
-              </a>
-            ))}
+              ))}
+            </div>
+            <div className="text-[9px] text-neutral-600 font-mono border-t border-border pt-2.5 leading-relaxed">
+              sbchundu@gmail.com · (513) 666-0099 · San Jose, CA · linkedin.com/in/schundu
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* RIGHT: Skills */}
-      <div className="flex-1 min-w-0 flex flex-col gap-3">
+      {/* ── Row 2: Skills + Current Focus ── */}
+      <div className="grid grid-cols-2 gap-3">
 
+        {/* Skills */}
         <div className="rounded-xl border border-border bg-surface-1">
           <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
@@ -1783,8 +1899,7 @@ function ProfileSection() {
                 <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-500 mb-2">{s.area}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {s.items.map(item => (
-                    <span key={item}
-                      className="inline-flex items-center px-2 py-0.5 bg-surface-2 border border-border text-[10px] font-mono text-neutral-400">
+                    <span key={item} className="inline-flex items-center px-2 py-0.5 bg-surface-2 border border-border text-[10px] font-mono text-neutral-400">
                       {item}
                     </span>
                   ))}
@@ -1794,118 +1909,27 @@ function ProfileSection() {
           </div>
         </div>
 
-        {/* Current focus */}
+        {/* Current Focus */}
         <div className="rounded-xl border border-border bg-surface-1">
           <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse" />
             <span className="text-[11px] font-semibold text-neutral-300">Current Focus</span>
           </div>
-          <div className="p-4 flex flex-col gap-2.5">
+          <div className="p-4 flex flex-col gap-3">
             {[
-              { title: 'Isaac ROS CI/CD Patterns',     sub: 'Pre-merge validation, nightly testing, and release pipelines for ROS 2 — Isaac ROS and IsaacLab workflows' },
-              { title: 'Multi-arch Docker Builds',      sub: 'x86-64 + ARM64 (Jetson Orin/Thor) via QEMU buildx; registry-backed cache; CUDA arch list hardening' },
-              { title: 'ROS 2 Workflow Automation',     sub: 'Multi-repo colcon/vcstool builds, complex dependency graphs, platform-specific targets for embedded + cloud' },
-              { title: 'NVIDIA JR2014821 Interview',    sub: 'Preparing for Senior DevOps Engineer — Robotics role at NVIDIA Santa Clara; targeting offer' },
+              { title: 'Isaac ROS CI/CD Patterns',  sub: 'Pre-merge validation, nightly testing, and release pipelines for ROS 2 — Isaac ROS and IsaacLab workflows' },
+              { title: 'Multi-arch Docker Builds',   sub: 'x86-64 + ARM64 (Jetson Orin/Thor) via QEMU buildx; registry-backed cache; CUDA arch list hardening' },
+              { title: 'ROS 2 Workflow Automation',  sub: 'Multi-repo colcon/vcstool builds, complex dependency graphs, platform-specific targets for embedded + cloud' },
+              { title: 'NVIDIA JR2014821 Interview', sub: 'Preparing for Senior DevOps Engineer — Robotics role at NVIDIA Santa Clara; targeting offer' },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-2.5">
-                <span className="w-1 h-1 rounded-full bg-nvidia flex-shrink-0 mt-[5px]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-nvidia flex-shrink-0 mt-1" />
                 <div>
-                  <div className="text-[12px] font-semibold text-neutral-200">{f.title}</div>
-                  <div className="text-[10px] text-neutral-500 leading-relaxed">{f.sub}</div>
+                  <div className="text-[11px] font-semibold text-neutral-200">{f.title}</div>
+                  <div className="text-[10px] text-neutral-500 leading-relaxed mt-0.5">{f.sub}</div>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* JD + Resume row */}
-      <div className="grid grid-cols-2 gap-4 mt-1">
-
-        {/* JD card */}
-        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-[#0d1a00] flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono bg-nvidia/10 border border-nvidia/30 px-2 py-0.5 rounded">NVIDIA · JR2014821</span>
-                <span className="text-[9px] text-neutral-500 font-mono">Santa Clara, CA</span>
-              </div>
-              <div className="text-[13px] font-bold text-white">Senior DevOps Engineer — Robotics</div>
-              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Engineer, Sys SW · $184K–$356K</div>
-            </div>
-            <a href="https://jobs.nvidia.com/careers/job/893394392367" target="_blank" rel="noreferrer"
-              className="flex-shrink-0 flex items-center gap-1 text-[10px] text-nvidia font-mono hover:underline ml-4">
-              View <ExternalLink size={9} />
-            </a>
-          </div>
-          <div className="p-4 grid grid-cols-2 gap-4 text-[11px]">
-            <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2">What You'll Be Doing</div>
-              <ul className="flex flex-col gap-1.5 text-neutral-400">
-                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Build &amp; operate CI/CD pipelines for Isaac ROS — pre-merge, nightly, release</li>
-                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Triage CI failures — infrastructure vs. product issues</li>
-                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Streamline ROS 2 workflows — multi-repo builds, dependency graphs</li>
-                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Improve observability — automation, metrics, logging</li>
-              </ul>
-            </div>
-            <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2">Requirements</div>
-              <ul className="flex flex-col gap-1.5 text-neutral-400">
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>8+ yrs DevOps/SRE/infra; 3+ yrs senior-level CI ownership</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>GitLab CI &amp; GitHub Actions, strong Git workflows</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>Strong Linux — networking, storage, performance, security</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>Docker; Kubernetes a plus; AWS / cloud CI workloads</li>
-                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>C++ &amp; Python build/test on Linux</li>
-              </ul>
-              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2 mt-3">Ways to Stand Out</div>
-              <ul className="flex flex-col gap-1.5 text-neutral-400">
-                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>ROS 2 / Isaac ROS direct experience</li>
-                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>Multi-arch CI — embedded + hardware-accelerated (ARM64)</li>
-                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>Release engineering — branching, publishing, CDN distribution</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Resume card */}
-        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-[#0a1929] flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-400 font-mono bg-blue-400/10 border border-blue-400/30 px-2 py-0.5 rounded">Resume · NVIDIA Target</span>
-              </div>
-              <div className="text-[13px] font-bold text-white">Sudhakar Chundu</div>
-              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Senior DevOps Engineer · Robotics CI/CD &amp; Platform Infrastructure</div>
-            </div>
-            <a href="/Sudhakar_Chundu_NVIDIA_Robotics_DevOps.docx" download
-              className="flex-shrink-0 flex items-center gap-1.5 text-[10px] font-bold font-mono bg-nvidia text-black px-3 py-1.5 rounded hover:bg-nvidia/90 transition-colors ml-4">
-              ⬇ Download
-            </a>
-          </div>
-          <div className="p-4 text-[11px]">
-            <p className="text-neutral-400 leading-relaxed mb-4">
-              12+ years CI/CD infrastructure ownership across multi-cloud and hardware-accelerated workloads.
-              Deep expertise in GitLab CI, GitHub Actions, multi-arch Docker, Kubernetes, and release engineering.
-            </p>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {[
-                { label: '12+ yrs CI/CD', sub: 'GitLab CI · GitHub Actions · Jenkins' },
-                { label: '100+ pipelines', sub: '50+ daily deploys · 99.97% reliability' },
-                { label: 'Multi-arch Docker', sub: 'x86-64 + ARM64 via QEMU buildx' },
-                { label: '$8M+ saved', sub: '73% cost reduction · 95% faster deploys' },
-                { label: 'Release Engineering', sub: 'Semantic versioning · OCI/ECR · CDN' },
-                { label: 'C++ / Python CI', sub: 'CMake · ASan/TSan · clang-tidy on Linux' },
-              ].map(m => (
-                <div key={m.label} className="bg-surface-2 border border-border rounded-lg px-3 py-2">
-                  <div className="text-[11px] font-semibold text-white">{m.label}</div>
-                  <div className="text-[9px] text-neutral-500 font-mono mt-0.5">{m.sub}</div>
-                </div>
-              ))}
-            </div>
-            <div className="text-[10px] text-neutral-600 font-mono border-t border-border pt-3">
-              sbchundu@gmail.com · (513) 666-0099 · San Jose, CA · linkedin.com/in/schundu
-            </div>
           </div>
         </div>
 
