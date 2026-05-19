@@ -1819,6 +1819,97 @@ function ProfileSection() {
         </div>
 
       </div>
+
+      {/* JD + Resume row */}
+      <div className="grid grid-cols-2 gap-4 mt-1">
+
+        {/* JD card */}
+        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-[#0d1a00] flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono bg-nvidia/10 border border-nvidia/30 px-2 py-0.5 rounded">NVIDIA · JR2014821</span>
+                <span className="text-[9px] text-neutral-500 font-mono">Santa Clara, CA</span>
+              </div>
+              <div className="text-[13px] font-bold text-white">Senior DevOps Engineer — Robotics</div>
+              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Engineer, Sys SW · $184K–$356K</div>
+            </div>
+            <a href="https://jobs.nvidia.com/careers/job/893394392367" target="_blank" rel="noreferrer"
+              className="flex-shrink-0 flex items-center gap-1 text-[10px] text-nvidia font-mono hover:underline ml-4">
+              View <ExternalLink size={9} />
+            </a>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-4 text-[11px]">
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2">What You'll Be Doing</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Build &amp; operate CI/CD pipelines for Isaac ROS — pre-merge, nightly, release</li>
+                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Triage CI failures — infrastructure vs. product issues</li>
+                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Streamline ROS 2 workflows — multi-repo builds, dependency graphs</li>
+                <li className="flex gap-2"><span className="text-nvidia flex-shrink-0">→</span>Improve observability — automation, metrics, logging</li>
+              </ul>
+            </div>
+            <div>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2">Requirements</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>8+ yrs DevOps/SRE/infra; 3+ yrs senior-level CI ownership</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>GitLab CI &amp; GitHub Actions, strong Git workflows</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>Strong Linux — networking, storage, performance, security</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>Docker; Kubernetes a plus; AWS / cloud CI workloads</li>
+                <li className="flex gap-2"><span className="text-green-400 flex-shrink-0">✓</span>C++ &amp; Python build/test on Linux</li>
+              </ul>
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-nvidia font-mono mb-2 mt-3">Ways to Stand Out</div>
+              <ul className="flex flex-col gap-1.5 text-neutral-400">
+                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>ROS 2 / Isaac ROS direct experience</li>
+                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>Multi-arch CI — embedded + hardware-accelerated (ARM64)</li>
+                <li className="flex gap-2"><span className="text-yellow-400 flex-shrink-0">★</span>Release engineering — branching, publishing, CDN distribution</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Resume card */}
+        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-[#0a1929] flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-400 font-mono bg-blue-400/10 border border-blue-400/30 px-2 py-0.5 rounded">Resume · NVIDIA Target</span>
+              </div>
+              <div className="text-[13px] font-bold text-white">Sudhakar Chundu</div>
+              <div className="text-[10px] text-neutral-500 font-mono mt-0.5">Senior DevOps Engineer · Robotics CI/CD &amp; Platform Infrastructure</div>
+            </div>
+            <a href="/Sudhakar_Chundu_NVIDIA_Robotics_DevOps.docx" download
+              className="flex-shrink-0 flex items-center gap-1.5 text-[10px] font-bold font-mono bg-nvidia text-black px-3 py-1.5 rounded hover:bg-nvidia/90 transition-colors ml-4">
+              ⬇ Download
+            </a>
+          </div>
+          <div className="p-4 text-[11px]">
+            <p className="text-neutral-400 leading-relaxed mb-4">
+              12+ years CI/CD infrastructure ownership across multi-cloud and hardware-accelerated workloads.
+              Deep expertise in GitLab CI, GitHub Actions, multi-arch Docker, Kubernetes, and release engineering.
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[
+                { label: '12+ yrs CI/CD', sub: 'GitLab CI · GitHub Actions · Jenkins' },
+                { label: '100+ pipelines', sub: '50+ daily deploys · 99.97% reliability' },
+                { label: 'Multi-arch Docker', sub: 'x86-64 + ARM64 via QEMU buildx' },
+                { label: '$8M+ saved', sub: '73% cost reduction · 95% faster deploys' },
+                { label: 'Release Engineering', sub: 'Semantic versioning · OCI/ECR · CDN' },
+                { label: 'C++ / Python CI', sub: 'CMake · ASan/TSan · clang-tidy on Linux' },
+              ].map(m => (
+                <div key={m.label} className="bg-surface-2 border border-border rounded-lg px-3 py-2">
+                  <div className="text-[11px] font-semibold text-white">{m.label}</div>
+                  <div className="text-[9px] text-neutral-500 font-mono mt-0.5">{m.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div className="text-[10px] text-neutral-600 font-mono border-t border-border pt-3">
+              sbchundu@gmail.com · (513) 666-0099 · San Jose, CA · linkedin.com/in/schundu
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }
