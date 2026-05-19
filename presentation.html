@@ -215,8 +215,8 @@ html, body {
 
 /* ── Screen spacer ────────────────────────────────────────────── */
 @media screen {
-  body { display: flex; flex-direction: column; align-items: center; padding: 0; }
-  .slide { box-shadow: 0 2px 32px rgba(0,0,0,.18); transform: scale(0.95); transform-origin: top center; margin-bottom: -3%; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 32px 0; gap: 32px; }
+  .slide { box-shadow: 0 2px 32px rgba(0,0,0,.18); }
 }
 </style>
 </head>
@@ -273,9 +273,9 @@ html, body {
         </div>
         <ul class="bullet-list">
           <li>OIDC token TTL exceeded during long GPU builds → credential expires mid-push to ECR</li>
-          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaacsim-core</span> pins <span style="font-family:var(--mono);font-size:8px;font-weight:600;">packaging==23.0</span>, conflicts with pip internals (#5558)</li>
+          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaacsim-core</span> pins <span style="font-family:var(--mono);font-size:8px;font-weight:600;">packaging==23.0</span>, conflicts with pip internals</li>
           <li>No retry logic — single network blip kills the entire nightly job, no fallback</li>
-          <li>PRs #5602, #5537 open but root ECR credential fix is not yet landed</li>
+          <li>Open fix PRs are pending merge</li>
         </ul>
       </div>
       <div class="ic" style="border-color:#f5bbb6;border-left:4px solid var(--red);margin-top:8px;">
@@ -285,9 +285,9 @@ html, body {
           <span class="badge br"><span class="dot" style="background:var(--red);"></span>Critical</span>
         </div>
         <ul class="bullet-list">
-          <li>RTX 5090 / 5070 Ti crashes — sm_120 (Blackwell) absent from CUDA arch list (#5520)</li>
-          <li>TiledCamera CUDA kernel hangs on GB202/GB203 silicon (#4951, #5001)</li>
-          <li>Driver 595.79 exposes new GPU init path that crashes headless GUI (#5140)</li>
+          <li>RTX 5090 / 5070 Ti crashes — sm_120 (Blackwell) absent from CUDA arch list</li>
+          <li>TiledCamera CUDA kernel hangs on GB202/GB203 silicon</li>
+          <li>Driver 595.79 exposes new GPU init path that crashes headless GUI</li>
           <li>No Blackwell runner in CI matrix — regressions ship to users, not caught in CI</li>
         </ul>
       </div>
@@ -301,9 +301,9 @@ html, body {
         </div>
         <ul class="bullet-list">
           <li>No single source of truth for dep versions — each package pins independently</li>
-          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaaclab.sh --install</span> fails silently with exit code 0 on conflicts (#5517)</li>
-          <li>CloudXR extension not published in Isaac Sim 6.0 pip index (#5368)</li>
-          <li>PRs #5571, #5566, #5201 still in DRAFT after weeks — not landed</li>
+          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaaclab.sh --install</span> fails silently with exit code 0 on conflicts</li>
+          <li>CloudXR extension not published in Isaac Sim 6.0 pip index</li>
+          <li>Open fix PRs are pending merge</li>
         </ul>
       </div>
       <div class="ic" style="border-color:#f5d9aa;border-left:4px solid var(--amber);margin-top:8px;">
@@ -315,15 +315,15 @@ html, body {
         <ul class="bullet-list">
           <li>32% of open PRs are docs-only — all trigger A100-80GB GPU runners unnecessarily</li>
           <li>Full 10-cell matrix (3 Isaac Sim versions × 4 extensions) runs on every PR</li>
-          <li>No <span style="font-family:var(--mono);font-size:8px;font-weight:600;">dorny/paths-filter</span> gate — ci-only changes spin GPU builds with zero value</li>
-          <li>Isaac Sim 6.0 compat gaps (#5435) mean old-version runs mask real failures</li>
+          <li>No path-filter gate — ci-only changes spin GPU builds with zero value</li>
+          <li>Isaac Sim 6.0 compat gaps mean old-version runs mask real failures</li>
         </ul>
       </div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="fl">Workflows: postmerge-ci.yml · daily-compatibility.yml · build.yml · Analysis: 2026-05-13</div>
+    <div class="fl">CI/CD Analysis — IsaacLab Repository</div>
     <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
   </div>
 </div>
@@ -350,22 +350,22 @@ html, body {
   <div class="g3" style="margin-bottom:14px;">
 
     <div class="wf" style="border-color:#f5bbb6;border-top:4px solid var(--red);">
-      <div class="wf-name">postmerge-ci.yml</div>
+      <div class="wf-name">Post-Merge CI</div>
       <div class="wf-stat">
         <span class="wf-stat-lbl">Pass rate</span>
         <div class="wf-bar-bg"><div class="wf-bar" style="width:16%;background:var(--red);"></div></div>
         <span class="wf-pct" style="color:var(--red);">16%</span>
       </div>
       <div class="wf-rows">
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">build-and-push-images</strong> — OIDC token expires during multi-hour GPU build; 96% of failures trace here (#5351)</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">packaging==23.0 conflict</strong> — isaacsim-core pin breaks pip vendored module inside Docker container (#5558)</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Silent source failures</strong> — isaaclab.sh exits 0 on conflict; CI marks green, job fails later (#5388, #5517)</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">build-and-push-images</strong> — OIDC token expires during multi-hour GPU build; 96% of failures trace here</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">packaging==23.0 conflict</strong> — isaacsim-core pin breaks pip vendored module inside Docker container</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Silent source failures</strong> — isaaclab.sh exits 0 on conflict; CI marks green, job fails later</span></div>
         <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Full 10-cell matrix</strong> — all 3 Isaac Sim × 4 extensions on every push; no post-merge vs PR split</span></div>
       </div>
     </div>
 
     <div class="wf" style="border-color:#f5bbb6;border-top:4px solid var(--red);">
-      <div class="wf-name">daily-compatibility.yml</div>
+      <div class="wf-name">Nightly Compatibility</div>
       <div class="wf-stat">
         <span class="wf-stat-lbl">Pass rate</span>
         <div class="wf-bar-bg"><div class="wf-bar" style="width:0%;background:var(--red);"></div></div>
@@ -373,14 +373,14 @@ html, body {
       </div>
       <div class="wf-rows">
         <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">ECR credential expiry</strong> — OIDC token issued at job start, expires before multi-hour GPU build finishes</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">resolve-matrix.py bug</strong> — unknown INPUT_SIM_VERSIONS silently falls back to ALL versions; re-run → 12-job full matrix</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">nightly-tags.sh risk</strong> — GITHUB_OUTPUT unset silently writes all 11 outputs to /dev/null; "tag not found" downstream</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Changelog deprecation</strong> — PR #5537 open; workflow_call syntax deprecated, breaking nightly trigger</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Matrix resolver bug</strong> — unknown INPUT_SIM_VERSIONS silently falls back to ALL versions; re-run → 12-job full matrix</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Output variable risk</strong> — Output variable unset — silently discards all 11 outputs; "tag not found" downstream</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Changelog deprecation</strong> — scheduled-workflow syntax deprecated, breaking nightly trigger</span></div>
       </div>
     </div>
 
     <div class="wf" style="border-color:#f5d9aa;border-top:4px solid var(--amber);">
-      <div class="wf-name">build.yml  (PR CI)</div>
+      <div class="wf-name">PR Build Pipeline</div>
       <div class="wf-stat">
         <span class="wf-stat-lbl">Skipped checks</span>
         <div class="wf-bar-bg"><div class="wf-bar" style="width:70%;background:var(--amber);"></div></div>
@@ -389,59 +389,59 @@ html, body {
       <div class="wf-rows">
         <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">No PR classification</strong> — 32% of PRs are docs-only; still trigger A100-80GB runner; 23 of 33 checks skip immediately</span></div>
         <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Full matrix on every PR</strong> — 3 Isaac Sim versions × 4 extensions; 60% of GPU work is redundant per PR</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Isaac Sim 6.0 gaps</strong> — #5435 compat breakages; old-version cells mask which version is actually broken</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">No Blackwell runner</strong> — sm_120 absent from CUDA arch; RTX 5090 regressions never caught in CI (#5520)</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Isaac Sim 6.0 gaps</strong> — compat breakages; old-version cells mask which version is actually broken</span></div>
+        <div class="wf-row"><div class="wf-row-dot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">No Blackwell runner</strong> — sm_120 absent from CUDA arch; RTX 5090 regressions never caught in CI</span></div>
       </div>
     </div>
   </div>
 
   <!-- Issue references -->
-  <div class="sec">Confirmed open GitHub issues — direct references</div>
+  <div class="sec">Key Failure Areas — Confirmed by Analysis</div>
   <div class="g4">
     <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">#5558</div>
+      <div class="ref-id" style="color:var(--red);">DEP CONFLICT</div>
       <div class="ref-title">packaging==23.0 pin conflict</div>
       <div class="ref-note">isaacsim-core conflicts with pip vendored module; breaks Docker pip install</div>
     </div>
     <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">#5520</div>
+      <div class="ref-id" style="color:var(--red);">GPU ARCH</div>
       <div class="ref-title">NVRTC arch error — Blackwell</div>
       <div class="ref-note">sm_120 (RTX 5090) missing from CUDA arch list; NVRTC fails</div>
     </div>
     <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">#5517</div>
+      <div class="ref-id" style="color:var(--red);">SILENT EXIT</div>
       <div class="ref-title">Silent install failure</div>
       <div class="ref-note">isaaclab.sh --install exits 0 on dependency conflict; no error surfaced</div>
     </div>
     <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">#5351</div>
+      <div class="ref-id" style="color:var(--red);">DOCKER PIP</div>
       <div class="ref-title">Broken pip in Docker</div>
       <div class="ref-note">Missing vendored packaging module inside IsaacLab Docker image</div>
     </div>
     <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">#5388</div>
+      <div class="ref-id" style="color:var(--amber);">BUILD SILENT</div>
       <div class="ref-title">Silent build from source</div>
       <div class="ref-note">Build step exits 0 despite source compile failure; CI marked green</div>
     </div>
     <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">#5435</div>
+      <div class="ref-id" style="color:var(--amber);">IS6 COMPAT</div>
       <div class="ref-title">Isaac Sim 6.0 compat</div>
       <div class="ref-note">API breakages with IS 6.0 not caught by current PR CI matrix</div>
     </div>
     <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">#5368</div>
+      <div class="ref-id" style="color:var(--amber);">MISSING PKG</div>
       <div class="ref-title">CloudXR missing in IS 6.0</div>
       <div class="ref-note">isaacsim.kit.xr.teleop.bridge not published in IS 6.0 pip index</div>
     </div>
     <div class="ref" style="border-color:#b0c8f5;border-left:3px solid var(--blue);">
-      <div class="ref-id" style="color:var(--blue);">#5350</div>
+      <div class="ref-id" style="color:var(--blue);">RAM LIMIT</div>
       <div class="ref-title">Docker RAM overconsumption</div>
       <div class="ref-note">Isaac Sim overconsumes RAM; no --memory limits set in docker run flags</div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="fl">Source: isaac-sim/IsaacLab — 150 open issues · 100 open PRs · postmerge-ci.yml · daily-compatibility.yml · build.yml</div>
+    <div class="fl">Source: isaac-sim/IsaacLab — 150+ open issues · 100+ open PRs</div>
     <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
   </div>
 </div>
@@ -475,11 +475,11 @@ html, body {
       </div>
       <div class="pitems">
         <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Rotate ECR OIDC credentials</strong> — fix IAM trust policy; add nick-fields/retry (3×, 60s) to ECR push step in postmerge-ci.yml</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Land PR #5571</strong> — centralize all external pins in tools/python_deps.py; resolves packaging==23.0 conflict (#5558)</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix isaaclab.sh exit codes</strong> — add post-install smoke test: python -c 'import isaaclab'; propagate real exit code (#5517)</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Centralize dependency pins</strong> — single source of truth in a shared deps file; resolves packaging==23.0 conflict</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix isaaclab.sh exit codes</strong> — add post-install smoke test: python -c 'import isaaclab'; propagate real exit code</span></div>
         <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix resolve-matrix.py fallback</strong> — unknown input → sys.exit(1), not silent all-matrix fallback in daily-compatibility</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Guard GITHUB_OUTPUT in nightly-tags.sh</strong> — fail fast in CI if unset; prevents silent /dev/null writes</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Land PR #5537</strong> — fix workflow_call deprecation breaking nightly trigger in daily-compatibility.yml</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Guard output variable in nightly script</strong> — fail fast in CI if unset; prevents silent /dev/null writes</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix deprecated nightly trigger</strong> — scheduled-workflow syntax fix restoring daily-compatibility trigger</span></div>
       </div>
     </div>
   </div>
@@ -494,11 +494,11 @@ html, body {
       </div>
       <div class="pitems">
         <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Add dorny/paths-filter</strong> — classify PR as docs / tests / source / ci-config before any GPU runner is assigned</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Gate GPU matrix in build.yml</strong> — if: needs.classify.outputs.source == 'true'; docs PRs → ubuntu-latest only, no GPU</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Gate GPU matrix in PR build workflow</strong> — if: needs.classify.outputs.source == 'true'; docs PRs → ubuntu-latest only, no GPU</span></div>
         <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Reduce PR matrix to 4 cells</strong> — latest Isaac Sim × 4 extensions on PRs; full 10-cell only on merge and nightly</span></div>
         <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">BuildKit cache mounts</strong> — --mount=type=cache,target=/root/.cache/pip; reorder Dockerfile: requirements first, source after</span></div>
         <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Base image deduplication</strong> — build base once per Isaac Sim version; fan-out to 4 extensions in parallel from cache</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Land PR #5563</strong> — add conda/uv installation tests in CI; catch install regressions before reaching users</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Add install test suite</strong> — conda/uv installation tests in CI; catch install regressions before reaching users</span></div>
       </div>
     </div>
   </div>
@@ -512,10 +512,10 @@ html, body {
         <span class="badge bb">Targets #2 — unblocks RTX 5090 / 5070 Ti users</span>
       </div>
       <div class="pitems">
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Add sm_90a + sm_120 to CUDA arch</strong> — fix NVRTC -arch error (#5520); update CMakeLists / setup.py for Blackwell</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Recompile TiledCamera kernel</strong> — add sm_120 target for GB202/GB203 silicon; resolves hang on RTX 5090 (#4951, #5001)</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Add sm_90a + sm_120 to CUDA arch</strong> — fix NVRTC -arch error; update CMakeLists / setup.py for Blackwell</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Recompile TiledCamera kernel</strong> — add sm_120 target for GB202/GB203 silicon; resolves hang on RTX 5090</span></div>
         <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Add Blackwell runner to nightly matrix</strong> — RTX 5090 (GB202) cell in daily-compatibility.yml from Week 8</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Resolve Isaac Sim 6.0 compat gaps</strong> — fix #5435 API breakages; make IS 6.0 the primary version in PR CI matrix</span></div>
+        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Resolve Isaac Sim 6.0 compat gaps</strong> — fix API breakages; make IS 6.0 the primary version in PR CI</span></div>
         <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">ECR push health check</strong> — hourly credential verification workflow; Slack alert on first failure before nightly runs</span></div>
         <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">DORA metrics baseline</strong> — track deployment freq, lead time, MTTR, CFR; target Elite band by end of Q3</span></div>
       </div>
@@ -550,7 +550,7 @@ html, body {
   </div>
 
   <div class="foot">
-    <div class="fl">Active PRs awaiting merge: #5571 · #5566 · #5563 · #5537 · #5602 · Analysis: 2026-05-13</div>
+    <div class="fl">Implementation Timeline — Q2/Q3 2026</div>
     <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
   </div>
 </div>

@@ -1349,7 +1349,483 @@ function CrossWorkflowPerf() {
   )
 }
 
+// ── CI/CD Analysis data ──────────────────────────────────────────────────────
+
+const CI_KPIS = [
+  { value: '16%',  label: 'Postmerge CI Pass Rate', note: '84% failing — image build step accounts for 96% of failures', color: '#c9210e', borderColor: '#f5bbb6' },
+  { value: '0%',   label: 'Nightly Pass Rate',       note: 'Nightly compatibility check at 0% for 14+ consecutive days',   color: '#c9210e', borderColor: '#f5bbb6' },
+  { value: '70%',  label: 'CI Checks Skipped',       note: '70% of checks skipped per PR but GPU runners still spin up and bill', color: '#b35b00', borderColor: '#f5d9aa' },
+  { value: '49',   label: 'Open Install Issues',     note: '33% of all 150 open issues are Docker / pip / installation failures', color: '#b35b00', borderColor: '#f5d9aa' },
+]
+
+const CI_FAILURES = [
+  {
+    num: 1, color: '#c9210e', borderColor: '#f5bbb6', severity: 'CRITICAL',
+    title: 'ECR Push Failures — Nightly Dead',
+    bullets: [
+      'OIDC token TTL exceeded during long GPU builds → credential expires mid-push to ECR',
+      'isaacsim-core pins packaging==23.0, conflicts with pip internals',
+      'No retry logic — single network blip kills the entire nightly job, no fallback',
+      'Open fix PRs are pending merge but root ECR credential fix is not yet landed',
+    ],
+  },
+  {
+    num: 2, color: '#c9210e', borderColor: '#f5bbb6', severity: 'CRITICAL',
+    title: 'Blackwell GPU — Zero Support',
+    bullets: [
+      'RTX 5090 / 5070 Ti crashes — sm_120 (Blackwell) absent from CUDA arch list',
+      'TiledCamera CUDA kernel hangs on Blackwell silicon (GB202/GB203)',
+      'Driver 595.79 exposes new GPU init path that crashes headless GUI',
+      'No Blackwell runner in CI matrix — regressions ship to users, not caught in CI',
+    ],
+  },
+  {
+    num: 3, color: '#b35b00', borderColor: '#f5d9aa', severity: 'HIGH',
+    title: 'Dependency Hell — 49 Open Issues',
+    bullets: [
+      'No single source of truth for dep versions — each package pins independently',
+      'Install script fails silently with exit code 0 on conflicts',
+      'CloudXR extension not published in Isaac Sim 6.0 pip index',
+      'Multiple fix PRs still in DRAFT after weeks — not landed',
+    ],
+  },
+  {
+    num: 4, color: '#b35b00', borderColor: '#f5d9aa', severity: 'HIGH',
+    title: 'Wasteful PR Matrix — 60% Redundant GPU',
+    bullets: [
+      '32% of open PRs are docs-only — all trigger A100-80GB GPU runners unnecessarily',
+      'Full 10-cell matrix (3 Isaac Sim versions × 4 extensions) runs on every PR',
+      'No path-filter gate — ci-only changes spin GPU builds with zero value',
+      'Isaac Sim 6.0 compat gaps mean old-version runs mask real failures',
+    ],
+  },
+]
+
+const CI_WORKFLOWS = [
+  {
+    name: 'Post-Merge CI',
+    statLabel: 'Pass rate', pct: 16, pctLabel: '16%', color: '#c9210e',
+    rows: [
+      { dot: '#c9210e', strong: 'Image push step', rest: ' — OIDC token expires during multi-hour GPU build; 96% of all failures trace here' },
+      { dot: '#c9210e', strong: 'Packaging version conflict', rest: ' — isaacsim-core pin breaks pip vendored module inside Docker container' },
+      { dot: '#c9210e', strong: 'Silent source failures', rest: ' — install script exits 0 on conflict; CI marks green, job fails later' },
+      { dot: '#b35b00', strong: 'Full 10-cell matrix', rest: ' — all 3 Isaac Sim × 4 extensions on every push; no post-merge vs PR split' },
+    ],
+  },
+  {
+    name: 'Nightly Compatibility',
+    statLabel: 'Pass rate', pct: 0, pctLabel: '0% (14d)', color: '#c9210e',
+    rows: [
+      { dot: '#c9210e', strong: 'ECR credential expiry', rest: ' — OIDC token issued at job start, expires before multi-hour GPU build finishes' },
+      { dot: '#c9210e', strong: 'Matrix resolver bug', rest: ' — unknown version input silently falls back to ALL versions; re-run → 12-job full matrix' },
+      { dot: '#c9210e', strong: 'Output variable risk', rest: ' — output env var unset silently discards all 11 outputs; "tag not found" downstream' },
+      { dot: '#b35b00', strong: 'Deprecated workflow trigger', rest: ' — scheduled-workflow syntax deprecated, breaking nightly trigger' },
+    ],
+  },
+  {
+    name: 'PR Build Pipeline',
+    statLabel: 'Skipped checks', pct: 70, pctLabel: '70%', color: '#b35b00',
+    rows: [
+      { dot: '#b35b00', strong: 'No PR classification', rest: ' — 32% of PRs are docs-only; still trigger A100-80GB runner; 23 of 33 checks skip immediately' },
+      { dot: '#b35b00', strong: 'Full matrix on every PR', rest: ' — 3 Isaac Sim versions × 4 extensions; 60% of GPU work is redundant per PR' },
+      { dot: '#b35b00', strong: 'Isaac Sim 6.0 gaps', rest: ' — compat breakages; old-version cells mask which version is actually broken' },
+      { dot: '#1d59c4', strong: 'No Blackwell runner', rest: ' — sm_120 absent from CUDA arch; RTX 5090 regressions never caught in CI' },
+    ],
+  },
+]
+
+const CI_ISSUE_REFS = [
+  { id: 'DEP CONFLICT',  color: '#c9210e', borderColor: '#f5bbb6', title: 'packaging==23.0 pin conflict',    note: 'isaacsim-core conflicts with pip vendored module; breaks Docker pip install' },
+  { id: 'GPU ARCH',      color: '#c9210e', borderColor: '#f5bbb6', title: 'NVRTC arch error — Blackwell',    note: 'sm_120 (RTX 5090) missing from CUDA arch list; NVRTC fails' },
+  { id: 'SILENT EXIT',   color: '#c9210e', borderColor: '#f5bbb6', title: 'Silent install failure',          note: 'Install script exits 0 on dependency conflict; no error surfaced' },
+  { id: 'DOCKER PIP',    color: '#c9210e', borderColor: '#f5bbb6', title: 'Broken pip in Docker',            note: 'Missing vendored packaging module inside IsaacLab Docker image' },
+  { id: 'BUILD SILENT',  color: '#b35b00', borderColor: '#f5d9aa', title: 'Silent build from source',        note: 'Build step exits 0 despite source compile failure; CI marked green' },
+  { id: 'IS6 COMPAT',    color: '#b35b00', borderColor: '#f5d9aa', title: 'Isaac Sim 6.0 compat gaps',       note: 'API breakages with IS 6.0 not caught by current PR CI matrix' },
+  { id: 'MISSING PKG',   color: '#b35b00', borderColor: '#f5d9aa', title: 'CloudXR missing in IS 6.0',       note: 'isaacsim.kit.xr.teleop.bridge not published in IS 6.0 pip index' },
+  { id: 'RAM LIMIT',     color: '#1d59c4', borderColor: '#b0c8f5', title: 'Docker RAM overconsumption',      note: 'Isaac Sim overconsumes RAM; no --memory limits set in docker run flags' },
+]
+
+const CI_PHASES = [
+  {
+    num: 1, color: '#c9210e', borderColor: '#f5bbb6',
+    badge: 'Targets issues #1 + #3 — restores nightly to 100%',
+    title: 'Fix ECR + Dependency Failures',
+    timeframe: 'Weeks 1–3',
+    items: [
+      'Rotate ECR OIDC credentials — fix IAM trust policy; add retry (3×, 60s backoff) to ECR push step',
+      'Centralize all external pins in a shared deps file; resolves packaging version conflict',
+      'Fix install script exit codes — add post-install smoke test; propagate real exit code',
+      'Fix matrix resolver fallback — unknown input → hard failure, not silent all-matrix fallback',
+      'Guard output variable in nightly script — fail fast in CI if unset; prevents silent discards',
+      'Fix deprecated nightly trigger — scheduled-workflow syntax fix restoring daily-compatibility',
+    ],
+  },
+  {
+    num: 2, color: '#b35b00', borderColor: '#f5d9aa',
+    badge: 'Targets issue #4 — −60% GPU runner cost',
+    title: 'Smart PR Gating — Eliminate GPU Waste',
+    timeframe: 'Weeks 4–7',
+    items: [
+      'Add path-filter action — classify PR as docs / tests / source / ci-config before any GPU runner is assigned',
+      'Gate GPU matrix in PR build workflow — docs PRs → ubuntu-latest only, no GPU runner',
+      'Reduce PR matrix to 4 cells — latest Isaac Sim × 4 extensions; full 10-cell only on merge and nightly',
+      'BuildKit cache mounts — type=cache for pip; reorder Dockerfile: requirements first, source after',
+      'Base image deduplication — build base once per Isaac Sim version; fan-out to extensions from cache',
+      'Add install test suite — conda/uv installation tests in CI; catch regressions before reaching users',
+    ],
+  },
+  {
+    num: 3, color: '#1d59c4', borderColor: '#b0c8f5',
+    badge: 'Targets issue #2 — unblocks RTX 5090 / 5070 Ti users',
+    title: 'Blackwell GPU Support + Elite Observability',
+    timeframe: 'Weeks 8–12',
+    items: [
+      'Add sm_90a + sm_120 to CUDA arch list — fix NVRTC arch error; update CMakeLists / setup.py for Blackwell',
+      'Recompile TiledCamera kernel — add sm_120 target for Blackwell silicon; resolves hang on RTX 5090',
+      'Add Blackwell runner to nightly matrix — RTX 5090 (GB202) cell in daily compatibility check from Week 8',
+      'Resolve Isaac Sim 6.0 compat gaps — fix API breakages; make IS 6.0 the primary version in PR CI',
+      'ECR push health check — hourly credential verification workflow; alert on first failure before nightly runs',
+      'DORA metrics baseline — track deployment freq, lead time, MTTR, CFR; target Elite band by end of Q3',
+    ],
+  },
+]
+
+const CI_OUTCOMES = [
+  { value: '+80%', label: 'Postmerge Pass Rate', note: 'ECR fix + retry logic → 16% → ~96%; Phase 1 alone achieves this', color: '#5a9e00' },
+  { value: '100%', label: 'Nightly Restored',    note: '0% → daily green; credential fix + deprecation patch in Phase 1',  color: '#5a9e00' },
+  { value: '−60%', label: 'GPU Runner Cost',     note: 'Smart gating + matrix reduction; ~40 GPU-hours/week saved',         color: '#5a9e00' },
+  { value: '49→0', label: 'Install Issues',       note: 'Centralized pins + smoke tests close all open install issues',      color: '#5a9e00' },
+]
+
+function SlideHeader({ eyebrow, title, accent, sub, tag, tagColor = '#a6d43a' }: {
+  eyebrow: string; title: string; accent: string; sub: string; tag: string; tagColor?: string
+}) {
+  return (
+    <div className="bg-[#0d0d0f] px-5 py-4 flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        <div className="text-[9px] font-semibold tracking-[0.14em] uppercase text-neutral-600 mb-1">{eyebrow}</div>
+        <div className="text-[20px] font-black text-white leading-tight">
+          {title} <span style={{ color: tagColor }}>{accent}</span>
+        </div>
+        <div className="text-[9px] text-neutral-500 mt-1 max-w-2xl leading-relaxed">{sub}</div>
+      </div>
+      <div className="flex items-center gap-1.5 border border-white/10 bg-white/5 px-2.5 py-1.5 flex-shrink-0">
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: tagColor, boxShadow: `0 0 5px ${tagColor}` }} />
+        <span className="text-[9px] font-mono uppercase tracking-wide text-neutral-500">{tag}</span>
+      </div>
+    </div>
+  )
+}
+
+function SectionRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-500 whitespace-nowrap">{label}</span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  )
+}
+
+function CIAnalysisSlides() {
+  return (
+    <div className="flex flex-col gap-4">
+
+      {/* ── Slide 1: Current State ──────────────────────────────────────── */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <SlideHeader
+          eyebrow="isaac-sim/IsaacLab · GitHub Actions · Current State · May 2026"
+          title="CI/CD Pipeline Is"
+          accent="Critically Broken"
+          sub="Analysis of 150+ open issues and 100+ open PRs. Nightly and post-merge CI are the primary failure surfaces with measurable impact on every contributor."
+          tag="isaac-sim/IsaacLab"
+        />
+        <div className="p-4 bg-surface flex flex-col gap-4">
+          <div className="grid grid-cols-4 gap-2">
+            {CI_KPIS.map(k => (
+              <div key={k.label} className="bg-surface-1 border-2 p-3"
+                style={{ borderColor: k.borderColor, borderLeftColor: k.color, borderLeftWidth: 4 }}>
+                <div className="text-[26px] font-black font-mono leading-none" style={{ color: k.color }}>{k.value}</div>
+                <div className="text-[9px] font-bold uppercase tracking-[0.09em] text-neutral-500 mt-1 mb-0.5">{k.label}</div>
+                <div className="text-[8px] text-neutral-500 leading-snug">{k.note}</div>
+              </div>
+            ))}
+          </div>
+
+          <SectionRow label="4 Critical Failure Categories" />
+
+          <div className="grid grid-cols-2 gap-3">
+            {[CI_FAILURES.slice(0, 2), CI_FAILURES.slice(2, 4)].map((col, ci) => (
+              <div key={ci} className="flex flex-col gap-2">
+                {col.map(f => (
+                  <div key={f.num} className="bg-surface-1 border-2 p-3"
+                    style={{ borderColor: f.borderColor, borderLeftColor: f.color, borderLeftWidth: 4 }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-[22px] h-[22px] flex items-center justify-center text-[10px] font-black font-mono border-2 flex-shrink-0"
+                        style={{ color: f.color, borderColor: f.color }}>{f.num}</div>
+                      <div className="text-[12px] font-bold text-white flex-1 leading-tight">{f.title}</div>
+                      <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 border flex-shrink-0"
+                        style={{ color: f.color, background: f.borderColor, borderColor: f.borderColor }}>{f.severity}</span>
+                    </div>
+                    <ul className="flex flex-col gap-1">
+                      {f.bullets.map((b, bi) => (
+                        <li key={bi} className="flex items-start gap-2">
+                          <span className="w-1 h-1 rounded-full bg-border/60 flex-shrink-0 mt-[5px]" />
+                          <span className="text-[8.5px] text-neutral-500 leading-snug">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-border flex items-center justify-between">
+            <span className="text-[8px] font-mono text-neutral-600">CI/CD Analysis — IsaacLab Repository</span>
+            <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-600">IsaacLab / IsaacSim CI Review · May 2026</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Slide 2: Workflow Deep Dive ─────────────────────────────────── */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <SlideHeader
+          eyebrow="Workflow Analysis — File-Level Breakdown"
+          title="Three Workflows,"
+          accent="Exact Failure Points"
+          sub="Mapped to specific workflow files and confirmed by analysis. Every item below is reproducible from the open issue tracker."
+          tag=".github/workflows"
+          tagColor="#ff6b6b"
+        />
+        <div className="p-4 bg-surface flex flex-col gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            {CI_WORKFLOWS.map(wf => (
+              <div key={wf.name} className="bg-surface-1 border-2 p-3"
+                style={{
+                  borderColor: wf.color === '#c9210e' ? '#f5bbb6' : '#f5d9aa',
+                  borderTopColor: wf.color, borderTopWidth: 4,
+                }}>
+                <div className="text-[9.5px] font-bold font-mono text-white mb-2">{wf.name}</div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[8px] font-semibold text-neutral-500 whitespace-nowrap">{wf.statLabel}</span>
+                  <div className="flex-1 h-1.5 bg-border">
+                    <div className="h-1.5" style={{ width: `${wf.pct}%`, background: wf.color }} />
+                  </div>
+                  <span className="text-[11px] font-bold font-mono min-w-[44px] text-right" style={{ color: wf.color }}>{wf.pctLabel}</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {wf.rows.map((row, ri) => (
+                    <div key={ri} className="flex items-start gap-1.5">
+                      <span className="w-[5px] h-[5px] rounded-full flex-shrink-0 mt-[4px]" style={{ background: row.dot }} />
+                      <span className="text-[8px] text-neutral-500 leading-snug">
+                        <strong className="text-neutral-200 font-semibold">{row.strong}</strong>{row.rest}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SectionRow label="Key Failure Areas — Confirmed by Analysis" />
+
+          <div className="grid grid-cols-4 gap-2">
+            {CI_ISSUE_REFS.map(ref => (
+              <div key={ref.id} className="bg-surface-1 border-2 p-2.5"
+                style={{ borderColor: ref.borderColor, borderLeftColor: ref.color, borderLeftWidth: 3 }}>
+                <div className="text-[8px] font-bold font-mono mb-1 tracking-wider" style={{ color: ref.color }}>{ref.id}</div>
+                <div className="text-[8.5px] font-semibold text-white mb-0.5">{ref.title}</div>
+                <div className="text-[7.5px] text-neutral-500 leading-snug">{ref.note}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-border flex items-center justify-between">
+            <span className="text-[8px] font-mono text-neutral-600">Source: isaac-sim/IsaacLab — 150+ open issues · 100+ open PRs</span>
+            <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-600">IsaacLab / IsaacSim CI Review · May 2026</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Slide 3: Improvement Roadmap ────────────────────────────────── */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <SlideHeader
+          eyebrow="Improvement Roadmap — 3-Phase Plan"
+          title="From 16% Pass Rate to"
+          accent="Elite CI/CD"
+          sub="Ordered by impact-to-effort ratio. Phase 1 alone restores nightly CI and unblocks post-merge. Each phase maps directly to a root cause identified above."
+          tag="Roadmap 2026"
+          tagColor="#6ea8fe"
+        />
+        <div className="p-4 bg-surface flex flex-col gap-3">
+          {CI_PHASES.map(ph => (
+            <div key={ph.num} className="bg-surface-1 border-2 flex gap-3 p-3"
+              style={{ borderColor: ph.borderColor, borderLeftColor: ph.color, borderLeftWidth: 4 }}>
+              <div className="w-[28px] h-[28px] flex items-center justify-center text-[11px] font-black font-mono border-2 flex-shrink-0 mt-0.5"
+                style={{ color: ph.color, borderColor: ph.color }}>{ph.num}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-[12px] font-bold text-white">{ph.title}</span>
+                  <span className="text-[8px] font-mono text-neutral-500 bg-surface-2 border border-border px-1.5 py-0.5">{ph.timeframe}</span>
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 border"
+                    style={{ color: ph.color, background: ph.borderColor, borderColor: ph.borderColor }}>{ph.badge}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {ph.items.map((item, ii) => (
+                    <div key={ii} className="flex items-start gap-1.5">
+                      <span className="w-1 h-1 rounded-full flex-shrink-0 mt-[5px]" style={{ background: ph.color }} />
+                      <span className="text-[8.5px] text-neutral-500 leading-snug">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div>
+            <SectionRow label="Expected Outcomes After All 3 Phases" />
+            <div className="grid grid-cols-4 gap-2 mt-3">
+              {CI_OUTCOMES.map(o => (
+                <div key={o.label} className="bg-surface-1 border-2 p-3"
+                  style={{ borderColor: '#bfdf7a', borderLeftColor: o.color, borderLeftWidth: 4 }}>
+                  <div className="text-[26px] font-black font-mono leading-none" style={{ color: o.color }}>{o.value}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-[0.09em] text-neutral-500 mt-1 mb-0.5">{o.label}</div>
+                  <div className="text-[8px] text-neutral-500 leading-snug">{o.note}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-border flex items-center justify-between">
+            <span className="text-[8px] font-mono text-neutral-600">Implementation Timeline — Q2/Q3 2026</span>
+            <span className="text-[8px] font-bold uppercase tracking-wider text-neutral-600">IsaacLab / IsaacSim CI Review · May 2026</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+// ── Profile / Portfolio section ───────────────────────────────────────────────
+
+const PROFILE_LINKS = [
+  { label: 'GitHub',    href: 'https://github.com/schundu007/',                          sub: 'schundu007 — open-source projects & contributions',   color: '#e5e5e5' },
+  { label: 'LinkedIn',  href: 'https://www.linkedin.com/in/schundu',                     sub: 'Professional profile & work history',                 color: '#0a66c2' },
+  { label: 'Portfolio', href: 'https://www.sudhakarchundu.org/',                          sub: 'Personal site — projects, blog, contact',              color: '#76b900' },
+  { label: 'DevOps Blog', href: 'https://www.sudhakarchundu.org/blog/NVIDIA_Isaac_ROS_DevOps.html', sub: 'NVIDIA Isaac ROS DevOps Reference — engineering guide', color: '#f59e0b' },
+]
+
+const SKILLS = [
+  { area: 'CI/CD & DevOps',     items: ['GitHub Actions', 'Docker', 'Kubernetes', 'ArgoCD', 'Helm', 'BuildKit'] },
+  { area: 'Cloud & Infra',      items: ['AWS ECR / S3 / IAM', 'NVIDIA NGC', 'Railway', 'Vercel', 'Terraform'] },
+  { area: 'Languages',          items: ['Python', 'TypeScript / React', 'Bash', 'C++', 'SQL'] },
+  { area: 'Robotics / AI',      items: ['Isaac Sim', 'IsaacLab', 'ROS 2', 'CUDA', 'PyTorch'] },
+]
+
+function ProfileSection() {
+  return (
+    <div className="flex gap-4 items-start">
+
+      {/* LEFT: Bio + links */}
+      <div className="w-[380px] flex-shrink-0 flex flex-col gap-3">
+
+        {/* Bio card */}
+        <div className="rounded-xl border border-border bg-surface-1 overflow-hidden">
+          <div className="bg-[#0d0d0f] px-4 py-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-600 mb-1">Engineer Profile</div>
+            <div className="text-[18px] font-black text-white leading-tight">Sudhakar Babu <span className="text-nvidia">Chundu</span></div>
+            <div className="text-[9px] text-neutral-500 mt-1">DevOps · MLOps · Robotics Infrastructure · IsaacLab CI/CD</div>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-[11px] leading-[1.7] text-neutral-400">
+              Infrastructure and CI/CD engineer focused on NVIDIA robotics toolchains. Currently improving
+              the IsaacLab / Isaac Sim build pipeline — cutting GPU runner costs, restoring nightly CI,
+              and shipping Blackwell (RTX 5090) support to the open-source community.
+            </p>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div className="rounded-xl border border-border bg-surface-1">
+          <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-neutral-300">Links</span>
+          </div>
+          <div className="divide-y divide-border/40">
+            {PROFILE_LINKS.map(link => (
+              <a key={link.label} href={link.href} target="_blank" rel="noreferrer"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2/40 transition-colors group">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: link.color }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-semibold text-neutral-200 group-hover:text-white transition-colors">{link.label}</div>
+                  <div className="text-[10px] text-neutral-500 truncate">{link.sub}</div>
+                </div>
+                <ExternalLink size={10} className="text-neutral-600 group-hover:text-neutral-400 flex-shrink-0" />
+              </a>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* RIGHT: Skills */}
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
+
+        <div className="rounded-xl border border-border bg-surface-1">
+          <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
+            <span className="text-[11px] font-semibold text-neutral-300">Skills & Stack</span>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-4">
+            {SKILLS.map(s => (
+              <div key={s.area}>
+                <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-500 mb-2">{s.area}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.items.map(item => (
+                    <span key={item}
+                      className="inline-flex items-center px-2 py-0.5 bg-surface-2 border border-border text-[10px] font-mono text-neutral-400">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Current focus */}
+        <div className="rounded-xl border border-border bg-surface-1">
+          <div className="px-4 py-2.5 border-b border-border bg-surface-2/60 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse" />
+            <span className="text-[11px] font-semibold text-neutral-300">Current Focus</span>
+          </div>
+          <div className="p-4 flex flex-col gap-2.5">
+            {[
+              { title: 'IsaacLab CI/CD Recovery',     sub: 'Restoring nightly CI from 0% → 100%; fixing ECR OIDC credential expiry and dependency conflicts' },
+              { title: 'Blackwell GPU Support',         sub: 'Adding sm_120 to CUDA arch list; unblocking RTX 5090 / 5070 Ti users across the Isaac Sim ecosystem' },
+              { title: 'Smart PR Gating',               sub: 'Path-filter + matrix reduction to cut GPU runner cost by 60%; docs PRs get instant feedback without GPU' },
+              { title: 'DORA Metrics Baseline',         sub: 'Tracking deploy frequency, lead time, MTTR, CFR — targeting Elite band by Q3 2026' },
+            ].map(f => (
+              <div key={f.title} className="flex items-start gap-2.5">
+                <span className="w-1 h-1 rounded-full bg-nvidia flex-shrink-0 mt-[5px]" />
+                <div>
+                  <div className="text-[12px] font-semibold text-neutral-200">{f.title}</div>
+                  <div className="text-[10px] text-neutral-500 leading-relaxed">{f.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+// ── Main Home export ──────────────────────────────────────────────────────────
+
 export default function Home() {
+  const [tab, setTab] = useState<'dashboard' | 'profile'>('dashboard')
   const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
   const repoSlug = data?.active?.slug ?? ''
   const isIsaacLab = repoSlug === 'isaac-sim/IsaacLab'
@@ -1357,22 +1833,39 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-3">
 
-      {/* Hero */}
+      {/* Hero + tabs */}
       <div className="flex items-center justify-between flex-shrink-0">
         <GitPulseLogo size={22} withText textSize="text-[15px]" className="text-nvidia" />
-        {repoSlug && (
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
-            <a href={`https://github.com/${repoSlug}`} target="_blank" rel="noreferrer"
-              className="flex items-center gap-1 text-[11px] font-mono text-neutral-500 hover:text-nvidia transition-colors">
-              {repoSlug}<ExternalLink size={9} />
-            </a>
+        <div className="flex items-center gap-3">
+          {/* Tab bar */}
+          <div className="flex items-center gap-0.5 bg-surface-2 border border-border p-0.5">
+            {(['dashboard', 'profile'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={cn(
+                  'px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors',
+                  tab === t ? 'bg-surface-3 text-white' : 'text-neutral-500 hover:text-neutral-300',
+                )}>
+                {t === 'dashboard' ? 'Dashboard' : 'Profile'}
+              </button>
+            ))}
           </div>
-        )}
+          {repoSlug && tab === 'dashboard' && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
+              <a href={`https://github.com/${repoSlug}`} target="_blank" rel="noreferrer"
+                className="flex items-center gap-1 text-[11px] font-mono text-neutral-500 hover:text-nvidia transition-colors">
+                {repoSlug}<ExternalLink size={9} />
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main content — conditional on active repo */}
-      {!data ? null : isIsaacLab ? (
+      {/* Tab content */}
+      {tab === 'profile' ? (
+        <ProfileSection />
+      ) : !data ? null : isIsaacLab ? (
+      <div className="flex flex-col gap-4">
       <div className="flex gap-4 items-start">
 
         {/* LEFT: Improvements Requested + breakdown cards */}
@@ -1504,6 +1997,11 @@ export default function Home() {
           <CrossWorkflowPerf />
 
         </div>
+      </div>
+
+      {/* CI/CD Analysis — presentation slides */}
+      <CIAnalysisSlides />
+
       </div>
       ) : (
         <GenericRepoHome repoSlug={repoSlug} />
