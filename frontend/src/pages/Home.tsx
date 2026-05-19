@@ -1735,13 +1735,14 @@ function ProfileSection() {
           <div className="bg-[#0d0d0f] px-4 py-3">
             <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-600 mb-1">Engineer Profile</div>
             <div className="text-[18px] font-black text-white leading-tight">Sudhakar Babu <span className="text-nvidia">Chundu</span></div>
-            <div className="text-[9px] text-neutral-500 mt-1">DevOps · MLOps · Robotics Infrastructure · IsaacLab CI/CD</div>
+            <div className="text-[9px] text-neutral-500 mt-1">Senior DevOps Engineer · Robotics CI/CD · Platform Infrastructure</div>
           </div>
           <div className="px-4 py-3">
             <p className="text-[11px] leading-[1.7] text-neutral-400">
-              Infrastructure and CI/CD engineer focused on NVIDIA robotics toolchains. Currently improving
-              the IsaacLab / Isaac Sim build pipeline — cutting GPU runner costs, restoring nightly CI,
-              and shipping Blackwell (RTX 5090) support to the open-source community.
+              12+ years of CI/CD infrastructure ownership across multi-cloud and hardware-accelerated workloads.
+              Targeting <span className="text-nvidia font-semibold">NVIDIA Senior DevOps Engineer — Robotics (JR2014821)</span>.
+              Deep expertise in GitLab CI, GitHub Actions, multi-arch Docker (x86-64 + ARM64), release engineering,
+              and ROS 2 development workflow automation.
             </p>
           </div>
         </div>
@@ -1801,10 +1802,10 @@ function ProfileSection() {
           </div>
           <div className="p-4 flex flex-col gap-2.5">
             {[
-              { title: 'IsaacLab CI/CD Recovery',     sub: 'Restoring nightly CI from 0% → 100%; fixing ECR OIDC credential expiry and dependency conflicts' },
-              { title: 'Blackwell GPU Support',         sub: 'Adding sm_120 to CUDA arch list; unblocking RTX 5090 / 5070 Ti users across the Isaac Sim ecosystem' },
-              { title: 'Smart PR Gating',               sub: 'Path-filter + matrix reduction to cut GPU runner cost by 60%; docs PRs get instant feedback without GPU' },
-              { title: 'DORA Metrics Baseline',         sub: 'Tracking deploy frequency, lead time, MTTR, CFR — targeting Elite band by Q3 2026' },
+              { title: 'Isaac ROS CI/CD Patterns',     sub: 'Pre-merge validation, nightly testing, and release pipelines for ROS 2 — Isaac ROS and IsaacLab workflows' },
+              { title: 'Multi-arch Docker Builds',      sub: 'x86-64 + ARM64 (Jetson Orin/Thor) via QEMU buildx; registry-backed cache; CUDA arch list hardening' },
+              { title: 'ROS 2 Workflow Automation',     sub: 'Multi-repo colcon/vcstool builds, complex dependency graphs, platform-specific targets for embedded + cloud' },
+              { title: 'NVIDIA JR2014821 Interview',    sub: 'Preparing for Senior DevOps Engineer — Robotics role at NVIDIA Santa Clara; targeting offer' },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-2.5">
                 <span className="w-1 h-1 rounded-full bg-nvidia flex-shrink-0 mt-[5px]" />
