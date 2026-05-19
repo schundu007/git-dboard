@@ -134,8 +134,6 @@ jobs:
       ISAAC_SIM_VERSION: ${{ matrix.isaac_sim_version }}
       SIM_MAJOR_MINOR:   ${{ matrix.sim_major_minor }}
       IMAGE_EXT:         ${{ matrix.image_ext }}
-      NGC_IMAGE:         ${{ env.NGC_IMAGE }}
-      GHCR_IMAGE:        ${{ env.GHCR_IMAGE }}
       ACCEPT_EULA:       "Y"
       PRIVACY_CONSENT:   "Y"
 
