@@ -807,6 +807,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
 
   const recommendations: Record<string, any> = data?.recommendations ?? {}
   const bestPractices: any[] = data?.best_practices ?? []
+  const hasGpu: boolean = data?.has_gpu ?? false
 
   const gpuRunners = runners.filter((r) =>
     r.labels?.some((l: any) => ['gpu', 'a100', 'cuda'].some((k) => l.name?.toLowerCase().includes(k)))
@@ -866,7 +867,7 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
         </div>
       )}
 
-      {Object.keys(recommendations).length > 0 && (
+      {hasGpu && Object.keys(recommendations).length > 0 && (
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border card-head">
             <p className="text-sm font-bold text-white">Runner Assignment by PR Type</p>

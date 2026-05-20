@@ -135,7 +135,17 @@ async def get_runner_recommendations():
             },
         ]
     else:
-        recs = {k: {**v, "runner": "ubuntu-latest", "gpu": False} for k, v in RUNNER_RECOMMENDATIONS.items()}
+        NO_GPU_REASONS = {
+            "docs":   "Docs builds are CPU-bound; hosted runners are fast and free.",
+            "tests":  "Unit/CPU tests run fine on GitHub-hosted runners.",
+            "source": "No GPU runners detected; use hosted runners for source changes.",
+            "ci":     "CI config changes only need lint + YAML validation on hosted runners.",
+            "mixed":  "No GPU runners detected; hosted runners cover all PR types.",
+        }
+        recs = {
+            k: {**v, "runner": "ubuntu-latest", "gpu": False, "reason": NO_GPU_REASONS.get(k, v["reason"])}
+            for k, v in RUNNER_RECOMMENDATIONS.items()
+        }
         best_practices = [
             {
                 "rule": "All PR types can use hosted runners",
