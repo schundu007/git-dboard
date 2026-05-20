@@ -19,7 +19,6 @@ const Analytics       = lazy(() => import('./pages/Analytics'))
 const SecurityAudit   = lazy(() => import('./pages/SecurityAudit'))
 const Settings        = lazy(() => import('./pages/Settings'))
 const ScriptPlayground   = lazy(() => import('./pages/ScriptPlayground'))
-const ScriptLibrary      = lazy(() => import('./pages/ScriptLibrary'))
 const ScriptBrowser      = lazy(() => import('./pages/ScriptBrowser'))
 
 function PageFallback() {
@@ -70,15 +69,15 @@ function RepoChangeWatcher() {
       const storedSlug = localStorage.getItem('active-repo-slug')
       localStorage.setItem('active-repo-slug', slug)
       if (storedSlug && storedSlug !== slug) {
-        qc.invalidateQueries({ predicate: q => q.queryKey[0] !== 'active-repo' })
+        qc.removeQueries({ predicate: q => q.queryKey[0] !== 'active-repo' })
       }
       return
     }
     if (prevSlug.current !== slug) {
       prevSlug.current = slug
       localStorage.setItem('active-repo-slug', slug)
-      // Invalidate every query except active-repo itself so all pages refetch
-      qc.invalidateQueries({ predicate: q => q.queryKey[0] !== 'active-repo' })
+      // Remove all non-active-repo queries so pages fetch fresh data for the new project
+      qc.removeQueries({ predicate: q => q.queryKey[0] !== 'active-repo' })
     }
   }, [data?.active?.slug, qc])
 
@@ -105,9 +104,6 @@ function useShowWelcome() {
 }
 
 function ScriptsPage() {
-  const { data } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
-  if (!data) return null
-  if ((data?.active?.slug ?? '') === 'isaac-sim/IsaacLab') return <ScriptLibrary />
   return <ScriptBrowser />
 }
 

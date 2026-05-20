@@ -317,8 +317,6 @@ function IssuesAnalysisTab() {
     queryFn: getIssuesAnalysis,
     staleTime: 10 * 60_000,
   })
-  const { data: arData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
-  const slug = arData?.active?.slug ?? ''
 
   const [activeSection, setActiveSection] = useState<'infra' | 'bugs' | 'features'>('infra')
 

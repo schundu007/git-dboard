@@ -93,7 +93,7 @@ def _build_gate_comment(
 
 **Runner recommendation:** `{runner_rec["runner"]}` {"🖥️ GPU" if runner_rec["gpu"] else "☁️ Hosted"} — {runner_rec["reason"]}
 
-<sub>Updated by IsaacLab Dashboard · {now}</sub>
+<sub>Updated by GitPulse · {now}</sub>
 """
 
 
