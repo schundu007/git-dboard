@@ -6,6 +6,7 @@ import {
   ShieldCheck, ShieldAlert, ShieldX, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { getSecurityOverview } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import clsx from 'clsx'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -725,8 +726,9 @@ function ErrorState({ message }: { message?: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SecurityAudit() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['security-overview'],
+    queryKey: [slug, 'security-overview'],
     queryFn: getSecurityOverview,
     staleTime: 120_000,
     refetchInterval: 300_000,

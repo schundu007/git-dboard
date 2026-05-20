@@ -10,12 +10,14 @@ import {
   getPRStats, getBuildStats,
 } from '../lib/api'
 import { useCountUp } from '../hooks/useCountUp'
+import { useRepoSlug } from '../lib/hooks'
 
 export default function RightSidebar() {
+  const slug = useRepoSlug()
   const navigate = useNavigate()
 
   const { data: pulse } = useQuery({
-    queryKey: ['insights-pulse'],
+    queryKey: [slug, 'insights-pulse'],
     queryFn: getInsightsPulse,
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -28,13 +30,13 @@ export default function RightSidebar() {
   })
 
   const { data: prStats } = useQuery({
-    queryKey: ['pr-stats'],
+    queryKey: [slug, 'pr-stats'],
     queryFn: getPRStats,
     staleTime: 60_000,
   })
 
   const { data: buildStats } = useQuery({
-    queryKey: ['build-stats-sidebar'],
+    queryKey: [slug, 'build-stats-sidebar'],
     queryFn: () => getBuildStats('', 7),
     staleTime: 60_000,
   })

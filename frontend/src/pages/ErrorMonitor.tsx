@@ -11,6 +11,7 @@ import { getAllRuns, getIssues, getIssueStats, getLogs, ingestLogs, purgeLogs } 
 import type { LogEntry } from '../lib/types'
 import StatusBadge from '../components/StatusBadge'
 import clsx from 'clsx'
+import { useRepoSlug } from '../lib/hooks'
 
 const BASE = 'http://localhost:8000'
 const req = (path: string) => fetch(`${BASE}${path}`).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json() })
@@ -20,9 +21,10 @@ type MainMode = 'diagnostics' | 'logs'
 // ── CI Failures ───────────────────────────────────────────────────────────────
 
 function CIFailuresPanel() {
+  const slug = useRepoSlug()
   const [expanded, setExpanded] = useState<number | null>(null)
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['monitor-ci-failures'],
+    queryKey: [slug, 'monitor-ci-failures'],
     queryFn: () => getAllRuns({ per_page: 30, page: 1 }),
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -88,8 +90,9 @@ function CIFailuresPanel() {
 // ── Nightly Job Failures ──────────────────────────────────────────────────────
 
 function NightlyFailuresPanel() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['failure-analysis-monitor'],
+    queryKey: [slug, 'failure-analysis-monitor'],
     queryFn: () => req('/analytics/failure-analysis?runs=20'),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -133,8 +136,9 @@ function NightlyFailuresPanel() {
 // ── Error Patterns ────────────────────────────────────────────────────────────
 
 function ErrorPatternsPanel() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['error-patterns'],
+    queryKey: [slug, 'error-patterns'],
     queryFn: () => req('/analytics/error-patterns'),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -173,8 +177,9 @@ function ErrorPatternsPanel() {
 // ── Bug Issues ────────────────────────────────────────────────────────────────
 
 function BugIssuesPanel() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['monitor-bugs'],
+    queryKey: [slug, 'monitor-bugs'],
     queryFn: () => getIssues({ state: 'open', labels: 'bug', per_page: 20 }),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -402,8 +407,9 @@ function RunIngestCard({ run, onIngested }: { run: any; onIngested: (id: number)
 }
 
 function EmptyState({ onIngested }: { onIngested: (id: number) => void }) {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['build-runs-for-logs'],
+    queryKey: [slug, 'build-runs-for-logs'],
     queryFn: () => getAllRuns({ per_page: 8, page: 1 }),
     staleTime: 60_000,
   })
@@ -437,22 +443,23 @@ function EmptyState({ onIngested }: { onIngested: (id: number) => void }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ErrorMonitor() {
+  const slug = useRepoSlug()
   const [mode, setMode] = useState<MainMode>('diagnostics')
   const qc = useQueryClient()
 
   // ── Diagnostics tab state ──
   const { data: issueStats } = useQuery({
-    queryKey: ['issue-stats-monitor'],
+    queryKey: [slug, 'issue-stats-monitor'],
     queryFn: getIssueStats,
     staleTime: 300_000,
   })
   const { data: ciData } = useQuery({
-    queryKey: ['monitor-ci-failures'],
+    queryKey: [slug, 'monitor-ci-failures'],
     queryFn: () => getAllRuns({ per_page: 30, page: 1 }),
     staleTime: 30_000,
   })
   const { data: epData } = useQuery({
-    queryKey: ['error-patterns'],
+    queryKey: [slug, 'error-patterns'],
     queryFn: () => req('/analytics/error-patterns'),
     staleTime: 120_000,
   })
@@ -464,11 +471,11 @@ export default function ErrorMonitor() {
   const errorCount = epData?.total_errors ?? 0
 
   function refreshDiagnostics() {
-    qc.invalidateQueries({ queryKey: ['monitor-ci-failures'] })
-    qc.invalidateQueries({ queryKey: ['monitor-bugs'] })
-    qc.invalidateQueries({ queryKey: ['error-patterns'] })
-    qc.invalidateQueries({ queryKey: ['failure-analysis-monitor'] })
-    qc.invalidateQueries({ queryKey: ['issue-stats-monitor'] })
+    qc.invalidateQueries({ queryKey: [slug, 'monitor-ci-failures'] })
+    qc.invalidateQueries({ queryKey: [slug, 'monitor-bugs'] })
+    qc.invalidateQueries({ queryKey: [slug, 'error-patterns'] })
+    qc.invalidateQueries({ queryKey: [slug, 'failure-analysis-monitor'] })
+    qc.invalidateQueries({ queryKey: [slug, 'issue-stats-monitor'] })
   }
 
   // ── Logs tab state ──
@@ -485,7 +492,7 @@ export default function ErrorMonitor() {
   if (search) logParams.search = search
 
   const { data: logsData = [], isLoading: logsLoading, isError: logsError, refetch: refetchLogs } = useQuery({
-    queryKey: ['logs', logParams],
+    queryKey: [slug, 'logs', logParams],
     queryFn: () => getLogs({ ...logParams, limit: 2000 }),
     refetchInterval: 15_000,
   })
@@ -556,14 +563,14 @@ export default function ErrorMonitor() {
   const { mutate: ingest, isPending: ingesting } = useMutation({
     mutationFn: () => ingestLogs(Number(ingestId)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['logs'] })
+      qc.invalidateQueries({ queryKey: [slug, 'logs'] })
       setIngestId('')
     },
   })
 
   const { mutate: purge } = useMutation({
     mutationFn: () => purgeLogs(30),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['logs'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'logs'] }),
   })
 
   const download = () => {
@@ -803,7 +810,7 @@ export default function ErrorMonitor() {
             </div>
           ) : !hasLogs ? (
             <div className="flex-1 bg-surface-1 border border-border rounded-xl overflow-y-auto">
-              <EmptyState onIngested={(id) => { qc.invalidateQueries({ queryKey: ['logs'] }); setSelectedRunId(String(id)) }} />
+              <EmptyState onIngested={(id) => { qc.invalidateQueries({ queryKey: [slug, 'logs'] }); setSelectedRunId(String(id)) }} />
             </div>
           ) : (
             <div className="flex gap-3 flex-1" style={{ minHeight: '500px' }}>

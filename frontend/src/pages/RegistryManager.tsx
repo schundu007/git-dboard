@@ -7,6 +7,7 @@ import {
   Tag, GitBranch as GitBranchIcon, Database,
 } from 'lucide-react'
 import { getECRImages, getECRUri, deleteECRImage, getRegistryPushStatus, getTagsMatrix, getTagsLifecycle, getTagsCompute, getActiveRepo } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import { formatDistanceToNow } from 'date-fns'
 import type { ECRImage } from '../lib/types'
 import clsx from 'clsx'
@@ -216,8 +217,9 @@ function CopyTag({ value }: { value: string }) {
 // ── Build matrix grid ─────────────────────────────────────────────────────────
 
 function MatrixSection() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['tags-matrix'],
+    queryKey: [slug, 'tags-matrix'],
     queryFn: getTagsMatrix,
     staleTime: Infinity,
   })
@@ -273,7 +275,8 @@ function MatrixSection() {
 // ── Tag calculator ────────────────────────────────────────────────────────────
 
 function TagCalculator() {
-  const { data: matrixData } = useQuery({ queryKey: ['tags-matrix'], queryFn: getTagsMatrix, staleTime: Infinity })
+  const slug = useRepoSlug()
+  const { data: matrixData } = useQuery({ queryKey: [slug, 'tags-matrix'], queryFn: getTagsMatrix, staleTime: Infinity })
   const simVersions: string[] = matrixData?.sim_versions ?? ['4.5.0', '5.0.0', '5.1.0']
   const imageExts: string[]   = matrixData?.image_exts   ?? ['base', 'ros2', 'cloudxr', 'ngc-slim']
 
@@ -294,7 +297,7 @@ function TagCalculator() {
   }
 
   const { data, isFetching } = useQuery({
-    queryKey: ['tags-compute', params],
+    queryKey: [slug, 'tags-compute', params],
     queryFn: () => getTagsCompute(params),
     staleTime: 5_000,
   })
@@ -399,7 +402,8 @@ function TagCalculator() {
 // ── Lifecycle policy ──────────────────────────────────────────────────────────
 
 function LifecycleSection() {
-  const { data, isLoading } = useQuery({ queryKey: ['tags-lifecycle'], queryFn: getTagsLifecycle, staleTime: Infinity })
+  const slug = useRepoSlug()
+  const { data, isLoading } = useQuery({ queryKey: [slug, 'tags-lifecycle'], queryFn: getTagsLifecycle, staleTime: Infinity })
   if (isLoading) return null
   const policies: any[] = data?.policies ?? []
   return (
@@ -569,26 +573,27 @@ verify-push.py validates all 6 OCI labels`}
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function RegistryManager() {
+  const slug = useRepoSlug()
   const [tab, setTab] = useState<RegistryTab>('images')
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date_desc')
   const qc = useQueryClient()
 
-  const { data: uriData } = useQuery({ queryKey: ['ecr-uri'], queryFn: getECRUri })
-  const { data: pushStatus } = useQuery({ queryKey: ['registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 60_000 })
+  const { data: uriData } = useQuery({ queryKey: [slug, 'ecr-uri'], queryFn: getECRUri })
+  const { data: pushStatus } = useQuery({ queryKey: [slug, 'registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 60_000 })
   const { data: activeRepo } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
   const ngcImage: string = pushStatus?.ngc?.image ?? ''
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['ecr-images'],
+    queryKey: [slug, 'ecr-images'],
     queryFn: () => getECRImages(100),
     refetchInterval: 60_000,
   })
 
   const { mutate: deleteImg } = useMutation({
     mutationFn: (tag: string) => deleteECRImage(tag),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ecr-images'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'ecr-images'] }),
     onError: () => toast.error('Failed to delete image'),
   })
 

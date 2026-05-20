@@ -16,6 +16,7 @@ import {
   getAutomationStatus, triggerAutomationRun, updateAutomationConfig,
   getRunnerRecommendations, getActiveRepo,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import type { PR } from '../lib/types'
 import clsx from 'clsx'
@@ -54,8 +55,9 @@ function GateChip({ verdict }: { verdict: string }) {
 // ── Gate overview bar ─────────────────────────────────────────────────────────
 
 function GateOverviewBar({ days }: { days?: number }) {
+  const slug = useRepoSlug()
   const { data } = useQuery({
-    queryKey: ['pr-gate-overview', days ?? null],
+    queryKey: [slug, 'pr-gate-overview', days ?? null],
     queryFn: () => getPRGateOverview(days),
     staleTime: 60_000,
     refetchInterval: 90_000,
@@ -88,8 +90,9 @@ const CAT_COLOR: Record<string, string> = {
 }
 
 function GatePanel({ prNumber }: { prNumber: number }) {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['pr-gate', prNumber],
+    queryKey: [slug, 'pr-gate', prNumber],
     queryFn: () => getPRGate(prNumber),
     staleTime: 45_000,
   })
@@ -248,20 +251,21 @@ function ReviewDots({ reviews }: { reviews: any[] }) {
 // ── Expanded panel ────────────────────────────────────────────────────────────
 
 function ExpandedPanel({ pr }: { pr: PR }) {
+  const slug = useRepoSlug()
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ['pr-summary', pr.number],
+    queryKey: [slug, 'pr-summary', pr.number],
     queryFn: () => getPRSummary(pr.number),
     staleTime: 30_000,
   })
 
   const { data: reviewsData } = useQuery({
-    queryKey: ['pr-reviews', pr.number],
+    queryKey: [slug, 'pr-reviews', pr.number],
     queryFn: () => getPRReviews(pr.number),
     staleTime: 30_000,
   })
 
   const { data: filesData } = useQuery({
-    queryKey: ['pr-files', pr.number],
+    queryKey: [slug, 'pr-files', pr.number],
     queryFn: () => getPRFiles(pr.number),
     staleTime: 60_000,
   })
@@ -396,8 +400,9 @@ function ExpandedPanel({ pr }: { pr: PR }) {
 // ── Inline gate badge (lightweight, shown on card without expanding) ──────────
 
 function InlineGateBadge({ prNumber }: { prNumber: number }) {
+  const slug = useRepoSlug()
   const { data } = useQuery({
-    queryKey: ['pr-gate', prNumber],
+    queryKey: [slug, 'pr-gate', prNumber],
     queryFn: () => getPRGate(prNumber),
     staleTime: 45_000,
     enabled: false,  // only loads when ExpandedPanel triggers it; avoids N requests on load
@@ -414,12 +419,13 @@ function InlineGateBadge({ prNumber }: { prNumber: number }) {
 // ── PR card ───────────────────────────────────────────────────────────────────
 
 function PRCard({ pr, canPush, repetitive }: { pr: PR; canPush: boolean; repetitive: boolean }) {
+  const slug = useRepoSlug()
   const [expanded, setExpanded] = useState(false)
   const qc = useQueryClient()
 
   const { mutate: triggerCI, isPending: triggering } = useMutation({
     mutationFn: () => triggerPRCI(pr.number),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['pr-summary', pr.number] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'pr-summary', pr.number] }),
     onError: () => toast.error('Failed to trigger CI'),
   })
 
@@ -590,29 +596,30 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 function AutomationTab() {
+  const slug = useRepoSlug()
   const qc = useQueryClient()
 
   const { data: status, isLoading } = useQuery({
-    queryKey: ['automation-status'],
+    queryKey: [slug, 'automation-status'],
     queryFn: getAutomationStatus,
     refetchInterval: 5_000,
   })
 
   const { mutate: runNow, isPending: running } = useMutation({
     mutationFn: triggerAutomationRun,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'automation-status'] }),
     onError: () => toast.error('Automation run failed'),
   })
 
   const { mutate: toggleEnabled } = useMutation({
     mutationFn: (enabled: boolean) => updateAutomationConfig({ enabled }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'automation-status'] }),
     onError: () => toast.error('Failed to update automation'),
   })
 
   const { mutate: setInterval } = useMutation({
     mutationFn: (interval_minutes: number) => updateAutomationConfig({ interval_minutes }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-status'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'automation-status'] }),
     onError: () => toast.error('Failed to update interval'),
   })
 
@@ -748,8 +755,9 @@ function AutomationTab() {
 // ── Runners tab ───────────────────────────────────────────────────────────────
 
 function RunnersTab() {
+  const slug = useRepoSlug()
   const { data } = useQuery({
-    queryKey: ['runner-recommendations'],
+    queryKey: [slug, 'runner-recommendations'],
     queryFn: getRunnerRecommendations,
     staleTime: 300_000,
   })
@@ -836,6 +844,7 @@ type Tab = 'prs' | 'branches' | 'issues' | 'automation' | 'runners'
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SourceControl() {
+  const slug = useRepoSlug()
   const [activeTab, setActiveTab] = useState<Tab>('prs')
   const [prState, setPrState] = useState<'open' | 'closed'>('open')
   const [search, setSearch] = useState('')
@@ -844,7 +853,7 @@ export default function SourceControl() {
   const qc = useQueryClient()
 
   const { data: permsData } = useQuery({
-    queryKey: ['repo-permissions'],
+    queryKey: [slug, 'repo-permissions'],
     queryFn: getRepoPermissions,
     staleTime: 300_000,
   })
@@ -852,13 +861,13 @@ export default function SourceControl() {
   const repoSlug = activeRepoData?.active?.slug ?? ''
 
   const { data: statsData } = useQuery({
-    queryKey: ['pr-stats'],
+    queryKey: [slug, 'pr-stats'],
     queryFn: getPRStats,
     refetchInterval: 60_000,
   })
 
   const { data = [], isLoading, isError } = useQuery({
-    queryKey: ['prs', prState],
+    queryKey: [slug, 'prs', prState],
     queryFn: () => getPRs(prState),
     refetchInterval: 60_000,
   })
@@ -946,7 +955,7 @@ export default function SourceControl() {
             </>
           )}
           <button
-            onClick={() => qc.invalidateQueries({ queryKey: ['prs'] })}
+            onClick={() => qc.invalidateQueries({ queryKey: [slug, 'prs'] })}
             className="p-1.5 rounded-lg hover:bg-surface-2 text-gray-500 hover:text-white transition-colors border border-transparent hover:border-border/50"
             title="Refresh"
           >

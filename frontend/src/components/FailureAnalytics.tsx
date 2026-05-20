@@ -12,6 +12,7 @@ import {
   getBuildStats, getInsightsContributors, getImprovementPlan,
   getQuickWins, getHealthCiTriage, getActiveRepo,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 
 const TOOLTIP_STYLE = {
   contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 6, fontSize: 11 },
@@ -31,11 +32,12 @@ const EFFORT_COLOR: Record<string, string> = {
 }
 
 export default function FailureAnalytics() {
-  const { data: build   } = useQuery({ queryKey: ['build-stats-fa'],    queryFn: () => getBuildStats('', 30), staleTime: 120_000 })
-  const { data: contribs} = useQuery({ queryKey: ['insights-contributors'], queryFn: getInsightsContributors, staleTime: 300_000 })
-  const { data: plan    } = useQuery({ queryKey: ['improvement-plan'],   queryFn: getImprovementPlan,         staleTime: 300_000 })
-  const { data: wins    } = useQuery({ queryKey: ['quick-wins'],         queryFn: getQuickWins,               staleTime: 300_000 })
-  const { data: triage  } = useQuery({ queryKey: ['health-ci-triage'],  queryFn: getHealthCiTriage,          staleTime: 120_000 })
+  const slug = useRepoSlug()
+  const { data: build   } = useQuery({ queryKey: [slug, 'build-stats-fa'],    queryFn: () => getBuildStats('', 30), staleTime: 120_000 })
+  const { data: contribs} = useQuery({ queryKey: [slug, 'insights-contributors'], queryFn: getInsightsContributors, staleTime: 300_000 })
+  const { data: plan    } = useQuery({ queryKey: [slug, 'improvement-plan'],   queryFn: getImprovementPlan,         staleTime: 300_000 })
+  const { data: wins    } = useQuery({ queryKey: [slug, 'quick-wins'],         queryFn: getQuickWins,               staleTime: 300_000 })
+  const { data: triage  } = useQuery({ queryKey: [slug, 'health-ci-triage'],  queryFn: getHealthCiTriage,          staleTime: 120_000 })
   const { data: active  } = useQuery({ queryKey: ['active-repo'],       queryFn: getActiveRepo,              staleTime: 30_000  })
 
   const ghBase = active?.active

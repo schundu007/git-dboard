@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { formatDistanceToNow } from 'date-fns'
 import { getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly, getFailureSummary } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import clsx from 'clsx'
 import type { WorkflowRun } from '../lib/types'
@@ -32,10 +33,11 @@ function cellStyle(status: string | undefined) {
 // ── Job-level matrix ─────────────────────────────────────────────────────────
 
 function MatrixTable() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['nightly-matrix', days],
+    queryKey: [slug, 'nightly-matrix', days],
     queryFn: () => getNightlyMatrix(days),
     refetchInterval: 120_000,
   })
@@ -192,9 +194,10 @@ function MatrixTable() {
 // ── Trend chart ───────────────────────────────────────────────────────────────
 
 function TrendChart() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading } = useQuery({
-    queryKey: ['nightly-trend', days],
+    queryKey: [slug, 'nightly-trend', days],
     queryFn: () => getNightlyTrend(days),
     refetchInterval: 300_000,
   })
@@ -256,9 +259,10 @@ function TrendChart() {
 // ── Failure detail (lazy-loaded per run) ─────────────────────────────────────
 
 function NightlyFailureDetail({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const [open, setOpen] = useState(false)
   const { data, isLoading } = useQuery({
-    queryKey: ['failure-summary', runId],
+    queryKey: [slug, 'failure-summary', runId],
     queryFn: () => getFailureSummary(runId),
     enabled: open,
     staleTime: 300_000,
@@ -319,8 +323,9 @@ function NightlyFailureDetail({ runId }: { runId: number }) {
 // ── Recent runs list ──────────────────────────────────────────────────────────
 
 function RecentRuns() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['nightly-runs'],
+    queryKey: [slug, 'nightly-runs'],
     queryFn: () => getNightlyRuns(),
     refetchInterval: 60_000,
   })

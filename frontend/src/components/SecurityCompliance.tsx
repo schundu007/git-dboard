@@ -5,6 +5,7 @@ import {
   AlertCircle, Info, Activity,
 } from 'lucide-react'
 import { getSecurityOverview, getActiveRepo } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -80,8 +81,9 @@ function ScoreRing({ score, grade, label }: { score: number; grade: string; labe
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function SecurityCompliance() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['security-overview'],
+    queryKey: [slug, 'security-overview'],
     queryFn: getSecurityOverview,
     staleTime: 300_000,
     refetchInterval: 600_000,

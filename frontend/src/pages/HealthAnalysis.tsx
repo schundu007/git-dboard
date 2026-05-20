@@ -14,6 +14,7 @@ import {
   getHealthDora, getHealthCiTriage, getHealthPipelinePerf, getHealthRunnerHealth,
   getActiveRepo,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -64,9 +65,10 @@ function StatCard({
 // ── DORA Tab ──────────────────────────────────────────────────────────────────
 
 function DoraTab() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['health-dora', days],
+    queryKey: [slug, 'health-dora', days],
     queryFn: () => getHealthDora(days),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -320,9 +322,10 @@ function TriageRow({ f }: { f: any }) {
 }
 
 function TriageTab() {
+  const slug = useRepoSlug()
   const [filter, setFilter] = useState<string>('all')
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['health-triage'],
+    queryKey: [slug, 'health-triage'],
     queryFn: getHealthCiTriage,
     staleTime: 120_000,
   })
@@ -394,8 +397,9 @@ function TriageTab() {
 // ── Pipeline Performance Tab ───────────────────────────────────────────────────
 
 function PerfTab() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['health-perf'],
+    queryKey: [slug, 'health-perf'],
     queryFn: getHealthPipelinePerf,
     staleTime: 120_000,
   })
@@ -484,8 +488,9 @@ function RunnerDot({ status, busy }: { status: string; busy: boolean }) {
 }
 
 function RunnersTab() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['health-runners'],
+    queryKey: [slug, 'health-runners'],
     queryFn: getHealthRunnerHealth,
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -815,8 +820,9 @@ function SloCard({ def, sloData }: { def: SloDefinition; sloData: SloStatus }) {
 }
 
 function SloTracker() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['health-dora'],
+    queryKey: [slug, 'health-dora'],
     queryFn: () => getHealthDora(),
     staleTime: 120_000,
     refetchInterval: 300_000,

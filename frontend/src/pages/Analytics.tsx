@@ -16,30 +16,31 @@ import {
   getInsightsPulse, getInsightsParticipation, getInsightsContributors,
   getInsightsCodeFrequency, getInsightsForks, getInsightsCommitActivity,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import clsx from 'clsx'
 
 const BASE = 'http://localhost:8000'
 const req = (path: string) => fetch(`${BASE}${path}`).then((r) => r.json())
 
 // ── API helpers ───────────────────────────────────────────────────────────────
-const useCommitActivity = (days: number) =>
-  useQuery({ queryKey: ['commit-activity', days], queryFn: () => req(`/analytics/commit-activity?days=${days}`), staleTime: 300_000 })
+const useCommitActivity = (slug: string, days: number) =>
+  useQuery({ queryKey: [slug, 'commit-activity', days], queryFn: () => req(`/analytics/commit-activity?days=${days}`), staleTime: 300_000 })
 
-const useBuildTrends = (days: number) =>
-  useQuery({ queryKey: ['build-trends', days], queryFn: () => req(`/analytics/build-trends?days=${days}`), staleTime: 120_000 })
+const useBuildTrends = (slug: string, days: number) =>
+  useQuery({ queryKey: [slug, 'build-trends', days], queryFn: () => req(`/analytics/build-trends?days=${days}`), staleTime: 120_000 })
 
-const useFailureAnalysis = (runs: number) =>
-  useQuery({ queryKey: ['failure-analysis', runs], queryFn: () => req(`/analytics/failure-analysis?runs=${runs}`), staleTime: 120_000 })
+const useFailureAnalysis = (slug: string, runs: number) =>
+  useQuery({ queryKey: [slug, 'failure-analysis', runs], queryFn: () => req(`/analytics/failure-analysis?runs=${runs}`), staleTime: 120_000 })
 
-const usePRVelocity = () =>
-  useQuery({ queryKey: ['pr-velocity'], queryFn: () => req('/analytics/pr-velocity?limit=100'), staleTime: 300_000 })
+const usePRVelocity = (slug: string) =>
+  useQuery({ queryKey: [slug, 'pr-velocity'], queryFn: () => req('/analytics/pr-velocity?limit=100'), staleTime: 300_000 })
 
-const useCommits = () =>
-  useQuery({ queryKey: ['commits'], queryFn: () => req('/analytics/commits?per_page=30'), staleTime: 120_000 })
+const useCommits = (slug: string) =>
+  useQuery({ queryKey: [slug, 'commits'], queryFn: () => req('/analytics/commits?per_page=30'), staleTime: 120_000 })
 
 
-const useErrorPatterns = () =>
-  useQuery({ queryKey: ['error-patterns'], queryFn: () => req('/analytics/error-patterns'), staleTime: 120_000 })
+const useErrorPatterns = (slug: string) =>
+  useQuery({ queryKey: [slug, 'error-patterns'], queryFn: () => req('/analytics/error-patterns'), staleTime: 120_000 })
 
 // ── Shared components ─────────────────────────────────────────────────────────
 
@@ -84,8 +85,9 @@ function StatRow({ items }: { items: { label: string; value: string | number; co
 // ── Commit activity chart ─────────────────────────────────────────────────────
 
 function CommitActivityChart() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState(14)
-  const { data, isLoading, isError } = useCommitActivity(days)
+  const { data, isLoading, isError } = useCommitActivity(slug, days)
   const series = data?.series ?? []
   const nonZero = series.filter((d: any) => d.commits > 0)
   const maxVal = Math.max(...series.map((d: any) => d.commits), 1)
@@ -145,8 +147,9 @@ function CommitActivityChart() {
 // ── Build success trend ───────────────────────────────────────────────────────
 
 function BuildTrendChart() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState(14)
-  const { data, isLoading } = useBuildTrends(days)
+  const { data, isLoading } = useBuildTrends(slug, days)
   const series = (data?.series ?? []).filter((d: any) => d.total > 0)
   const summary = data?.summary
 
@@ -206,8 +209,9 @@ function BuildTrendChart() {
 // ── Failure rate by job ───────────────────────────────────────────────────────
 
 function FailureRateChart() {
+  const slug = useRepoSlug()
   const [runs, setRuns] = useState(30)
-  const { data, isLoading } = useFailureAnalysis(runs)
+  const { data, isLoading } = useFailureAnalysis(slug, runs)
   const jobs: any[] = data?.jobs ?? []
 
   const chartData = jobs.map((j) => ({
@@ -299,7 +303,8 @@ function FailureRateChart() {
 // ── PR velocity ───────────────────────────────────────────────────────────────
 
 function PRVelocityCard() {
-  const { data, isLoading } = usePRVelocity()
+  const slug = useRepoSlug()
+  const { data, isLoading } = usePRVelocity(slug)
   const summary = data?.summary
   const dist = data?.distribution
   const topAuthors: any[] = data?.top_authors ?? []
@@ -393,9 +398,10 @@ function ComputingNotice() {
 // ── Top contributors (enhanced with sparklines) ───────────────────────────────
 
 function ContributorsCard() {
+  const slug = useRepoSlug()
   const [sortBy, setSortBy] = useState<'total' | 'recent'>('total')
   const { data, isLoading } = useQuery({
-    queryKey: ['insights-contributors'],
+    queryKey: [slug, 'insights-contributors'],
     queryFn: getInsightsContributors,
     staleTime: 300_000,
     refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
@@ -483,8 +489,9 @@ function ContributorsCard() {
 // ── Recent commits ─────────────────────────────────────────────────────────────
 
 function RecentCommitsCard() {
+  const slug = useRepoSlug()
   const [limit, setLimit] = useState(6)
-  const { data, isLoading } = useCommits()
+  const { data, isLoading } = useCommits(slug)
   const commits: any[] = data?.commits ?? []
   const visible = commits.slice(0, limit)
   const hasMore = limit < commits.length
@@ -546,7 +553,8 @@ function RecentCommitsCard() {
 // ── Error patterns ────────────────────────────────────────────────────────────
 
 function ErrorPatternsCard() {
-  const { data, isLoading } = useErrorPatterns()
+  const slug = useRepoSlug()
+  const { data, isLoading } = useErrorPatterns(slug)
   const patterns: any[] = data?.patterns ?? []
 
   if (!isLoading && patterns.length === 0) {
@@ -592,11 +600,12 @@ function ErrorPatternsCard() {
 const MEDAL: Record<number, string> = { 0: '🥇', 1: '🥈', 2: '🥉' }
 
 function UserMetricsCard() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState(30)
   const [limit, setLimit] = useState(8)
   const [selected, setSelected] = useState<string | null>(null)
   const { data, isLoading } = useQuery({
-    queryKey: ['user-metrics', days],
+    queryKey: [slug, 'user-metrics', days],
     queryFn: () => getUserMetrics(days),
     staleTime: 120_000,
     refetchInterval: 120_000,
@@ -786,8 +795,9 @@ interface WorkflowCostRow {
 }
 
 function PipelineCostAnalytics() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['build-perf-cost'],
+    queryKey: [slug, 'build-perf-cost'],
     queryFn: () => getBuildPerformance(30),
     staleTime: 300_000,
   })
@@ -935,14 +945,15 @@ function PipelineCostAnalytics() {
 // ── Repository Pulse ──────────────────────────────────────────────────────────
 
 function RepoPulseCard() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['insights-pulse'],
+    queryKey: [slug, 'insights-pulse'],
     queryFn: getInsightsPulse,
     staleTime: 120_000,
     refetchInterval: 300_000,
   })
   const { data: participation } = useQuery({
-    queryKey: ['insights-participation'],
+    queryKey: [slug, 'insights-participation'],
     queryFn: getInsightsParticipation,
     staleTime: 300_000,
   })
@@ -1009,8 +1020,9 @@ function RepoPulseCard() {
 // ── 52-week commit history ────────────────────────────────────────────────────
 
 function WeeklyCommitCard() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['insights-commit-activity'],
+    queryKey: [slug, 'insights-commit-activity'],
     queryFn: getInsightsCommitActivity,
     staleTime: 300_000,
     refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
@@ -1058,8 +1070,9 @@ function WeeklyCommitCard() {
 // ── Code frequency ────────────────────────────────────────────────────────────
 
 function CodeFrequencyCard() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['insights-code-frequency'],
+    queryKey: [slug, 'insights-code-frequency'],
     queryFn: getInsightsCodeFrequency,
     staleTime: 300_000,
     refetchInterval: (query: any) => query.state.data?.computing ? 12_000 : false,
@@ -1119,11 +1132,12 @@ function CodeFrequencyCard() {
 // ── Forks ─────────────────────────────────────────────────────────────────────
 
 function ForksCard() {
+  const slug = useRepoSlug()
   const [sort, setSort] = useState<'newest' | 'oldest' | 'stargazers' | 'watchers'>('newest')
   const [page, setPage] = useState(1)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['insights-forks', sort, page],
+    queryKey: [slug, 'insights-forks', sort, page],
     queryFn: () => getInsightsForks(sort, page),
     staleTime: 120_000,
   })
@@ -1192,16 +1206,17 @@ function ForksCard() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
+  const slug = useRepoSlug()
   const { data: overview } = useQuery({
-    queryKey: ['overview'],
+    queryKey: [slug, 'overview'],
     queryFn: () => req('/overview/summary'),
     staleTime: 60_000,
   })
   const { data: activeRepoData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
   const repoSlug = activeRepoData?.active?.slug ?? ''
-  const { data: ca } = useCommitActivity(30)
-  const { data: bt } = useBuildTrends(30)
-  const { data: pv } = usePRVelocity()
+  const { data: ca } = useCommitActivity(slug, 30)
+  const { data: bt } = useBuildTrends(slug, 30)
+  const { data: pv } = usePRVelocity(slug)
 
   const statItems = [
     {

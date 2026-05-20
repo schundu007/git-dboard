@@ -10,15 +10,17 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { getOverviewSummary, getFailureSummary, getActiveRepo } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import clsx from 'clsx'
 
 // ── Failure summary expander ──────────────────────────────────────────────────
 
 function FailureDetail({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const [open, setOpen] = useState(false)
   const { data, isLoading } = useQuery({
-    queryKey: ['failure-summary', runId],
+    queryKey: [slug, 'failure-summary', runId],
     queryFn: () => getFailureSummary(runId),
     enabled: open,
     staleTime: 300_000,
@@ -517,9 +519,10 @@ function ActivityFeed({ items }: { items: any[] }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Overview() {
+  const slug = useRepoSlug()
   const nav = useNavigate()
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['overview'],
+    queryKey: [slug, 'overview'],
     queryFn: getOverviewSummary,
     refetchInterval: 60_000,
   })

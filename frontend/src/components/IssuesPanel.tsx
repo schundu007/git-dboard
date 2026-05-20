@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Shield, CheckCircle, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 import { getImprovementPlan, getBuildStats, getOverviewSummary, getActiveRepo } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 
 const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 const anim = (v: string) => prefersReducedMotion ? undefined : v
@@ -72,9 +73,10 @@ function shortBenefit(item: any): string {
 }
 
 export default function IssuesPanel() {
-  const { data: plan }    = useQuery({ queryKey: ['improvement-plan'],  queryFn: getImprovementPlan,        staleTime: 300_000 })
-  const { data: build }   = useQuery({ queryKey: ['build-stats-biz'],   queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
-  const { data: summary } = useQuery({ queryKey: ['overview'],          queryFn: getOverviewSummary,        staleTime: 60_000  })
+  const slug = useRepoSlug()
+  const { data: plan }    = useQuery({ queryKey: [slug, 'improvement-plan'],  queryFn: getImprovementPlan,        staleTime: 300_000 })
+  const { data: build }   = useQuery({ queryKey: [slug, 'build-stats-biz'],   queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
+  const { data: summary } = useQuery({ queryKey: [slug, 'overview'],          queryFn: getOverviewSummary,        staleTime: 60_000  })
   const { data: active }  = useQuery({ queryKey: ['active-repo'],       queryFn: getActiveRepo,             staleTime: 30_000  })
 
   const ghBase = active?.active

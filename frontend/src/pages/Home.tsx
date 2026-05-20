@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { getActiveRepo, getBuildPerformance, getOverviewSummary, getIssueStats, getPRs } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import GitPulseLogo from '../components/GitPulseLogo'
 import { TargetArchSVG } from '../components/CICDArchitectures'
 import StatusBadge from '../components/StatusBadge'
@@ -769,8 +770,9 @@ function buildInsights(data: any, repoSlug: string) {
 }
 
 function GenericRepoHome({ repoSlug }: { repoSlug: string }) {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['overview'],
+    queryKey: [slug, 'overview'],
     queryFn: getOverviewSummary,
     staleTime: 60_000,
   })
@@ -1038,7 +1040,8 @@ function BreakdownCard({
 }
 
 function IssueBreakdownCard({ repoSlug }: { repoSlug: string }) {
-  const { data } = useQuery({ queryKey: ['issue-stats'], queryFn: getIssueStats, staleTime: 120_000 })
+  const slug = useRepoSlug()
+  const { data } = useQuery({ queryKey: [slug, 'issue-stats'], queryFn: getIssueStats, staleTime: 120_000 })
   if (!data) return null
   const rows = categoriseLabels(data.top_labels ?? [], 'issues')
   const githubUrl = `https://github.com/${repoSlug}/issues`
@@ -1055,8 +1058,9 @@ function IssueBreakdownCard({ repoSlug }: { repoSlug: string }) {
 }
 
 function PRBreakdownCard({ repoSlug }: { repoSlug: string }) {
+  const slug = useRepoSlug()
   const { data: prsData } = useQuery({
-    queryKey: ['prs-open'],
+    queryKey: [slug, 'prs-open'],
     queryFn: () => getPRs('open', 1),
     staleTime: 120_000,
   })
@@ -1090,12 +1094,13 @@ function PRBreakdownCard({ repoSlug }: { repoSlug: string }) {
 }
 
 function CrossWorkflowPerf() {
+  const slug = useRepoSlug()
   const [timeWindow, setTimeWindow] = useState('14d')
   const [tab, setTab] = useState<TableTab>('duration')
   const days = WINDOW_DAYS[timeWindow] ?? 14
 
   const { data, isLoading } = useQuery({
-    queryKey: ['workflow-performance', days],
+    queryKey: [slug, 'workflow-performance', days],
     queryFn: () => getBuildPerformance(days),
     staleTime: 120_000,
   })

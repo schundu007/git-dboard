@@ -31,6 +31,7 @@ import {
 } from '../lib/api'
 import { useCountUp } from '../hooks/useCountUp'
 import IssuesPanel from '../components/IssuesPanel'
+import { useRepoSlug } from '../lib/hooks'
 
 // ── SLO Definitions ───────────────────────────────────────────────────────────
 
@@ -497,9 +498,10 @@ function StatCard({
 // ── DORA Tab ──────────────────────────────────────────────────────────────────
 
 function DoraTab() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ['health-dora', days],
+    queryKey: [slug, 'health-dora', days],
     queryFn: () => getHealthDora(days),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -753,9 +755,10 @@ function TriageRow({ f }: { f: any }) {
 }
 
 function TriageTab() {
+  const slug = useRepoSlug()
   const [filter, setFilter] = useState<string>('all')
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['health-triage'],
+    queryKey: [slug, 'health-triage'],
     queryFn: getHealthCiTriage,
     staleTime: 120_000,
   })
@@ -827,8 +830,9 @@ function TriageTab() {
 // ── Pipeline Performance Tab ───────────────────────────────────────────────────
 
 function PerfTab() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['health-perf'],
+    queryKey: [slug, 'health-perf'],
     queryFn: getHealthPipelinePerf,
     staleTime: 120_000,
   })
@@ -917,8 +921,9 @@ function RunnerDot({ status, busy }: { status: string; busy: boolean }) {
 }
 
 function RunnersTab() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['health-runners'],
+    queryKey: [slug, 'health-runners'],
     queryFn: getHealthRunnerHealth,
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -1176,8 +1181,9 @@ function SloCard({ def, sloData }: { def: SloDefinition; sloData: SloStatus }) {
 // ── SLO Tracker ───────────────────────────────────────────────────────────────
 
 function SloTracker() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['health-dora'],
+    queryKey: [slug, 'health-dora'],
     queryFn: () => getHealthDora(),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -1511,17 +1517,18 @@ function DevOpsIntelligence({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ControlPlane() {
-  const { data: summary, isError: summaryError, refetch: refetchSummary } = useQuery({ queryKey: ['overview'], queryFn: getOverviewSummary, staleTime: 60_000, refetchInterval: 120_000 })
-  const { data: imageMatrix } = useQuery({ queryKey: ['nightly-image-matrix'], queryFn: getNightlyImageMatrix, staleTime: 120_000, refetchInterval: 300_000 })
-  const { data: nightlyRuns } = useQuery({ queryKey: ['nightly-runs-1'], queryFn: () => getNightlyRuns(1), staleTime: 60_000 })
-  const { data: allRuns } = useQuery({ queryKey: ['all-runs-ctrl'], queryFn: () => getAllRuns({ per_page: 20 }), staleTime: 60_000 })
-  const { data: runnersData } = useQuery({ queryKey: ['runners-ctrl'], queryFn: getRunners, staleTime: 30_000, refetchInterval: 60_000 })
-  const { data: pushStatus } = useQuery({ queryKey: ['registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 120_000, refetchInterval: 300_000 })
-  const { data: gateOverview } = useQuery({ queryKey: ['pr-gate-overview', null], queryFn: () => getPRGateOverview(), staleTime: 60_000, refetchInterval: 90_000 })
+  const slug = useRepoSlug()
+  const { data: summary, isError: summaryError, refetch: refetchSummary } = useQuery({ queryKey: [slug, 'overview'], queryFn: getOverviewSummary, staleTime: 60_000, refetchInterval: 120_000 })
+  const { data: imageMatrix } = useQuery({ queryKey: [slug, 'nightly-image-matrix'], queryFn: getNightlyImageMatrix, staleTime: 120_000, refetchInterval: 300_000 })
+  const { data: nightlyRuns } = useQuery({ queryKey: [slug, 'nightly-runs-1'], queryFn: () => getNightlyRuns(1), staleTime: 60_000 })
+  const { data: allRuns } = useQuery({ queryKey: [slug, 'all-runs-ctrl'], queryFn: () => getAllRuns({ per_page: 20 }), staleTime: 60_000 })
+  const { data: runnersData } = useQuery({ queryKey: [slug, 'runners-ctrl'], queryFn: getRunners, staleTime: 30_000, refetchInterval: 60_000 })
+  const { data: pushStatus } = useQuery({ queryKey: [slug, 'registry-push-status'], queryFn: getRegistryPushStatus, staleTime: 120_000, refetchInterval: 300_000 })
+  const { data: gateOverview } = useQuery({ queryKey: [slug, 'pr-gate-overview', null], queryFn: () => getPRGateOverview(), staleTime: 60_000, refetchInterval: 90_000 })
   const { data: activeRepo } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
-  const { data: buildStats } = useQuery({ queryKey: ['build-stats-ctrl'], queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
-  const { data: doraData }   = useQuery({ queryKey: ['health-dora'], queryFn: () => getHealthDora(), staleTime: 120_000, refetchInterval: 300_000 })
-  const { data: usageData }  = useQuery({ queryKey: ['build-usage'], queryFn: getBuildUsage, staleTime: 300_000, refetchInterval: 300_000 })
+  const { data: buildStats } = useQuery({ queryKey: [slug, 'build-stats-ctrl'], queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
+  const { data: doraData }   = useQuery({ queryKey: [slug, 'health-dora'], queryFn: () => getHealthDora(), staleTime: 120_000, refetchInterval: 300_000 })
+  const { data: usageData }  = useQuery({ queryKey: [slug, 'build-usage'], queryFn: getBuildUsage, staleTime: 300_000, refetchInterval: 300_000 })
 
   // ── Derived data ────────────────────────────────────────────────────────────
 

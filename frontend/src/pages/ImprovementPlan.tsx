@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import { getImprovementPlan, getIssuesAnalysis, getActiveRepo } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import BusinessReport from '../components/BusinessReport'
 import { TabBar } from '../components/ui/TabBar'
 import { CurrentArchSVG, TargetArchSVG } from '../components/CICDArchitectures'
@@ -310,8 +311,9 @@ function IssueRow({ issue, type }: { issue: any; type: 'bug' | 'feature' }) {
 }
 
 function IssuesAnalysisTab() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['issues-analysis'],
+    queryKey: [slug, 'issues-analysis'],
     queryFn: getIssuesAnalysis,
     staleTime: 10 * 60_000,
   })
@@ -808,10 +810,11 @@ function CICDArchitectureSection() {
 type MainTab = 'plan' | 'issues'
 
 export default function ImprovementPlan() {
+  const slug = useRepoSlug()
   const [mainTab, setMainTab] = useState<MainTab>('plan')
 
   const { data, isLoading } = useQuery({
-    queryKey: ['improvement-plan'],
+    queryKey: [slug, 'improvement-plan'],
     queryFn: getImprovementPlan,
     staleTime: 5 * 60_000,
   })

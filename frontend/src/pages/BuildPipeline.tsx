@@ -20,6 +20,7 @@ import {
   triggerBuild, rerunBuild, rerunFailedJobs, cancelBuild, buildLogsWS,
   getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import LogViewer, { LogLine } from '../components/LogViewer'
 import type { WorkflowRun, Job } from '../lib/types'
@@ -82,8 +83,9 @@ function StatCard({
 // ── Stats panel ───────────────────────────────────────────────────────────────
 
 function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow }) {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['build-stats', workflow, days],
+    queryKey: [slug, 'build-stats', workflow, days],
     queryFn: () => getBuildStats(workflow, days),
     staleTime: 120_000,
     refetchInterval: 120_000,
@@ -173,9 +175,10 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
 // ── Failure detail ────────────────────────────────────────────────────────────
 
 function FailureDetail({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const [open, setOpen] = useState(false)
   const { data, isLoading } = useQuery({
-    queryKey: ['failure-summary', runId],
+    queryKey: [slug, 'failure-summary', runId],
     queryFn: () => getFailureSummary(runId),
     enabled: open,
     staleTime: 300_000,
@@ -233,8 +236,9 @@ function FailureDetail({ runId }: { runId: number }) {
 // ── Job list ──────────────────────────────────────────────────────────────────
 
 function JobList({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const { data } = useQuery({
-    queryKey: ['build-jobs', runId],
+    queryKey: [slug, 'build-jobs', runId],
     queryFn: () => getBuildJobs(runId),
     refetchInterval: 10_000,
   })
@@ -265,8 +269,9 @@ function JobList({ runId }: { runId: number }) {
 // ── Artifacts panel ───────────────────────────────────────────────────────────
 
 function ArtifactsPanel({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['build-artifacts', runId],
+    queryKey: [slug, 'build-artifacts', runId],
     queryFn: () => getBuildArtifacts(runId),
     staleTime: 300_000,
   })
@@ -328,6 +333,7 @@ function LogPanel({ runId, onClose }: { runId: number; onClose: () => void }) {
 // ── Run card ──────────────────────────────────────────────────────────────────
 
 function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow?: boolean }) {
+  const slug = useRepoSlug()
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<'jobs' | 'artifacts'>('jobs')
   const [showLogs, setShowLogs] = useState(false)
@@ -338,15 +344,15 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
 
   const { mutate: rerun, isPending: rerunning } = useMutation({
     mutationFn: () => rerunBuild(run.id),
-    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 2000),
+    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: [slug, 'build-runs'] }), 2000),
   })
   const { mutate: rerunFailed, isPending: rerunningFailed } = useMutation({
     mutationFn: () => rerunFailedJobs(run.id),
-    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 2000),
+    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: [slug, 'build-runs'] }), 2000),
   })
   const { mutate: cancel, isPending: cancelling } = useMutation({
     mutationFn: () => cancelBuild(run.id),
-    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 1500),
+    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: [slug, 'build-runs'] }), 1500),
   })
 
   const actor = run.triggering_actor ?? run.actor
@@ -463,6 +469,7 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
 // ── Live runs banner ──────────────────────────────────────────────────────────
 
 function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
+  const slug = useRepoSlug()
   const qc = useQueryClient()
   const live = runs.filter((r) => r.status === 'in_progress' || r.status === 'queued')
   if (!live.length) return null
@@ -497,7 +504,7 @@ function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {r.status === 'in_progress' && (
-                  <CancelMiniButton runId={r.id} onSuccess={() => qc.invalidateQueries({ queryKey: ['all-runs'] })} />
+                  <CancelMiniButton runId={r.id} onSuccess={() => qc.invalidateQueries({ queryKey: [slug, 'all-runs'] })} />
                 )}
                 <a href={r.html_url} target="_blank" rel="noreferrer">
                   <ExternalLink size={11} className="text-gray-500 hover:text-neutral-300" />
@@ -524,6 +531,7 @@ function CancelMiniButton({ runId, onSuccess }: { runId: number; onSuccess: () =
 // ── All-workflows panel ───────────────────────────────────────────────────────
 
 function AllWorkflowsPanel() {
+  const slug = useRepoSlug()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [branch, setBranch] = useState('')
   const [event, setEvent] = useState('')
@@ -531,7 +539,7 @@ function AllWorkflowsPanel() {
   const [page, setPage] = useState(1)
 
   const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: ['all-runs', statusFilter, branch, event, actor, page],
+    queryKey: [slug, 'all-runs', statusFilter, branch, event, actor, page],
     queryFn: () => getAllRuns({
       per_page: 30,
       page,
@@ -656,13 +664,14 @@ function staleness(lastAccessedAt: string | null): { label: string; color: strin
 }
 
 function CachesPanel() {
+  const slug = useRepoSlug()
   const [refFilter, setRefFilter] = useState('')
   const [keyFilter, setKeyFilter] = useState('')
   const [sortBy, setSortBy] = useState<'size' | 'age' | 'ref'>('size')
   const qc = useQueryClient()
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['caches', refFilter, keyFilter],
+    queryKey: [slug, 'caches', refFilter, keyFilter],
     queryFn: () => getCaches(refFilter || undefined, keyFilter || undefined),
     staleTime: 60_000,
     refetchInterval: 60_000,
@@ -670,7 +679,7 @@ function CachesPanel() {
 
   const { mutate: del, isPending: deleting, variables: deletingId } = useMutation({
     mutationFn: (id: number) => deleteCache(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['caches'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'caches'] }),
   })
 
   const allCaches: any[] = data?.caches ?? []
@@ -846,19 +855,20 @@ function statusDot(status: string) {
 const PINNED_ENVS = ['premerge-verification', 'mirror-production']
 
 function DeploymentsPanel() {
+  const slug = useRepoSlug()
   const [selectedEnv, setSelectedEnv] = useState('')
   const [page, setPage] = useState(1)
 
   // Load all known environments from the dedicated endpoint
   const { data: envsData } = useQuery({
-    queryKey: ['environments'],
+    queryKey: [slug, 'environments'],
     queryFn: () => getEnvironments(),
     staleTime: 300_000,
   })
 
   // Load deployments — filtered by selected env when one is chosen
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['deployments', selectedEnv, page],
+    queryKey: [slug, 'deployments', selectedEnv, page],
     queryFn: () => getDeployments(selectedEnv || undefined, undefined, page, 30),
     staleTime: 30_000,
     refetchInterval: 30_000,
@@ -1029,8 +1039,9 @@ function DeploymentsPanel() {
 // ── Usage panel ───────────────────────────────────────────────────────────────
 
 function UsagePanel() {
+  const slug = useRepoSlug()
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['build-usage'],
+    queryKey: [slug, 'build-usage'],
     queryFn: getBuildUsage,
     staleTime: 300_000,
     refetchInterval: 300_000,
@@ -1176,11 +1187,12 @@ function UsagePanel() {
 // ── Performance metrics panel ─────────────────────────────────────────────────
 
 function PerformanceMetricsPanel() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const [sortBy, setSortBy] = useState<'failure_rate' | 'avg' | 'total'>('avg')
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['build-performance', days],
+    queryKey: [slug, 'build-performance', days],
     queryFn: () => getBuildPerformance(days),
     staleTime: 120_000,
     refetchInterval: 300_000,
@@ -1334,11 +1346,12 @@ function PerformanceMetricsPanel() {
 // ── Workflow browser panel ─────────────────────────────────────────────────────
 
 function WorkflowListPanel() {
+  const slug = useRepoSlug()
   const [search, setSearch] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['workflows-status'],
+    queryKey: [slug, 'workflows-status'],
     queryFn: getWorkflowsWithStatus,
     staleTime: 60_000,
     refetchInterval: 60_000,
@@ -1432,8 +1445,9 @@ function WorkflowRunsPanel({ workflow, statsWindow, setStatsWindow, showStats, s
   const [branch, setBranch] = useState('')
   const qc = useQueryClient()
 
+  const slug = useRepoSlug()
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['build-runs', workflow, statusFilter, branch],
+    queryKey: [slug, 'build-runs', workflow, statusFilter, branch],
     queryFn: () => getBuildRuns(
       workflow, 1,
       branch || undefined,
@@ -1520,9 +1534,10 @@ function nightlyCellStyle(status: string | undefined) {
 // ── Nightly: job matrix ──────────────────────────────────────────────────────
 
 function NightlyMatrixTable() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['nightly-matrix', days],
+    queryKey: [slug, 'nightly-matrix', days],
     queryFn: () => getNightlyMatrix(days),
     refetchInterval: 120_000,
   })
@@ -1635,9 +1650,10 @@ function NightlyMatrixTable() {
 // ── Nightly: trend chart ─────────────────────────────────────────────────────
 
 function NightlyTrendChart() {
+  const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
   const { data, isLoading } = useQuery({
-    queryKey: ['nightly-trend', days],
+    queryKey: [slug, 'nightly-trend', days],
     queryFn: () => getNightlyTrend(days),
     refetchInterval: 300_000,
   })
@@ -1679,9 +1695,10 @@ function NightlyTrendChart() {
 // ── Nightly: failure detail ───────────────────────────────────────────────────
 
 function NightlyFailureDetail({ runId }: { runId: number }) {
+  const slug = useRepoSlug()
   const [open, setOpen] = useState(false)
   const { data, isLoading } = useQuery({
-    queryKey: ['failure-summary', runId],
+    queryKey: [slug, 'failure-summary', runId],
     queryFn: () => getFailureSummary(runId),
     enabled: open,
     staleTime: 300_000,
@@ -1737,8 +1754,9 @@ function NightlyFailureDetail({ runId }: { runId: number }) {
 // ── Nightly: recent runs ─────────────────────────────────────────────────────
 
 function NightlyRecentRuns() {
+  const slug = useRepoSlug()
   const { data, isLoading } = useQuery({
-    queryKey: ['nightly-runs'],
+    queryKey: [slug, 'nightly-runs'],
     queryFn: () => getNightlyRuns(),
     refetchInterval: 60_000,
   })
@@ -1790,6 +1808,7 @@ function NightlyRecentRuns() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BuildPipeline() {
+  const slug = useRepoSlug()
   const [mode, setMode] = useState<MainMode>('runs')
   const [mgmtTab, setMgmtTab] = useState<MgmtTab>('caches')
   const [workflow, setWorkflow] = useState<string | 'all'>('all')
@@ -1801,7 +1820,7 @@ export default function BuildPipeline() {
 
   const { mutate: trigger, isPending: triggering } = useMutation({
     mutationFn: () => triggerBuild(ref, workflow === 'all' ? '' : workflow),
-    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: ['build-runs'] }), 3000),
+    onSuccess: () => setTimeout(() => qc.invalidateQueries({ queryKey: [slug, 'build-runs'] }), 3000),
   })
 
   const { mutate: triggerNight, isPending: triggeringNight } = useMutation({
@@ -1863,12 +1882,12 @@ export default function BuildPipeline() {
           )}
           <button
             onClick={() => {
-              qc.invalidateQueries({ queryKey: ['build-runs'] })
-              qc.invalidateQueries({ queryKey: ['all-runs'] })
+              qc.invalidateQueries({ queryKey: [slug, 'build-runs'] })
+              qc.invalidateQueries({ queryKey: [slug, 'all-runs'] })
               if (mode === 'nightly') {
-                qc.invalidateQueries({ queryKey: ['nightly-matrix'] })
-                qc.invalidateQueries({ queryKey: ['nightly-runs'] })
-                qc.invalidateQueries({ queryKey: ['nightly-trend'] })
+                qc.invalidateQueries({ queryKey: [slug, 'nightly-matrix'] })
+                qc.invalidateQueries({ queryKey: [slug, 'nightly-runs'] })
+                qc.invalidateQueries({ queryKey: [slug, 'nightly-trend'] })
               }
             }}
             className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">

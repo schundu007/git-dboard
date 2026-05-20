@@ -9,6 +9,7 @@ import {
   getRunners, getClusterQueue, getClusterNodes, cancelJob, getJobOutput, getInfraStatus, getActiveRunners,
   getRunnerRecommendations, getLiveRuns,
 } from '../lib/api'
+import { useRepoSlug } from '../lib/hooks'
 import type { Runner, ClusterJob, ClusterNode } from '../lib/types'
 import clsx from 'clsx'
 
@@ -250,6 +251,7 @@ function StatCard({ label, value, sub, accent }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function InfraAssignment() {
+  const slug = useRepoSlug()
   const [scheduler, setScheduler] = useState<'slurm' | 'pbs'>('slurm')
   const [queueSearch, setQueueSearch] = useState('')
   const [queueStateFilter, setQueueStateFilter] = useState('')
@@ -258,45 +260,45 @@ export default function InfraAssignment() {
   const qc = useQueryClient()
 
   const { data: statusData } = useQuery({
-    queryKey: ['infra-status'],
+    queryKey: [slug, 'infra-status'],
     queryFn: getInfraStatus,
     refetchInterval: 30_000,
   })
 
   const { data: runnersData, isLoading: runnersLoading } = useQuery({
-    queryKey: ['runners'],
+    queryKey: [slug, 'runners'],
     queryFn: getRunners,
     refetchInterval: 30_000,
   })
 
   const { data: activeRunnersData } = useQuery({
-    queryKey: ['active-runners-infra'],
+    queryKey: [slug, 'active-runners-infra'],
     queryFn: getActiveRunners,
     staleTime: 120_000,
     refetchInterval: 120_000,
   })
 
   const { data: queueData, isLoading: queueLoading, isError: queueError } = useQuery({
-    queryKey: ['cluster-queue', scheduler],
+    queryKey: [slug, 'cluster-queue', scheduler],
     queryFn: () => getClusterQueue(scheduler),
     refetchInterval: 30_000,
   })
 
   const { data: nodesData } = useQuery({
-    queryKey: ['cluster-nodes'],
+    queryKey: [slug, 'cluster-nodes'],
     queryFn: getClusterNodes,
     refetchInterval: 60_000,
   })
 
   const { data: liveRunsData, isLoading: liveRunsLoading } = useQuery({
-    queryKey: ['infra-live-runs'],
+    queryKey: [slug, 'infra-live-runs'],
     queryFn: getLiveRuns,
     refetchInterval: 30_000,
   })
 
   const { mutate: cancel } = useMutation({
     mutationFn: (j: ClusterJob) => cancelJob(j.job_id, j.scheduler),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cluster-queue'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [slug, 'cluster-queue'] }),
   })
 
   const handleViewOutput = async (j: ClusterJob) => {
@@ -362,12 +364,12 @@ export default function InfraAssignment() {
   const displayPending = pendingJobs.length
 
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: ['runners'] })
-    qc.invalidateQueries({ queryKey: ['cluster-queue', scheduler] })
-    qc.invalidateQueries({ queryKey: ['cluster-nodes'] })
-    qc.invalidateQueries({ queryKey: ['infra-status'] })
-    qc.invalidateQueries({ queryKey: ['infra-live-runs'] })
-    qc.invalidateQueries({ queryKey: ['active-runners-infra'] })
+    qc.invalidateQueries({ queryKey: [slug, 'runners'] })
+    qc.invalidateQueries({ queryKey: [slug, 'cluster-queue', scheduler] })
+    qc.invalidateQueries({ queryKey: [slug, 'cluster-nodes'] })
+    qc.invalidateQueries({ queryKey: [slug, 'infra-status'] })
+    qc.invalidateQueries({ queryKey: [slug, 'infra-live-runs'] })
+    qc.invalidateQueries({ queryKey: [slug, 'active-runners-infra'] })
   }
 
   return (
@@ -796,8 +798,9 @@ function LiveActivitySection({ runs, loading }: { runs: any[]; loading: boolean 
 // ── Runner Analysis ────────────────────────────────────────────────────────────
 
 function RunnerAnalysisSection({ runners }: { runners: any[] }) {
+  const slug = useRepoSlug()
   const { data } = useQuery({
-    queryKey: ['runner-recommendations'],
+    queryKey: [slug, 'runner-recommendations'],
     queryFn: getRunnerRecommendations,
     staleTime: 5 * 60_000,
   })
