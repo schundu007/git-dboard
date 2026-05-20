@@ -11,8 +11,6 @@ import GitPulseLogo from './GitPulseLogo'
 import CommandPalette from './CommandPalette'
 
 const ROUTE_META: Record<string, string> = {
-  '/':            'Profile',
-  '/profile':     'Profile',
   '/dashboard':   'Dashboard',
   '/prs':         'Source Control',
   '/builds':      'CI Pipeline',
