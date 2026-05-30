@@ -1,11 +1,13 @@
-import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { getGroupSummary } from '../lib/api'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { getGroupSummary, activateRepo } from '../lib/api'
 import {
   GitPullRequest, CheckCircle2, XCircle, Clock, Moon,
-  ChevronRight, Loader2, AlertTriangle, ExternalLink,
+  ChevronRight, Loader2, AlertTriangle, ExternalLink, LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
+
+const getApiUrl = () => localStorage.getItem('api_url') || 'http://localhost:8000'
 
 function StatusDot({ status }: { status: string | null }) {
   if (!status) return <span className="w-2 h-2 rounded-full bg-surface-3 border border-border" />
@@ -64,7 +66,7 @@ function AggregateStat({ label, value, sub, icon: Icon, color }: {
   )
 }
 
-function RepoCard({ r }: { r: any }) {
+function RepoCard({ r, onOpen }: { r: any; onOpen: () => void }) {
   const ghUrl = `https://github.com/${r.slug}`
   return (
     <div className="rounded-xl border border-border bg-surface-1 p-4 space-y-3 hover:border-border/80 transition-colors">
@@ -127,12 +129,25 @@ function RepoCard({ r }: { r: any }) {
           <RateBar rate={r.ci_rate} />
         </div>
       )}
+
+      {/* Open in Dashboard */}
+      {r.id && (
+        <button
+          onClick={onOpen}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium border border-border bg-surface-2 text-gray-300 hover:border-nvidia/40 hover:text-nvidia hover:bg-nvidia/5 transition-colors"
+        >
+          <LayoutDashboard size={11} />
+          Open in Dashboard
+        </button>
+      )}
     </div>
   )
 }
 
 export default function GroupDashboard() {
   const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['group-summary', slug],
@@ -167,6 +182,15 @@ export default function GroupDashboard() {
   const group = data?.group ?? {}
   const agg = data?.aggregate ?? {}
   const repos: any[] = data?.repos ?? []
+
+  const openRepo = async (id: number, repoSlug: string) => {
+    try {
+      await activateRepo(id)
+      await fetch(`${getApiUrl()}/cache/clear`, { method: 'POST' }).catch(() => {})
+    } catch { return }
+    qc.clear()
+    setTimeout(() => { window.location.href = '/dashboard' }, 300)
+  }
 
   const nightlyHealth = agg.nightly_pass_rate !== null && agg.nightly_pass_rate !== undefined
     ? agg.nightly_pass_rate >= 80 ? 'Healthy' : agg.nightly_pass_rate >= 50 ? 'Degraded' : 'Critical'
@@ -231,7 +255,7 @@ export default function GroupDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {repos.map((r: any) => <RepoCard key={r.slug} r={r} />)}
+            {repos.map((r: any) => <RepoCard key={r.slug} r={r} onOpen={() => openRepo(r.id, r.slug)} />)}
           </div>
         )}
       </div>

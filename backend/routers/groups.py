@@ -62,7 +62,7 @@ async def list_groups(db: AsyncSession = Depends(get_db)):
     }
 
 
-async def _fetch_repo_metrics(owner: str, repo: str, pat: Optional[str]) -> dict:
+async def _fetch_repo_metrics(owner: str, repo: str, pat: Optional[str], repo_id: Optional[int] = None) -> dict:
     token = pat or settings.GH_PAT
     headers = {
         "Authorization": f"token {token}",
@@ -111,6 +111,7 @@ async def _fetch_repo_metrics(owner: str, repo: str, pat: Optional[str]) -> dict
         language = rd.get("language")
 
     return {
+        "id": repo_id,
         "slug": f"{owner}/{repo}",
         "owner": owner,
         "repo": repo,
@@ -134,7 +135,7 @@ async def get_group_summary(slug: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Group '{slug}' not found")
 
     metrics = await asyncio.gather(
-        *[_fetch_repo_metrics(r.owner, r.repo, r.gh_pat or None) for r in rows],
+        *[_fetch_repo_metrics(r.owner, r.repo, r.gh_pat or None, r.id) for r in rows],
         return_exceptions=True,
     )
     repo_metrics = [m for m in metrics if isinstance(m, dict)]
