@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from database import init_db, AsyncSessionLocal
-from routers import analytics, automation, builds, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, repos, security, tags
+from routers import analytics, automation, builds, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, repos, security, tags
 from services import github_client as gh
 from services import log_store
 from services import pr_automation
@@ -163,6 +163,7 @@ app.include_router(insights.router)
 app.include_router(health_analysis.router)
 app.include_router(improvement.router)
 app.include_router(repos.router)
+app.include_router(groups.router)
 app.include_router(security.router)
 app.include_router(tags.router)
 

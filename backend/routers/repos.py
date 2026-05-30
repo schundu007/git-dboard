@@ -1,6 +1,7 @@
 from typing import Optional
 import asyncio
 import logging
+import re
 import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
@@ -16,6 +17,28 @@ from services import log_store
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/repos", tags=["repos"])
+
+
+def _auto_detect_business_unit(owner: str, repo: str) -> Optional[str]:
+    """Infer a business unit slug from the repo name using common prefix patterns."""
+    repo_lower = repo.lower()
+    known = [
+        ("isaac_ros_", "isaac_ros"),
+        ("isaacros",   "isaac_ros"),
+        ("isaaclab",   "isaaclab"),
+        ("isaac_lab",  "isaaclab"),
+        ("isaac_sim",  "isaac_sim"),
+        ("isaacsim",   "isaac_sim"),
+        ("orbit_",     "orbit"),
+    ]
+    for prefix, unit in known:
+        if repo_lower.startswith(prefix):
+            return unit
+    # Generic: first word before _ or - if ≥4 chars
+    m = re.match(r'^([a-z][a-z0-9]{3,})[-_]', repo_lower)
+    if m:
+        return m.group(1)
+    return None
 
 
 class RepoCreate(BaseModel):
@@ -41,6 +64,7 @@ def _repo_dict(r: RepoConfig) -> dict:
         "is_active": r.is_active,
         "created_at": r.created_at.isoformat() if r.created_at else None,
         "capabilities": r.capabilities or {},
+        "business_unit": r.business_unit,
     }
 
 
@@ -66,6 +90,7 @@ async def add_repo(body: RepoCreate, db: AsyncSession = Depends(get_db)):
         gh_pat=body.gh_pat or "",
         is_active=False,
         capabilities={},
+        business_unit=_auto_detect_business_unit(body.owner, body.repo),
     )
     db.add(r)
     await db.commit()
@@ -236,6 +261,21 @@ async def _test_connection(owner: str, repo: str, pat: Optional[str]) -> dict:
         },
         "capabilities": capabilities,
     }
+
+
+class BusinessUnitUpdate(BaseModel):
+    business_unit: Optional[str] = None
+
+
+@router.patch("/{repo_id}/business-unit")
+async def set_business_unit(repo_id: int, body: BusinessUnitUpdate, db: AsyncSession = Depends(get_db)):
+    r = (await db.execute(select(RepoConfig).where(RepoConfig.id == repo_id))).scalar_one_or_none()
+    if not r:
+        raise HTTPException(status_code=404, detail="Repo not found")
+    r.business_unit = body.business_unit or None
+    await db.commit()
+    await db.refresh(r)
+    return _repo_dict(r)
 
 
 async def _detect_capabilities(owner: str, repo: str, headers: dict) -> dict:

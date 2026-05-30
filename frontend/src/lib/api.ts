@@ -256,6 +256,16 @@ export const getTagsCompute = (params: {
   return request<any>(`/tags/compute?${p}`)
 }
 
+// ── Business unit groups ──────────────────────────────────────────────────────
+export const getGroups = () => request<any>('/groups')
+export const getGroupSummary = (slug: string) => request<any>(`/groups/${encodeURIComponent(slug)}/summary`)
+export const setRepoBusinessUnit = (id: number, business_unit: string | null) =>
+  request<any>(`/repos/${id}/business-unit`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ business_unit }),
+  })
+
 // ── Repo management ───────────────────────────────────────────────────────────
 export const getRepos = () => request<any>('/repos')
 export const getActiveRepo = () => request<any>('/repos/active')

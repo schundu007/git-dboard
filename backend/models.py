@@ -51,3 +51,4 @@ class RepoConfig(Base):
     is_active = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
     capabilities = Column(JSON, default={})
+    business_unit = Column(String(100), nullable=True, default=None)

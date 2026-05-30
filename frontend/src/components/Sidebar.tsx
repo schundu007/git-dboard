@@ -8,6 +8,7 @@ import {
   Shield, BarChart2, Cpu, Lightbulb, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
   Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
+  Boxes,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -15,7 +16,7 @@ import { cn } from '../lib/cn'
 import { useSidebar } from '../contexts/SidebarContext'
 import { Tooltip } from './ui/Tooltip'
 import * as RadixTooltip from '@radix-ui/react-tooltip'
-import { getActiveRepo, getRepos, addRepo, activateRepo, testRepoConnection } from '../lib/api'
+import { getActiveRepo, getRepos, addRepo, activateRepo, testRepoConnection, getGroups } from '../lib/api'
 
 type NavItem    = { to: string; icon: LucideIcon; label: string; exact?: boolean; badge?: string }
 type NavSection = { label: string; items: NavItem[] }
@@ -459,6 +460,76 @@ function RepoSwitcher() {
   )
 }
 
+function BusinessUnitsSection() {
+  const location = useLocation()
+  const { collapsed, mobileOpen } = useSidebar()
+  const showLabels = mobileOpen || !collapsed
+
+  const { data } = useQuery({
+    queryKey: ['groups'],
+    queryFn: getGroups,
+    staleTime: 60_000,
+  })
+
+  const groups: any[] = data?.groups ?? []
+  if (groups.length === 0) return null
+
+  return (
+    <div className="mt-1">
+      <div className="mx-3 my-1.5 h-px bg-border-subtle" />
+      {showLabels && (
+        <p className="px-3 py-1 text-[9px] font-semibold uppercase tracking-widest text-gray-600">
+          Business Units
+        </p>
+      )}
+      <div className={cn('space-y-0.5', !showLabels && 'flex flex-col items-center gap-0.5')}>
+        {groups.map((g: any) => {
+          const to = `/groups/${g.slug}`
+          const isActive = location.pathname === to
+          const linkContent = (
+            <NavLink
+              to={to}
+              className={cn(
+                'group flex items-center gap-2.5 rounded-md transition-all duration-150 select-none',
+                !showLabels
+                  ? 'justify-center h-9 w-9 mx-auto'
+                  : 'px-2.5 py-[6px] mx-2',
+                isActive
+                  ? 'bg-surface-3 text-white font-semibold'
+                  : 'text-neutral-400 hover:bg-surface-2/60 hover:text-neutral-100',
+              )}
+            >
+              <Boxes
+                size={14}
+                className={cn(
+                  'flex-shrink-0',
+                  isActive ? 'text-white' : 'text-neutral-500 group-hover:text-neutral-200',
+                )}
+              />
+              {showLabels && (
+                <>
+                  <span className={cn('text-[13px] truncate flex-1', isActive ? 'font-semibold' : 'font-normal')}>
+                    {g.name}
+                  </span>
+                  <span className="text-[9px] tabular-nums text-gray-600 flex-shrink-0">{g.repo_count}</span>
+                </>
+              )}
+            </NavLink>
+          )
+          if (!showLabels) {
+            return (
+              <Tooltip key={g.slug} content={g.name} side="right" delayDuration={80}>
+                {linkContent}
+              </Tooltip>
+            )
+          }
+          return <div key={g.slug}>{linkContent}</div>
+        })}
+      </div>
+    </div>
+  )
+}
+
 function NavItemRow({ item }: { item: NavItem }) {
   const location = useLocation()
   const { collapsed, mobileOpen, closeMobile } = useSidebar()
@@ -570,6 +641,7 @@ export default function Sidebar() {
               </div>
             </div>
           ))}
+          <BusinessUnitsSection />
         </RadixTooltip.Provider>
       </nav>
 

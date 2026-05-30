@@ -19,6 +19,7 @@ const SecurityAudit   = lazy(() => import('./pages/SecurityAudit'))
 const Settings        = lazy(() => import('./pages/Settings'))
 const ScriptPlayground   = lazy(() => import('./pages/ScriptPlayground'))
 const ScriptBrowser      = lazy(() => import('./pages/ScriptBrowser'))
+const GroupDashboard     = lazy(() => import('./pages/GroupDashboard'))
 
 function PageFallback() {
   return (
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/settings"    element={<Settings />} />
           <Route path="/scripts"     element={<ScriptsPage />} />
           <Route path="/playground"  element={<ScriptPlayground />} />
+          <Route path="/groups/:slug" element={<GroupDashboard />} />
           {/* Legacy redirects */}
           <Route path="/improvement" element={<Navigate to="/action-plan" replace />} />
           <Route path="/health"      element={<Navigate to="/dashboard" replace />} />

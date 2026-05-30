@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getRepos, getActiveRepo, addRepo, deleteRepo, activateRepo,
-  deactivateRepo, testRepoConnection,
+  deactivateRepo, testRepoConnection, setRepoBusinessUnit, getGroups,
 } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useTheme } from '../contexts/ThemeContext'
@@ -10,7 +10,7 @@ import {
   GitBranch, Plus, Trash2, CheckCircle2, XCircle, Loader2,
   Globe, Lock, Zap, AlertCircle,
   ChevronDown, ChevronUp, RefreshCw, Link,
-  Sun, Moon, Server, Key, Bell, Pencil, Check, X,
+  Sun, Moon, Server, Key, Bell, Pencil, Check, X, Boxes,
 } from 'lucide-react'
 
 const getApiUrl = () => localStorage.getItem('api_url') || 'http://localhost:8000'
@@ -413,8 +413,12 @@ export default function Settings() {
   const [expandedCaps, setExpandedCaps] = useState<number | null>(null)
   const [switching, setSwitching] = useState<string | null>(null)
 
+  const [editingUnitId, setEditingUnitId] = useState<number | null>(null)
+  const [unitDraft, setUnitDraft] = useState('')
+
   const { data: reposData, isLoading } = useQuery({ queryKey: ['repos'], queryFn: getRepos })
   const { data: activeData } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, refetchInterval: 5000 })
+  const { data: groupsData } = useQuery({ queryKey: ['groups'], queryFn: getGroups, staleTime: 30_000 })
 
   const switchTo = async (id: number, slug: string) => {
     setSwitching(slug)
@@ -454,6 +458,19 @@ export default function Settings() {
     mutationFn: deleteRepo,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['repos'] }),
   })
+
+  const unitMut = useMutation({
+    mutationFn: ({ id, unit }: { id: number; unit: string | null }) => setRepoBusinessUnit(id, unit),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['repos'] })
+      qc.invalidateQueries({ queryKey: ['groups'] })
+      setEditingUnitId(null)
+    },
+  })
+
+  const existingUnits: string[] = Array.from(new Set(
+    (groupsData?.groups ?? []).map((g: any) => g.slug as string)
+  ))
 
   const handleUrlPaste = (raw: string) => {
     setUrlInput(raw); setUrlError('')
@@ -703,6 +720,46 @@ export default function Settings() {
                           {r.has_pat && <Lock size={10} className="text-gray-400" />}
                         </div>
                         <p className="text-[11px] text-gray-400 font-mono">{r.slug}</p>
+                        {/* Business unit inline edit */}
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Boxes size={9} className="text-gray-600 flex-shrink-0" />
+                          {editingUnitId === r.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                autoFocus
+                                value={unitDraft}
+                                onChange={e => setUnitDraft(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') unitMut.mutate({ id: r.id, unit: unitDraft.trim() || null })
+                                  if (e.key === 'Escape') setEditingUnitId(null)
+                                }}
+                                list={`units-${r.id}`}
+                                placeholder="e.g. isaac_ros"
+                                className="bg-surface-3 border border-nvidia/40 rounded px-1.5 py-0.5 text-[10px] text-white font-mono focus:outline-none w-32"
+                              />
+                              <datalist id={`units-${r.id}`}>
+                                {existingUnits.map(u => <option key={u} value={u} />)}
+                              </datalist>
+                              <button onClick={() => unitMut.mutate({ id: r.id, unit: unitDraft.trim() || null })} className="text-accent-green hover:opacity-80">
+                                <Check size={10} />
+                              </button>
+                              <button onClick={() => setEditingUnitId(null)} className="text-gray-500 hover:text-gray-300">
+                                <X size={10} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setEditingUnitId(r.id); setUnitDraft(r.business_unit ?? '') }}
+                              className="flex items-center gap-1 text-[10px] hover:text-gray-200 transition-colors group/unit"
+                            >
+                              {r.business_unit
+                                ? <span className="font-mono text-nvidia/80">{r.business_unit}</span>
+                                : <span className="text-gray-600 italic">no group</span>
+                              }
+                              <Pencil size={8} className="text-gray-700 group-hover/unit:text-gray-400" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {caps.workflows?.length > 0 && (
