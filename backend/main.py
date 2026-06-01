@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from config import settings
 from database import init_db, AsyncSessionLocal
 from routers import analytics, automation, builds, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, repos, security, tags
 from services import github_client as gh
