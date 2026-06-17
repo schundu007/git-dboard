@@ -17,7 +17,7 @@ import {
 } from '../lib/api'
 import clsx from 'clsx'
 
-const BASE = 'http://localhost:8000'
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
 const req = (path: string) => fetch(`${BASE}${path}`).then(r => r.json())
 const TOOLTIP_STYLE = {
   contentStyle: { background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 6, fontSize: 11 },

@@ -19,7 +19,7 @@ import {
 import { useRepoSlug } from '../lib/hooks'
 import clsx from 'clsx'
 
-const BASE = 'http://localhost:8000'
+const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
 const req = (path: string) => fetch(`${BASE}${path}`).then((r) => r.json())
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -964,7 +964,12 @@ function RepoPulseCard() {
     owner: (participation?.owner ?? [])[i] ?? 0,
   })).reverse()
 
-  if (isLoading || !data) return null
+  if (isLoading) return (
+    <div className="bg-surface-1 border border-border rounded-xl p-4 flex items-center justify-center py-8 text-gray-500 text-sm">
+      Loading pulse data…
+    </div>
+  )
+  if (!data) return null
 
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-4">

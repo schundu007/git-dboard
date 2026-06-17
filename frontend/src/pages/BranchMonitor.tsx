@@ -15,11 +15,13 @@ import { EmptyState } from '../components/ui/EmptyState'
 
 // ── Branch API ────────────────────────────────────────────────────────────────
 
+const _BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
+
 const fetchBranches = (limit: number) =>
-  fetch(`http://localhost:8000/analytics/branches?limit=${limit}`).then((r) => r.json())
+  fetch(`${_BASE}/analytics/branches?limit=${limit}`).then((r) => r.json())
 
 const fetchCommits = (branch: string) =>
-  fetch(`http://localhost:8000/analytics/branches/${encodeURIComponent(branch)}/commits?per_page=10`).then((r) =>
+  fetch(`${_BASE}/analytics/branches/${encodeURIComponent(branch)}/commits?per_page=10`).then((r) =>
     r.json(),
   )
 
