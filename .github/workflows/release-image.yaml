@@ -103,11 +103,13 @@ jobs:
         run: python3 docker/scripts/resolve-matrix.py
 
       - name: Print release plan
+        env:
+          MATRIX: ${{ steps.resolve.outputs.matrix }}
         run: |
           echo "Release version : ${{ steps.meta.outputs.release_version }}"
           echo "Short SHA       : ${{ steps.meta.outputs.short_sha }}"
           echo "Cells           : ${{ steps.resolve.outputs.cell_count }}"
-          echo "${{ steps.resolve.outputs.matrix }}" | python3 -m json.tool
+          echo "$MATRIX" | python3 -m json.tool
 
 
   # ---------------------------------------------------------------------------
