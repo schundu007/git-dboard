@@ -260,6 +260,26 @@ export default function RepoWelcome() {
                 Add &amp; open dashboard
               </button>
             </div>
+            {addMut.isError && (() => {
+              const msg = (addMut.error as Error)?.message ?? ''
+              const alreadyAdded = msg.toLowerCase().includes('already added')
+              return (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-accent-red/[.08] border border-accent-red/20 text-accent-red text-[11px]">
+                  <XCircle size={13} className="flex-shrink-0" />
+                  <span className="flex-1">{alreadyAdded ? 'Repository already added.' : msg}</span>
+                  {alreadyAdded && form.owner && form.repo && (
+                    <a
+                      href={`https://github.com/${form.owner}/${form.repo}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-accent-red/80 hover:text-accent-red whitespace-nowrap"
+                    >
+                      Open on GitHub ↗
+                    </a>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         </div>
 

@@ -8,11 +8,7 @@ from services import pr_automation
 from services.pr_automation import RUNNER_RECOMMENDATIONS
 from services import github_client as gh
 
-try:
-    from anthropic import AsyncAnthropic
-    _ANTHROPIC_AVAILABLE = True
-except ImportError:
-    _ANTHROPIC_AVAILABLE = False
+from services import llm as llm_service
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 
@@ -171,32 +167,14 @@ class ScriptAnalysisRequest(BaseModel):
 
 @router.post("/analyze-script")
 async def analyze_script(body: ScriptAnalysisRequest):
-    if not _ANTHROPIC_AVAILABLE:
-        raise HTTPException(503, "anthropic package is not installed — run: pip install anthropic")
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise HTTPException(503, "ANTHROPIC_API_KEY is not set on the server")
     if not body.script.strip():
         raise HTTPException(400, "script must not be empty")
-
-    client = AsyncAnthropic(api_key=api_key)
     try:
-        message = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
+        raw = await llm_service.call(
+            prompt=f"Language: {body.language}\n\nScript to analyze:\n\n```{body.language}\n{body.script}\n```",
             system=_ANALYSIS_SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": (
-                        f"Language: {body.language}\n\n"
-                        f"Script to analyze:\n\n"
-                        f"```{body.language}\n{body.script}\n```"
-                    ),
-                }
-            ],
         )
-        raw = message.content[0].text.strip()
+        raw = raw.strip()
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
         return json.loads(raw)

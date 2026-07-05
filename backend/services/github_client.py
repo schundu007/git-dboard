@@ -349,6 +349,18 @@ async def get_commits(
         return r.json()
 
 
+async def compare_commits(base: str, head: str, per_page: int = 250) -> dict:
+    """GitHub compare API — commits in the range base..head (up to 250)."""
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(
+            f"{_BASE}/repos/{_repo()}/compare/{base}...{head}",
+            headers=_headers(),
+            params={"per_page": min(per_page, 250)},
+        )
+        r.raise_for_status()
+        return r.json()
+
+
 async def get_closed_prs(per_page: int = 100, page: int = 1) -> list:
     async with httpx.AsyncClient(timeout=20) as c:
         r = await c.get(

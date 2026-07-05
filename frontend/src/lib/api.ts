@@ -5,7 +5,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, options)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `HTTP ${res.status}`)
+    let message = text || `HTTP ${res.status}`
+    try { const j = JSON.parse(text); if (j.detail) message = j.detail } catch {}
+    throw new Error(message)
   }
   return res.json() as Promise<T>
 }
@@ -71,6 +73,10 @@ export const getNightlyTrend = (days = 30) =>
 
 export const getNightlyJobs = (runId: number) =>
   request<any>(`/nightly/runs/${runId}/jobs`)
+
+// ── Release notes ─────────────────────────────────────────────────────────────
+export const getReleaseNotes = (base: string, head: string) =>
+  request<any>(`/release-notes/generate?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`)
 
 export const triggerNightly = (ref = 'main') =>
   request<any>(`/nightly/trigger?ref=${ref}`, { method: 'POST' })
@@ -267,6 +273,10 @@ export const setRepoBusinessUnit = (id: number, business_unit: string | null) =>
   })
 
 // ── Repo management ───────────────────────────────────────────────────────────
+export const getAIConfig = () => request<any>('/ai/config')
+export const updateAIConfig = (body: Record<string, string | null>) =>
+  request<any>('/ai/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
 export const getRepos = () => request<any>('/repos')
 export const getActiveRepo = () => request<any>('/repos/active')
 export const addRepo = (body: { name: string; owner: string; repo: string; gh_pat?: string }) =>

@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from config import settings
 from database import init_db, AsyncSessionLocal
-from routers import analytics, automation, builds, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, repos, security, tags
+from routers import analytics, ai_config, automation, builds, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, prs, registry, release_notes, repos, security, tags
 from services import github_client as gh
 from services import log_store
 from services import pr_automation
@@ -150,12 +150,14 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers=headers,
     )
 
+app.include_router(ai_config.router)
 app.include_router(overview.router)
 app.include_router(analytics.router)
 app.include_router(automation.router)
 app.include_router(prs.router)
 app.include_router(builds.router)
 app.include_router(nightly.router)
+app.include_router(release_notes.router)
 app.include_router(logs.router)
 app.include_router(infra.router)
 app.include_router(registry.router)

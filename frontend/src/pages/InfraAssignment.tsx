@@ -71,6 +71,47 @@ function RunnerCard({ runner }: { runner: Runner }) {
   )
 }
 
+// ── Runner row (combined table) ───────────────────────────────────────────────
+
+function RunnerRow({ runner }: { runner: Runner }) {
+  const isOnline = runner.status === 'online'
+  const isBusy = isOnline && runner.busy
+  const statusLabel = !isOnline ? 'offline' : isBusy ? 'busy' : 'idle'
+  const statusClass = !isOnline
+    ? 'bg-gray-800 text-gray-500'
+    : isBusy
+    ? 'bg-amber-500/[.07] text-amber-400 ring-1 ring-amber-500/25'
+    : 'bg-emerald-500/[.07] text-emerald-400 ring-1 ring-emerald-500/25'
+  const dotClass = !isOnline ? 'bg-gray-600' : isBusy ? 'bg-yellow-400' : 'bg-accent-green'
+
+  const systemLabels = runner.labels.filter((l) => l.type === 'system').map((l) => l.name)
+  const customLabels = runner.labels.filter((l) => l.type !== 'system').map((l) => l.name)
+
+  return (
+    <tr className={clsx('border-b border-border hover:bg-surface-2 transition-colors', !isOnline && 'opacity-60')}>
+      <td className="py-2 pr-3 align-top">
+        <span className={clsx('inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full', statusClass)}>
+          <span className={clsx('w-1.5 h-1.5 rounded-full', dotClass, isOnline && !isBusy && 'animate-pulse')} />
+          {statusLabel}
+        </span>
+      </td>
+      <td className="py-2 pr-3 align-top text-xs text-white font-medium max-w-[240px] truncate" title={runner.name}>{runner.name}</td>
+      <td className="py-2 pr-3 align-top text-[10px] text-gray-500 whitespace-nowrap">{runner.os}</td>
+      <td className="py-2 align-top">
+        <div className="flex flex-wrap gap-1">
+          {customLabels.map((l) => (
+            <span key={l} className="bg-blue-500/[.07] text-blue-400 px-1.5 py-0.5 rounded text-[9px] font-mono">{l}</span>
+          ))}
+          {systemLabels.slice(0, 4).map((l) => (
+            <span key={l} className="bg-surface-2 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">{l}</span>
+          ))}
+          {systemLabels.length > 4 && <span className="text-gray-400 text-[9px]">+{systemLabels.length - 4}</span>}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 // ── Cluster node card ─────────────────────────────────────────────────────────
 
 function NodeCard({ node }: { node: ClusterNode }) {
@@ -494,36 +535,25 @@ export default function InfraAssignment() {
         )}
 
         {runners.length > 0 && (
-          <div className="space-y-3">
-            {/* Online / busy */}
-            {busyRunners.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[9px] text-yellow-500 uppercase tracking-wider font-semibold">Busy</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {busyRunners.map((r) => <RunnerCard key={r.id} runner={r} />)}
-                </div>
-              </div>
-            )}
-
-            {/* Online / idle */}
-            {onlineRunners.filter((r) => !r.busy).length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[9px] text-accent-green uppercase tracking-wider font-semibold">Idle</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {onlineRunners.filter((r) => !r.busy).map((r) => <RunnerCard key={r.id} runner={r} />)}
-                </div>
-              </div>
-            )}
-
-            {/* Offline */}
-            {offlineRunners.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Offline</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {offlineRunners.map((r) => <RunnerCard key={r.id} runner={r} />)}
-                </div>
-              </div>
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-border text-[9px] uppercase tracking-wider text-gray-500">
+                  <th className="py-1.5 pr-3 font-medium">Status</th>
+                  <th className="py-1.5 pr-3 font-medium">Runner</th>
+                  <th className="py-1.5 pr-3 font-medium">OS</th>
+                  <th className="py-1.5 font-medium">Labels</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Ordered busy → idle → offline so state reads top-to-bottom */}
+                {[
+                  ...busyRunners,
+                  ...onlineRunners.filter((r) => !r.busy),
+                  ...offlineRunners,
+                ].map((r) => <RunnerRow key={r.id} runner={r} />)}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

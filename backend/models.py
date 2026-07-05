@@ -41,6 +41,16 @@ class NightlyRun(Base):
     artifact_url = Column(String(500))
 
 
+class AISettings(Base):
+    __tablename__ = "ai_settings"
+    id = Column(Integer, primary_key=True, default=1)
+    provider = Column(String(50), default="anthropic")   # anthropic|gemini|deepseek|cohere
+    anthropic_key = Column(String(500), nullable=True)
+    gemini_key = Column(String(500), nullable=True)
+    deepseek_key = Column(String(500), nullable=True)
+    cohere_key = Column(String(500), nullable=True)
+
+
 class RepoConfig(Base):
     __tablename__ = "repo_configs"
     id = Column(Integer, primary_key=True)

@@ -9,7 +9,7 @@ import {
 } from 'recharts'
 import { formatDistanceToNow } from 'date-fns'
 import { getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly, getFailureSummary } from '../lib/api'
-import { useRepoSlug } from '../lib/hooks'
+import { useRepoSlug, useActiveRepoName } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import clsx from 'clsx'
 import type { WorkflowRun } from '../lib/types'
@@ -391,6 +391,7 @@ function RecentRuns() {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NightlyMonitor() {
+  const repoName = useActiveRepoName()
   const [ref, setRef] = useState('main')
   const { mutate: trigger, isPending } = useMutation({
     mutationFn: () => triggerNightly(ref),
@@ -425,7 +426,7 @@ export default function NightlyMonitor() {
       <TrendChart />
 
       <div className="bg-surface-1 border border-border rounded-xl p-4">
-        <div className="section-head">Isaac Sim Compatibility Matrix</div>
+        <div className="section-head">{repoName ? `${repoName} Compatibility Matrix` : 'Nightly Compatibility Matrix'}</div>
         <MatrixTable />
       </div>
 

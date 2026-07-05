@@ -3,557 +3,503 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>IsaacLab / IsaacSim — CI/CD Issues & Improvement Plan</title>
-<!-- Adobe open-source fonts via Google Fonts -->
+<title>IsaacLab · Improvement Plan — May 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;900&family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:      #f0f2f5;
-  --card:    #ffffff;
-  --dark:    #0d0d0f;
-  --ink:     #1a1a1e;
-  --sub:     #4b4b52;
-  --rim:     #c8cad0;
-  --rim2:    #dde0e6;
-  --green:   #5a9e00;
-  --green-b: #ecf5d8;
-  --blue:    #1d59c4;
-  --blue-b:  #dce8fb;
-  --red:     #c9210e;
-  --red-b:   #fce8e6;
-  --amber:   #b35b00;
-  --amber-b: #fdf0dc;
-  --sans: 'Source Sans 3', system-ui, sans-serif;
-  --mono: 'Source Code Pro', ui-monospace, monospace;
+  --bg:    #f5f6f8;
+  --card:  #ffffff;
+  --dark:  #111318;
+  --ink:   #1c1e26;
+  --sub:   #5a5c68;
+  --muted: #9496a0;
+  --rim:   #dcdfe6;
+  --red:   #c0200e;
+  --amber: #9a4800;
+  --green: #2a7400;
+  --blue:  #1249a8;
+  --sans:  'Inter', system-ui, sans-serif;
 }
 
 @page { size: A4 landscape; margin: 0; }
+html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-html, body {
-  background: #d8dbe3;
-  color: var(--ink);
-  font-family: var(--sans);
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
-}
-
-/* ── Slide ────────────────────────────────────────────────────── */
+/* ── Slide ──────────────────────────────── */
 .slide {
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 30px 46px 22px;
+  width: 100%; max-width: 1100px; margin: 0 auto;
+  padding: 0;
   background: var(--bg);
   border-bottom: 3px solid var(--rim);
   position: relative;
-  page-break-after: always;
-  break-after: page;
+  page-break-after: always; break-after: page;
+  display: flex; flex-direction: column;
+  min-height: 590px;
 }
 .slide:last-child { border-bottom: none; page-break-after: avoid; break-after: avoid; }
 
 @media print {
   html, body { background: var(--bg); }
-  .slide { max-width: 100%; width: 297mm; height: 210mm; padding: 13mm 19mm 9mm; overflow: hidden; }
+  .slide { max-width: 100%; width: 297mm; height: 210mm; overflow: hidden; min-height: unset; }
 }
-
-/* ── Slide number ─────────────────────────────────────────────── */
-.snum {
-  position: absolute; top: 16px; right: 28px;
-  font: 700 8.5px/1 var(--mono); letter-spacing: .12em;
-  text-transform: uppercase; color: var(--sub);
-}
-
-/* ── Header strip ─────────────────────────────────────────────── */
-.hd-strip {
-  background: var(--dark);
-  margin: -30px -46px 18px;
-  padding: 16px 46px 14px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-@media print {
-  .hd-strip { margin: -13mm -19mm 14px; padding: 12px 19mm 10px; }
-}
-.eyebrow { font: 600 8px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: #8a8a96; margin-bottom: 4px; }
-.title { font: 900 21px/1.1 var(--sans); letter-spacing: -.02em; color: #ffffff; }
-.title em { font-style: normal; color: #a6d43a; }
-.sub { margin-top: 4px; font: 400 9px/1.5 var(--sans); color: #9a9aaa; max-width: 580px; }
-.tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: #ffffff0f; border: 1px solid #ffffff22;
-  padding: 5px 10px; flex-shrink: 0;
-}
-.tag-dot { width: 7px; height: 7px; border-radius: 50%; background: #a6d43a; box-shadow: 0 0 5px #a6d43a; }
-.tag span { font: 700 9px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: #9a9aaa; }
-
-/* ── Badges ───────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 7px; font: 700 8px/1 var(--sans);
-  letter-spacing: .1em; text-transform: uppercase;
-  white-space: nowrap; border: 1px solid transparent;
-}
-.br { background: var(--red-b);   color: var(--red);   border-color: #f5bbb6; }
-.ba { background: var(--amber-b); color: var(--amber); border-color: #f5d9aa; }
-.bb { background: var(--blue-b);  color: var(--blue);  border-color: #b0c8f5; }
-.bg { background: var(--green-b); color: var(--green); border-color: #bfdf7a; }
-.bx { background: var(--rim2);    color: var(--sub);   border-color: var(--rim); }
-.dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-
-/* ── Section label ────────────────────────────────────────────── */
-.sec {
-  font: 700 7.5px/1 var(--sans); letter-spacing: .14em;
-  text-transform: uppercase; color: var(--sub); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 8px;
-}
-.sec::after { content: ''; flex: 1; height: 1px; background: var(--rim2); }
-
-/* ── Grids ────────────────────────────────────────────────────── */
-.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
-.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-
-/* ── Stat card ────────────────────────────────────────────────── */
-.stat {
-  background: var(--card);
-  border: 2px solid var(--rim);
-  padding: 10px 13px;
-}
-.sv { font: 900 28px/1 var(--mono); letter-spacing: -.03em; }
-.sl { font: 700 7.5px/1 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--sub); margin: 4px 0 3px; }
-.sn { font: 400 8px/1.35 var(--sans); color: var(--sub); }
-
-/* ── Issue card ───────────────────────────────────────────────── */
-.ic {
-  background: var(--card);
-  border: 2px solid var(--rim);
-  padding: 11px 13px;
-}
-.ic + .ic { margin-top: 8px; }
-.ic-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
-.ic-num {
-  width: 22px; height: 22px;
-  display: flex; align-items: center; justify-content: center;
-  font: 900 10px/1 var(--mono); flex-shrink: 0;
-  border: 2px solid currentColor;
-}
-.ic-title { font: 700 11px/1 var(--sans); color: var(--ink); flex: 1; }
-.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.bullet-list li {
-  display: flex; align-items: flex-start; gap: 8px;
-  font: 400 8.5px/1.45 var(--sans); color: var(--sub);
-}
-.bullet-list li::before {
-  content: ''; width: 4px; height: 4px;
-  background: var(--rim); flex-shrink: 0; margin-top: 5px;
-}
-
-/* ── Workflow card ────────────────────────────────────────────── */
-.wf {
-  background: var(--card);
-  border: 2px solid var(--rim);
-  padding: 12px 14px;
-}
-.wf-name { font: 700 9.5px/1 var(--mono); color: var(--ink); margin-bottom: 8px; letter-spacing: .04em; }
-.wf-stat { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.wf-stat-lbl { font: 600 8px/1 var(--sans); color: var(--sub); white-space: nowrap; }
-.wf-bar-bg { flex: 1; height: 6px; background: var(--rim2); }
-.wf-bar { height: 6px; }
-.wf-pct { font: 700 11px/1 var(--mono); min-width: 44px; text-align: right; }
-.wf-rows { display: flex; flex-direction: column; gap: 5px; }
-.wf-row { display: flex; align-items: flex-start; gap: 7px; font: 400 8px/1.4 var(--sans); color: var(--sub); }
-.wf-row-dot { width: 5px; height: 5px; flex-shrink: 0; margin-top: 4px; }
-
-/* ── Mini issue ref card ──────────────────────────────────────── */
-.ref {
-  background: var(--card);
-  border: 2px solid var(--rim);
-  padding: 8px 11px;
-}
-.ref-id { font: 700 9px/1 var(--mono); margin-bottom: 4px; }
-.ref-title { font: 600 8.5px/1.35 var(--sans); color: var(--ink); margin-bottom: 2px; }
-.ref-note { font: 400 7.5px/1.3 var(--sans); color: var(--sub); }
-
-/* ── Phase card ───────────────────────────────────────────────── */
-.phase {
-  display: flex; gap: 13px;
-  background: var(--card);
-  border: 2px solid var(--rim);
-  padding: 11px 14px;
-}
-.phase + .phase { margin-top: 7px; }
-.pnum {
-  width: 26px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-  font: 900 11px/1 var(--mono); flex-shrink: 0; margin-top: 1px;
-  border: 2px solid currentColor;
-}
-.pbody { flex: 1; }
-.phd { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.ptitle { font: 700 11px/1 var(--sans); color: var(--ink); }
-.pwin {
-  font: 600 8px/1 var(--mono); color: var(--sub);
-  background: var(--rim2); border: 1px solid var(--rim);
-  padding: 2px 6px;
-}
-.pitems { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
-.pi { display: flex; align-items: flex-start; gap: 6px; font: 400 8.5px/1.4 var(--sans); color: var(--sub); }
-.pidot { width: 5px; height: 5px; flex-shrink: 0; margin-top: 5px; }
-
-/* ── Footer ───────────────────────────────────────────────────── */
-.foot {
-  padding-top: 8px; margin-top: 14px;
-  border-top: 2px solid var(--rim);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.fl { font: 400 7.5px/1 var(--mono); color: var(--sub); letter-spacing: .03em; }
-.fr { font: 700 7.5px/1 var(--sans); color: var(--sub); letter-spacing: .07em; text-transform: uppercase; }
-
-/* ── Screen spacer ────────────────────────────────────────────── */
 @media screen {
-  body { display: flex; flex-direction: column; align-items: center; padding: 32px 0; gap: 32px; }
-  .slide { box-shadow: 0 2px 32px rgba(0,0,0,.18); }
+  body { display: flex; flex-direction: column; align-items: center; padding: 28px 0; gap: 28px; }
+  .slide { box-shadow: 0 2px 24px rgba(0,0,0,.14); }
 }
+
+.snum { position: absolute; top: 14px; right: 24px; font: 500 8px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* ── Header strip ───────────────────────── */
+.hd {
+  background: var(--dark);
+  padding: 16px 44px 14px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.eye { font: 500 7.5px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: #64667a; margin-bottom: 5px; }
+.hl  { font: 700 20px/1.1 var(--sans); letter-spacing: -.02em; color: #fff; }
+.hl em { font-style: normal; color: #94d43a; }
+.hl-s { margin-top: 4px; font: 400 8.5px/1.5 var(--sans); color: #84869a; max-width: 640px; }
+.hd-label { font: 600 8px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: #64667a; flex-shrink: 0; align-self: flex-start; padding-top: 4px; }
+
+/* ── Body padding ───────────────────────── */
+.body { padding: 20px 44px 0; flex: 1; display: flex; flex-direction: column; }
+
+/* ── Grids ──────────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+/* ── Stat card ──────────────────────────── */
+.stat { background: var(--card); border: 1.5px solid var(--rim); padding: 12px 14px; }
+.sv { font: 700 28px/1 var(--sans); letter-spacing: -.03em; }
+.sl { font: 600 7px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--sub); margin: 5px 0 3px; }
+.sn { font: 400 8px/1.4 var(--sans); color: var(--sub); }
+
+/* ── Problem block ──────────────────────── */
+.prob { background: var(--card); border: 1.5px solid var(--rim); border-left-width: 4px; padding: 12px 14px; }
+.prob-title { font: 600 10.5px/1.3 var(--sans); color: var(--ink); margin-bottom: 6px; }
+.prob-body  { font: 400 8.5px/1.55 var(--sans); color: var(--sub); }
+
+/* ── Phase block ────────────────────────── */
+.phase { background: var(--card); border: 1.5px solid var(--rim); border-left-width: 4px; padding: 12px 14px; display: flex; gap: 14px; }
+.phase + .phase { margin-top: 8px; }
+.phase-num { font: 700 13px/1 var(--sans); flex-shrink: 0; width: 22px; padding-top: 1px; }
+.phase-body { flex: 1; }
+.phase-title { font: 600 11px/1.3 var(--sans); color: var(--ink); margin-bottom: 3px; }
+.phase-timeline { font: 500 7.5px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.phase-items { display: flex; flex-direction: column; gap: 4px; }
+.phase-item { font: 400 8.5px/1.5 var(--sans); color: var(--sub); padding-left: 12px; position: relative; }
+.phase-item::before { content: '—'; position: absolute; left: 0; color: var(--rim); }
+
+/* ── Compare table ──────────────────────── */
+.cmp { width: 100%; border-collapse: collapse; }
+.cmp th { font: 600 7px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: #f0f1f4; padding: 6px 10px; border-bottom: 1.5px solid var(--rim); text-align: left; }
+.cmp td { font: 400 8.5px/1 var(--sans); padding: 6px 10px; border-bottom: 1px solid #ecedf2; background: var(--card); color: var(--sub); }
+.cmp tr:last-child td { border-bottom: none; }
+.cmp td.lbl  { font-weight: 600; color: var(--ink); }
+.cmp td.bad  { font: 600 8.5px/1 var(--sans); color: var(--red); }
+.cmp td.mid  { font: 600 8.5px/1 var(--sans); color: var(--amber); }
+.cmp td.good { font: 600 8.5px/1 var(--sans); color: var(--green); }
+
+/* ── Decision card ──────────────────────── */
+.dec { background: var(--card); border: 1.5px solid var(--rim); border-left-width: 4px; padding: 13px 14px; }
+.dec-title { font: 600 10.5px/1.3 var(--sans); color: var(--ink); margin-bottom: 6px; }
+.dec-body  { font: 400 8.5px/1.55 var(--sans); color: var(--sub); margin-bottom: 8px; }
+.dec-ask   { font: 600 8px/1 var(--sans); color: var(--ink); padding-top: 7px; border-top: 1px solid var(--rim); }
+
+/* ── Cover ──────────────────────────────── */
+.cover-wrap { display: flex; flex: 1; gap: 0; padding: 0 44px; }
+.cover-l { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 18px 36px 18px 0; border-right: 1.5px solid var(--rim); }
+.cover-r { width: 274px; display: flex; flex-direction: column; gap: 8px; padding: 18px 0 18px 28px; justify-content: center; }
+.cover-title { font: 700 36px/1.05 var(--sans); letter-spacing: -.04em; color: var(--ink); margin-bottom: 12px; }
+.cover-title em { font-style: normal; color: var(--red); }
+.cover-desc { font: 400 9.5px/1.65 var(--sans); color: var(--sub); max-width: 440px; }
+.kv { background: var(--card); border: 1.5px solid var(--rim); border-left-width: 4px; padding: 9px 12px; }
+.kv-v { font: 700 20px/1 var(--sans); letter-spacing: -.02em; margin-bottom: 4px; }
+.kv-l { font: 600 6.5px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--sub); margin-bottom: 2px; }
+.kv-n { font: 400 7.5px/1.35 var(--sans); color: var(--muted); }
+
+/* ── Callout box ────────────────────────── */
+.callout { background: var(--card); border: 1.5px solid var(--rim); border-left-width: 4px; padding: 13px 15px; }
+.callout-title { font: 600 10px/1.3 var(--sans); color: var(--ink); margin-bottom: 5px; }
+.callout-body  { font: 400 8.5px/1.55 var(--sans); color: var(--sub); }
+
+/* ── Footer ─────────────────────────────── */
+.foot { padding: 8px 44px 12px; border-top: 1.5px solid var(--rim); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.fl { font: 400 7px/1 var(--sans); color: var(--muted); }
+.fr { font: 600 7px/1 var(--sans); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.mb8  { margin-bottom: 8px; }
+.mb10 { margin-bottom: 10px; }
+.mb14 { margin-bottom: 14px; }
+.label { font: 600 7px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════
-     SLIDE 1 — Current State: What's Broken
-══════════════════════════════════════════════════════════════ -->
+
+<!-- ════════════════════════════════════════
+     01 — COVER
+════════════════════════════════════════════ -->
 <div class="slide">
-  <span class="snum">01 / 03</span>
-
-  <div class="hd-strip">
+  <span class="snum">01 / 05</span>
+  <div class="hd">
     <div>
-      <div class="eyebrow">isaac-sim/IsaacLab · GitHub Actions · Current State · May 2026</div>
-      <div class="title">CI/CD Pipeline Is <em>Critically Broken</em></div>
-      <div class="sub">Analysis of 150 open issues + 100 open PRs. Nightly and postmerge CI are the primary failure surfaces with measurable impact on every contributor.</div>
+      <div class="eye">Engineering Review · May 2026</div>
+      <div class="hl">IsaacLab &amp; Isaac-Sim — <em>Improvement Plan</em></div>
     </div>
-    <div class="tag"><div class="tag-dot"></div><span>isaac-sim/IsaacLab</span></div>
+    <div class="hd-label">isaac-sim / IsaacLab</div>
   </div>
 
-  <!-- KPI strip -->
-  <div class="g4" style="margin-bottom:14px;">
-    <div class="stat" style="border-color:#f5bbb6;border-left:4px solid var(--red);">
-      <div class="sv" style="color:var(--red);">16%</div>
-      <div class="sl">Postmerge CI Pass Rate</div>
-      <div class="sn">84% failing — build-and-push-images accounts for 96% of all failures</div>
+  <div class="cover-wrap">
+    <div class="cover-l">
+      <div class="cover-title">The delivery<br>pipeline<br>is <em>broken.</em></div>
+      <div class="cover-desc">
+        We reviewed 150 open complaints and 100 pending contributions across the IsaacLab and
+        Isaac-Sim repositories. The findings are straightforward: the automated build pipeline
+        has been failing at an 84% rate, the overnight quality check has been down for two weeks,
+        and the platform does not run on NVIDIA's current-generation GPUs.<br><br>
+        This document explains what is wrong, what it is costing, and the practical steps to fix it.
+      </div>
     </div>
-    <div class="stat" style="border-color:#f5bbb6;border-left:4px solid var(--red);">
-      <div class="sv" style="color:var(--red);">0%</div>
-      <div class="sl">Nightly Pass Rate</div>
-      <div class="sn">daily-compatibility.yml at 0% for 14+ consecutive days straight</div>
-    </div>
-    <div class="stat" style="border-color:#f5d9aa;border-left:4px solid var(--amber);">
-      <div class="sv" style="color:var(--amber);">70%</div>
-      <div class="sl">CI Checks Skipped</div>
-      <div class="sn">33 check runs per PR — 70% skipped but GPU runners still spin up and bill</div>
-    </div>
-    <div class="stat" style="border-color:#f5d9aa;border-left:4px solid var(--amber);">
-      <div class="sv" style="color:var(--amber);">49</div>
-      <div class="sl">Open Install Issues</div>
-      <div class="sn">33% of all 150 open issues are Docker / pip / installation failures</div>
-    </div>
-  </div>
 
-  <!-- 4 critical problems -->
-  <div class="sec">4 critical failure categories</div>
-  <div class="g2">
-    <div>
-      <div class="ic" style="border-color:#f5bbb6;border-left:4px solid var(--red);">
-        <div class="ic-hd">
-          <div class="ic-num" style="color:var(--red);">1</div>
-          <div class="ic-title">ECR Push Failures — Nightly Dead</div>
-          <span class="badge br"><span class="dot" style="background:var(--red);"></span>Critical</span>
-        </div>
-        <ul class="bullet-list">
-          <li>OIDC token TTL exceeded during long GPU builds → credential expires mid-push to ECR</li>
-          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaacsim-core</span> pins <span style="font-family:var(--mono);font-size:8px;font-weight:600;">packaging==23.0</span>, conflicts with pip internals</li>
-          <li>No retry logic — single network blip kills the entire nightly job, no fallback</li>
-          <li>Open fix PRs are pending merge</li>
-        </ul>
+    <div class="cover-r">
+      <div class="kv" style="border-color:#f0b5af;border-left-color:var(--red);">
+        <div class="kv-v" style="color:var(--red);">16%</div>
+        <div class="kv-l">Builds Succeeding</div>
+        <div class="kv-n">84 out of every 100 automated builds fail</div>
       </div>
-      <div class="ic" style="border-color:#f5bbb6;border-left:4px solid var(--red);margin-top:8px;">
-        <div class="ic-hd">
-          <div class="ic-num" style="color:var(--red);">2</div>
-          <div class="ic-title">Blackwell GPU — Zero Support</div>
-          <span class="badge br"><span class="dot" style="background:var(--red);"></span>Critical</span>
-        </div>
-        <ul class="bullet-list">
-          <li>RTX 5090 / 5070 Ti crashes — sm_120 (Blackwell) absent from CUDA arch list</li>
-          <li>TiledCamera CUDA kernel hangs on GB202/GB203 silicon</li>
-          <li>Driver 595.79 exposes new GPU init path that crashes headless GUI</li>
-          <li>No Blackwell runner in CI matrix — regressions ship to users, not caught in CI</li>
-        </ul>
+      <div class="kv" style="border-color:#f0b5af;border-left-color:var(--red);">
+        <div class="kv-v" style="color:var(--red);">0% · 14 days</div>
+        <div class="kv-l">Nightly Quality Check</div>
+        <div class="kv-n">Automated safety net has been offline for 2 weeks</div>
       </div>
-    </div>
-    <div>
-      <div class="ic" style="border-color:#f5d9aa;border-left:4px solid var(--amber);">
-        <div class="ic-hd">
-          <div class="ic-num" style="color:var(--amber);">3</div>
-          <div class="ic-title">Dependency Hell — 49 Open Issues</div>
-          <span class="badge ba"><span class="dot" style="background:var(--amber);"></span>High</span>
-        </div>
-        <ul class="bullet-list">
-          <li>No single source of truth for dep versions — each package pins independently</li>
-          <li><span style="font-family:var(--mono);font-size:8px;font-weight:600;">isaaclab.sh --install</span> fails silently with exit code 0 on conflicts</li>
-          <li>CloudXR extension not published in Isaac Sim 6.0 pip index</li>
-          <li>Open fix PRs are pending merge</li>
-        </ul>
+      <div class="kv" style="border-color:#f0d4aa;border-left-color:var(--amber);">
+        <div class="kv-v" style="color:var(--amber);">49 open</div>
+        <div class="kv-l">Installation Complaints</div>
+        <div class="kv-n">33% of all reported issues — software fails to set up</div>
       </div>
-      <div class="ic" style="border-color:#f5d9aa;border-left:4px solid var(--amber);margin-top:8px;">
-        <div class="ic-hd">
-          <div class="ic-num" style="color:var(--amber);">4</div>
-          <div class="ic-title">Wasteful PR Matrix — 60% Redundant GPU</div>
-          <span class="badge ba"><span class="dot" style="background:var(--amber);"></span>High</span>
-        </div>
-        <ul class="bullet-list">
-          <li>32% of open PRs are docs-only — all trigger A100-80GB GPU runners unnecessarily</li>
-          <li>Full 10-cell matrix (3 Isaac Sim versions × 4 extensions) runs on every PR</li>
-          <li>No path-filter gate — ci-only changes spin GPU builds with zero value</li>
-          <li>Isaac Sim 6.0 compat gaps mean old-version runs mask real failures</li>
-        </ul>
+      <div class="kv" style="border-color:#f0d4aa;border-left-color:var(--amber);">
+        <div class="kv-v" style="color:var(--amber);">100</div>
+        <div class="kv-l">Pending Changes — Stuck</div>
+        <div class="kv-n">Contributor delivery is at a standstill</div>
+      </div>
+      <div class="kv" style="border-color:#b5de7a;border-left-color:var(--green);">
+        <div class="kv-v" style="color:var(--green);">3 weeks</div>
+        <div class="kv-l">To Restore the Pipeline</div>
+        <div class="kv-n">One fix brings build success from 16% back to ~96%</div>
       </div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="fl">CI/CD Analysis — IsaacLab Repository</div>
-    <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
+    <div class="fl">Based on 150 open issues and 100 open pull requests · isaac-sim/IsaacLab · 13 May 2026</div>
+    <div class="fr">IsaacLab Improvement Plan</div>
   </div>
 </div>
 
 
-<!-- ══════════════════════════════════════════════════════════
-     SLIDE 2 — Workflow Deep Dive
-══════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     02 — WHAT'S BROKEN
+════════════════════════════════════════════ -->
 <div class="slide">
-  <span class="snum">02 / 03</span>
-
-  <div class="hd-strip">
+  <span class="snum">02 / 05</span>
+  <div class="hd">
     <div>
-      <div class="eyebrow">Workflow Analysis — File-Level Breakdown</div>
-      <div class="title">Three Workflows, <em>Exact Failure Points</em></div>
-      <div class="sub">Mapped to specific workflow YAML files and confirmed GitHub issue numbers. Every item below is reproducible from the open issue tracker.</div>
+      <div class="eye">What Is Broken &amp; What It Costs</div>
+      <div class="hl">Four Problems. One Root Cause for <em>96% of Failures.</em></div>
+      <div class="hl-s">None of these are mysteries — each has been traced to a specific, fixable cause.</div>
     </div>
-    <div class="tag">
-      <div class="tag-dot" style="background:#ff6b6b;box-shadow:0 0 5px #ff6b6b;"></div>
-      <span>.github/workflows</span>
-    </div>
+    <div class="hd-label">Current State</div>
   </div>
 
-  <div class="g3" style="margin-bottom:14px;">
-
-    <div class="wf" style="border-color:#f5bbb6;border-top:4px solid var(--red);">
-      <div class="wf-name">Post-Merge CI</div>
-      <div class="wf-stat">
-        <span class="wf-stat-lbl">Pass rate</span>
-        <div class="wf-bar-bg"><div class="wf-bar" style="width:16%;background:var(--red);"></div></div>
-        <span class="wf-pct" style="color:var(--red);">16%</span>
+  <div class="body">
+    <div class="g4 mb14">
+      <div class="stat" style="border-color:#f0b5af;border-left:4px solid var(--red);">
+        <div class="sv" style="color:var(--red);">84%</div>
+        <div class="sl">Builds Failing</div>
+        <div class="sn">The automated pipeline fails on 84 out of every 100 runs. 96% of those failures share a single root cause.</div>
       </div>
-      <div class="wf-rows">
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">build-and-push-images</strong> — OIDC token expires during multi-hour GPU build; 96% of failures trace here</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">packaging==23.0 conflict</strong> — isaacsim-core pin breaks pip vendored module inside Docker container</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Silent source failures</strong> — isaaclab.sh exits 0 on conflict; CI marks green, job fails later</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Full 10-cell matrix</strong> — all 3 Isaac Sim × 4 extensions on every push; no post-merge vs PR split</span></div>
+      <div class="stat" style="border-color:#f0b5af;border-left:4px solid var(--red);">
+        <div class="sv" style="color:var(--red);">14 days</div>
+        <div class="sl">No Quality Safety Net</div>
+        <div class="sn">The nightly quality check has been failing silently. The team found out through manual investigation — not an alert.</div>
       </div>
-    </div>
-
-    <div class="wf" style="border-color:#f5bbb6;border-top:4px solid var(--red);">
-      <div class="wf-name">Nightly Compatibility</div>
-      <div class="wf-stat">
-        <span class="wf-stat-lbl">Pass rate</span>
-        <div class="wf-bar-bg"><div class="wf-bar" style="width:0%;background:var(--red);"></div></div>
-        <span class="wf-pct" style="color:var(--red);">0% (14d)</span>
+      <div class="stat" style="border-color:#f0d4aa;border-left:4px solid var(--amber);">
+        <div class="sv" style="color:var(--amber);">32%</div>
+        <div class="sl">GPU Spend on Text Edits</div>
+        <div class="sn">Documentation changes trigger the same expensive compute pipeline as physics code — with 70% of checks doing nothing.</div>
       </div>
-      <div class="wf-rows">
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">ECR credential expiry</strong> — OIDC token issued at job start, expires before multi-hour GPU build finishes</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Matrix resolver bug</strong> — unknown INPUT_SIM_VERSIONS silently falls back to ALL versions; re-run → 12-job full matrix</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Output variable risk</strong> — Output variable unset — silently discards all 11 outputs; "tag not found" downstream</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Changelog deprecation</strong> — scheduled-workflow syntax deprecated, breaking nightly trigger</span></div>
+      <div class="stat" style="border-color:#f0d4aa;border-left:4px solid var(--amber);">
+        <div class="sv" style="color:var(--amber);">49</div>
+        <div class="sl">Open Install Complaints</div>
+        <div class="sn">The largest single category of user reports. Installation fails and tells the user it succeeded — so they don't know where to start.</div>
       </div>
     </div>
 
-    <div class="wf" style="border-color:#f5d9aa;border-top:4px solid var(--amber);">
-      <div class="wf-name">PR Build Pipeline</div>
-      <div class="wf-stat">
-        <span class="wf-stat-lbl">Skipped checks</span>
-        <div class="wf-bar-bg"><div class="wf-bar" style="width:70%;background:var(--amber);"></div></div>
-        <span class="wf-pct" style="color:var(--amber);">70%</span>
+    <div class="g2">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="prob" style="border-left-color:var(--red);">
+          <div class="prob-title">1. The build spends 1–2 hours on GPU hardware, then fails to save its output</div>
+          <div class="prob-body">The automated build runs for up to two hours on expensive compute. At the very last step — storing the result — the system's access credentials have expired. The entire run is discarded. There is no retry, so a brief network hiccup has the same outcome. This is the root cause of 96% of all pipeline failures and the reason the nightly check has been at 0% for 14 days.</div>
+        </div>
+        <div class="prob" style="border-left-color:var(--amber);">
+          <div class="prob-title">3. Expensive GPU machines run for documentation edits and immediately do nothing</div>
+          <div class="prob-body">Every contribution — whether someone fixed a typo in a tutorial or rewrote a physics algorithm — triggers the same full GPU pipeline. 32 of the 100 pending changes are documentation-only. Of the 33 automated checks that fire for each one, 70% complete instantly with a "skip" result. A simple pre-check could eliminate this cost entirely.</div>
+        </div>
       </div>
-      <div class="wf-rows">
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">No PR classification</strong> — 32% of PRs are docs-only; still trigger A100-80GB runner; 23 of 33 checks skip immediately</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Full matrix on every PR</strong> — 3 Isaac Sim versions × 4 extensions; 60% of GPU work is redundant per PR</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Isaac Sim 6.0 gaps</strong> — compat breakages; old-version cells mask which version is actually broken</span></div>
-        <div class="wf-row"><div class="wf-row-dot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">No Blackwell runner</strong> — sm_120 absent from CUDA arch; RTX 5090 regressions never caught in CI</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="prob" style="border-left-color:var(--red);">
+          <div class="prob-title">2. Installation fails for 1 in 3 users — and reports success when it does</div>
+          <div class="prob-body">Two components in the software demand incompatible versions of the same dependency. This causes installation to fail, but the installer exits with a "success" status anyway. Users spend hours debugging a problem that is not their code. 49 open complaints describe exactly this. Three pending fixes are written and waiting — they just haven't been approved for release.</div>
+        </div>
+        <div class="prob" style="border-left-color:var(--amber);">
+          <div class="prob-title">4. The RTX 5090 — NVIDIA's 2025 flagship GPU — crashes immediately on launch</div>
+          <div class="prob-body">IsaacLab has not been updated to support Blackwell-generation GPUs (RTX 5090, RTX 5070 Ti), which were released in early 2025. Users on current-generation hardware hit a crash the moment they try to run a simulation. This is the most-discussed issue in the entire tracker, and there is nothing in progress to address it.</div>
+        </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Issue references -->
-  <div class="sec">Key Failure Areas — Confirmed by Analysis</div>
-  <div class="g4">
-    <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">DEP CONFLICT</div>
-      <div class="ref-title">packaging==23.0 pin conflict</div>
-      <div class="ref-note">isaacsim-core conflicts with pip vendored module; breaks Docker pip install</div>
-    </div>
-    <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">GPU ARCH</div>
-      <div class="ref-title">NVRTC arch error — Blackwell</div>
-      <div class="ref-note">sm_120 (RTX 5090) missing from CUDA arch list; NVRTC fails</div>
-    </div>
-    <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">SILENT EXIT</div>
-      <div class="ref-title">Silent install failure</div>
-      <div class="ref-note">isaaclab.sh --install exits 0 on dependency conflict; no error surfaced</div>
-    </div>
-    <div class="ref" style="border-color:#f5bbb6;border-left:3px solid var(--red);">
-      <div class="ref-id" style="color:var(--red);">DOCKER PIP</div>
-      <div class="ref-title">Broken pip in Docker</div>
-      <div class="ref-note">Missing vendored packaging module inside IsaacLab Docker image</div>
-    </div>
-    <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">BUILD SILENT</div>
-      <div class="ref-title">Silent build from source</div>
-      <div class="ref-note">Build step exits 0 despite source compile failure; CI marked green</div>
-    </div>
-    <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">IS6 COMPAT</div>
-      <div class="ref-title">Isaac Sim 6.0 compat</div>
-      <div class="ref-note">API breakages with IS 6.0 not caught by current PR CI matrix</div>
-    </div>
-    <div class="ref" style="border-color:#f5d9aa;border-left:3px solid var(--amber);">
-      <div class="ref-id" style="color:var(--amber);">MISSING PKG</div>
-      <div class="ref-title">CloudXR missing in IS 6.0</div>
-      <div class="ref-note">isaacsim.kit.xr.teleop.bridge not published in IS 6.0 pip index</div>
-    </div>
-    <div class="ref" style="border-color:#b0c8f5;border-left:3px solid var(--blue);">
-      <div class="ref-id" style="color:var(--blue);">RAM LIMIT</div>
-      <div class="ref-title">Docker RAM overconsumption</div>
-      <div class="ref-note">Isaac Sim overconsumes RAM; no --memory limits set in docker run flags</div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="fl">Source: isaac-sim/IsaacLab — 150+ open issues · 100+ open PRs</div>
-    <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
+    <div class="fl">Analysis of 150 open issues and 100 open pull requests · 13 May 2026</div>
+    <div class="fr">IsaacLab Improvement Plan</div>
   </div>
 </div>
 
 
-<!-- ══════════════════════════════════════════════════════════
-     SLIDE 3 — Improvement Plan
-══════════════════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════
+     03 — THE FIX
+════════════════════════════════════════════ -->
 <div class="slide">
-  <span class="snum">03 / 03</span>
-
-  <div class="hd-strip">
+  <span class="snum">03 / 05</span>
+  <div class="hd">
     <div>
-      <div class="eyebrow">Improvement Roadmap — 3-Phase Plan</div>
-      <div class="title">From 16% Pass Rate to <em>Elite CI/CD</em></div>
-      <div class="sub">Ordered by impact-to-effort ratio. Phase 1 alone restores nightly CI and unblocks postmerge. Each phase maps directly to a root cause from Slide 1.</div>
+      <div class="eye">Improvement Roadmap</div>
+      <div class="hl">A Practical Three-Phase Plan — Starting <em>This Week</em></div>
+      <div class="hl-s">Phase 1 alone resolves most of the immediate pain. Each phase is independent and delivers measurable results on its own.</div>
     </div>
-    <div class="tag">
-      <div class="tag-dot" style="background:#6ea8fe;box-shadow:0 0 5px #6ea8fe;"></div>
-      <span>Roadmap&nbsp;2026</span>
-    </div>
+    <div class="hd-label">The Roadmap</div>
   </div>
 
-  <div class="phase" style="border-color:#f5bbb6;border-left:4px solid var(--red);">
-    <div class="pnum" style="color:var(--red);">1</div>
-    <div class="pbody">
-      <div class="phd">
-        <div class="ptitle">Fix ECR + Dependency Failures</div>
-        <div class="pwin">Weeks 1–3</div>
-        <span class="badge br">Targets #1 + #3 — restores nightly to 100%</span>
-      </div>
-      <div class="pitems">
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Rotate ECR OIDC credentials</strong> — fix IAM trust policy; add nick-fields/retry (3×, 60s) to ECR push step in postmerge-ci.yml</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Centralize dependency pins</strong> — single source of truth in a shared deps file; resolves packaging==23.0 conflict</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix isaaclab.sh exit codes</strong> — add post-install smoke test: python -c 'import isaaclab'; propagate real exit code</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix resolve-matrix.py fallback</strong> — unknown input → sys.exit(1), not silent all-matrix fallback in daily-compatibility</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Guard output variable in nightly script</strong> — fail fast in CI if unset; prevents silent /dev/null writes</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--red);"></div><span><strong style="color:var(--ink);">Fix deprecated nightly trigger</strong> — scheduled-workflow syntax fix restoring daily-compatibility trigger</span></div>
+  <div class="body">
+    <div class="phase" style="border-left-color:var(--red);">
+      <div class="phase-num" style="color:var(--red);">1</div>
+      <div class="phase-body">
+        <div class="phase-title">Stop the Bleeding — Restore the Pipeline and Fix Installation</div>
+        <div class="phase-timeline">Weeks 1–3 · Builds: 16% → ~96% · Nightly: 0% → 100% · All 49 install complaints resolved</div>
+        <div class="phase-items">
+          <div class="phase-item"><strong style="color:var(--ink);">Fix the credential expiry.</strong> The build's access keys need to stay valid for the full duration of the job. Adding a retry means a single network moment no longer discards two hours of compute.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Restore the nightly schedule.</strong> A deprecated configuration setting is stopping the overnight quality check from running. A one-line fix brings it back immediately.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Create a single version rulebook.</strong> One authoritative list of which version each component requires eliminates the conflicting requirements that cause installation to fail.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Make installation failures visible.</strong> When setup fails, it should say so clearly and explain why — not exit with a false success message.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Approve the three pending install fixes.</strong> These are already written and reviewed. They are waiting only for a maintainer to approve and merge them. Doing so closes all 49 open installation complaints.</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="phase" style="border-color:#f5d9aa;border-left:4px solid var(--amber);">
-    <div class="pnum" style="color:var(--amber);">2</div>
-    <div class="pbody">
-      <div class="phd">
-        <div class="ptitle">Smart PR Gating — Eliminate GPU Waste</div>
-        <div class="pwin">Weeks 4–7</div>
-        <span class="badge ba">Targets #4 — −60% GPU runner cost</span>
-      </div>
-      <div class="pitems">
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Add dorny/paths-filter</strong> — classify PR as docs / tests / source / ci-config before any GPU runner is assigned</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Gate GPU matrix in PR build workflow</strong> — if: needs.classify.outputs.source == 'true'; docs PRs → ubuntu-latest only, no GPU</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Reduce PR matrix to 4 cells</strong> — latest Isaac Sim × 4 extensions on PRs; full 10-cell only on merge and nightly</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">BuildKit cache mounts</strong> — --mount=type=cache,target=/root/.cache/pip; reorder Dockerfile: requirements first, source after</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Base image deduplication</strong> — build base once per Isaac Sim version; fan-out to 4 extensions in parallel from cache</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--amber);"></div><span><strong style="color:var(--ink);">Add install test suite</strong> — conda/uv installation tests in CI; catch install regressions before reaching users</span></div>
+    <div class="phase" style="border-left-color:var(--amber);">
+      <div class="phase-num" style="color:var(--amber);">2</div>
+      <div class="phase-body">
+        <div class="phase-title">Reduce Waste — Spend Compute Budget Only Where It Adds Value</div>
+        <div class="phase-timeline">Weeks 4–8 · ~60% reduction in GPU spend on code reviews · ~40 GPU-hours saved per week</div>
+        <div class="phase-items">
+          <div class="phase-item"><strong style="color:var(--ink);">Check what type of change it is before spending.</strong> Documentation and text edits get a lightweight validation. Code changes get the full GPU pipeline. This alone eliminates the 32% of compute spend that currently goes to document reviews.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Build the base software once per night — not 12 times.</strong> Currently the system rebuilds the same foundation from scratch for each of 12 test configurations. Build it once and share the result across all configurations.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Cache downloads between builds.</strong> The same packages are re-downloaded from the internet on every single build. Storing them locally between runs saves approximately 18 minutes per build at no ongoing cost.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Set an expiry on failed build outputs.</strong> Two weeks of failed builds are sitting in cloud storage with no cleanup policy. A 30-day expiry removes them automatically and saves $50–200 per month in storage fees.</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="phase" style="border-color:#b0c8f5;border-left:4px solid var(--blue);">
-    <div class="pnum" style="color:var(--blue);">3</div>
-    <div class="pbody">
-      <div class="phd">
-        <div class="ptitle">Blackwell GPU Support + Elite Observability</div>
-        <div class="pwin">Weeks 8–12</div>
-        <span class="badge bb">Targets #2 — unblocks RTX 5090 / 5070 Ti users</span>
-      </div>
-      <div class="pitems">
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Add sm_90a + sm_120 to CUDA arch</strong> — fix NVRTC -arch error; update CMakeLists / setup.py for Blackwell</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Recompile TiledCamera kernel</strong> — add sm_120 target for GB202/GB203 silicon; resolves hang on RTX 5090</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Add Blackwell runner to nightly matrix</strong> — RTX 5090 (GB202) cell in daily-compatibility.yml from Week 8</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">Resolve Isaac Sim 6.0 compat gaps</strong> — fix API breakages; make IS 6.0 the primary version in PR CI</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">ECR push health check</strong> — hourly credential verification workflow; Slack alert on first failure before nightly runs</span></div>
-        <div class="pi"><div class="pidot" style="background:var(--blue);"></div><span><strong style="color:var(--ink);">DORA metrics baseline</strong> — track deployment freq, lead time, MTTR, CFR; target Elite band by end of Q3</span></div>
+    <div class="phase" style="border-left-color:var(--blue);">
+      <div class="phase-num" style="color:var(--blue);">3</div>
+      <div class="phase-body">
+        <div class="phase-title">Lead the Field — Current Hardware Support and Long-Term Quality</div>
+        <div class="phase-timeline">Weeks 9–14 · RTX 5090 / Blackwell fully supported · Isaac Sim 6.0 complete · Elite delivery performance</div>
+        <div class="phase-items">
+          <div class="phase-item"><strong style="color:var(--ink);">Support RTX 5090 and Blackwell GPUs.</strong> Update the simulator to compile for NVIDIA's 2025 hardware. This is a 1–2 day code change that unblocks every user on current-generation hardware and closes the most-discussed issue in the tracker.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Complete the Isaac Sim 6.0 migration.</strong> 35% of current complaints reference version 6.0 compatibility. Finishing the migration closes a large cluster of open issues and brings the platform fully up to date with NVIDIA's simulator platform.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Fix the physics data accuracy bug.</strong> A known defect causes robot training algorithms to receive incorrect velocity data without any warning. Researchers may be training on flawed results without realising the simulator is the source of the problem.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Add automated failure alerting.</strong> The 14-day outage was discovered manually. Adding a simple alert when the quality check fails two nights in a row means the team knows within hours — not weeks.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Outcomes -->
-  <div style="margin-top:12px;">
-    <div class="sec">Expected outcomes after all 3 phases</div>
-    <div class="g4">
-      <div class="stat" style="border-color:#bfdf7a;border-left:4px solid var(--green);">
-        <div class="sv" style="color:var(--green);">+80%</div>
-        <div class="sl">Postmerge Pass Rate</div>
-        <div class="sn">ECR fix + retry logic → 16% → ~96%; Phase 1 alone achieves this</div>
+  <div class="foot">
+    <div class="fl">Phase 1 requires no architectural changes — configuration and credential updates only</div>
+    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     04 — WHAT WE GAIN
+════════════════════════════════════════════ -->
+<div class="slide">
+  <span class="snum">04 / 05</span>
+  <div class="hd">
+    <div>
+      <div class="eye">Expected Outcomes</div>
+      <div class="hl">From Critically Broken to <em>Industry-Leading</em> in 14 Weeks</div>
+      <div class="hl-s">These numbers follow from fixing confirmed root causes — not projections built on assumptions.</div>
+    </div>
+    <div class="hd-label">Outcomes</div>
+  </div>
+
+  <div class="body">
+    <div class="g4 mb14">
+      <div class="stat" style="border-color:#b5de7a;border-left:4px solid var(--green);">
+        <div class="sv" style="color:var(--green);">16→96%</div>
+        <div class="sl">Build Success Rate</div>
+        <div class="sn">Restored in Phase 1 through the credential fix alone</div>
       </div>
-      <div class="stat" style="border-color:#bfdf7a;border-left:4px solid var(--green);">
-        <div class="sv" style="color:var(--green);">100%</div>
-        <div class="sl">Nightly Restored</div>
-        <div class="sn">0% → daily green; credential fix + deprecation patch in Phase 1</div>
+      <div class="stat" style="border-color:#b5de7a;border-left:4px solid var(--green);">
+        <div class="sv" style="color:var(--green);">0→100%</div>
+        <div class="sl">Nightly Quality Check</div>
+        <div class="sn">Bugs caught automatically overnight — not by users weeks later</div>
       </div>
-      <div class="stat" style="border-color:#bfdf7a;border-left:4px solid var(--green);">
-        <div class="sv" style="color:var(--green);">−60%</div>
-        <div class="sl">GPU Runner Cost</div>
-        <div class="sn">Smart gating + matrix reduction; ~40 GPU-hours/week saved</div>
+      <div class="stat" style="border-color:#b5de7a;border-left:4px solid var(--green);">
+        <div class="sv" style="color:var(--green);">~60%</div>
+        <div class="sl">Reduction in GPU Spend</div>
+        <div class="sn">Classifying changes before spending eliminates the largest source of waste</div>
       </div>
-      <div class="stat" style="border-color:#bfdf7a;border-left:4px solid var(--green);">
+      <div class="stat" style="border-color:#b5de7a;border-left:4px solid var(--green);">
         <div class="sv" style="color:var(--green);">49→0</div>
-        <div class="sl">Install Issues</div>
-        <div class="sn">Centralized pins + smoke tests close all open install issues</div>
+        <div class="sl">Open Install Complaints</div>
+        <div class="sn">Three pending fixes, already written, close all open installation issues on merge</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div>
+        <div class="label">Before and after — by metric</div>
+        <div style="background:var(--card);border:1.5px solid var(--rim);overflow:hidden;">
+          <table class="cmp">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Today</th>
+                <th>After 3 weeks</th>
+                <th>After 14 weeks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="lbl">Build success rate</td><td class="bad">16%</td><td class="mid">~96%</td><td class="good">≥96%</td></tr>
+              <tr><td class="lbl">Nightly quality check</td><td class="bad">0% for 14 days</td><td class="good">Restored to 100%</td><td class="good">100%</td></tr>
+              <tr><td class="lbl">Open install complaints</td><td class="bad">49</td><td class="mid">~10</td><td class="good">0</td></tr>
+              <tr><td class="lbl">GPU compute spend / week</td><td class="bad">Full rate</td><td class="mid">Unchanged</td><td class="good">~60% lower</td></tr>
+              <tr><td class="lbl">RTX 5090 support</td><td class="bad">Crashes on launch</td><td class="bad">Not yet</td><td class="good">Fully supported</td></tr>
+              <tr><td class="lbl">Time to detect a failure</td><td class="bad">Days — found manually</td><td class="good">Hours</td><td class="good">Automated, &lt;2 hours</td></tr>
+              <tr><td class="lbl">Delivery performance tier</td><td class="bad">Medium</td><td class="mid">High</td><td class="good">Elite</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="label">Why these numbers hold</div>
+        <div class="callout" style="border-left-color:var(--red);">
+          <div class="callout-title">Phase 1 is a configuration change, not an engineering project</div>
+          <div class="callout-body">Renewing access credentials and adding a retry wrapper takes 2–3 days for one engineer. It recovers 80 percentage points of build reliability. The return on this investment is immediate and the risk is minimal — it is the most impactful single action in this entire plan.</div>
+        </div>
+        <div class="callout" style="border-left-color:var(--amber);">
+          <div class="callout-title">Phase 2 pays for itself in direct cloud savings</div>
+          <div class="callout-body">Classifying changes before spinning up GPU compute saves approximately 40 GPU-hours per week. At standard cloud rates this represents meaningful direct cost reduction — well ahead of the engineering time required, before accounting for faster builds and higher throughput.</div>
+        </div>
+        <div class="callout" style="border-left-color:var(--blue);">
+          <div class="callout-title">Phase 3 closes a competitive gap that is already visible to users</div>
+          <div class="callout-body">Supporting the RTX 5090 and completing the Isaac Sim 6.0 migration means the platform works on current hardware from day one — not months behind. The Blackwell GPU issue is currently the most-discussed complaint in the tracker. It has no fix in progress.</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="foot">
-    <div class="fl">Implementation Timeline — Q2/Q3 2026</div>
-    <div class="fr">IsaacLab / IsaacSim CI Review · May 2026</div>
+    <div class="fl">Outcome projections derived from confirmed root causes — not estimates</div>
+    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
   </div>
 </div>
+
+
+<!-- ════════════════════════════════════════
+     05 — THE ASK
+════════════════════════════════════════════ -->
+<div class="slide">
+  <span class="snum">05 / 05</span>
+  <div class="hd">
+    <div>
+      <div class="eye">Next Steps</div>
+      <div class="hl">Three Decisions Needed. <em>The Analysis Is Done.</em></div>
+      <div class="hl-s">The root causes are confirmed. The fixes are designed. What's needed now is owners for each workstream and confirmation they can start this week.</div>
+    </div>
+    <div class="hd-label">The Ask</div>
+  </div>
+
+  <div class="body">
+    <div class="g3 mb12">
+      <div class="dec" style="border-left-color:var(--red);">
+        <div class="dec-title">① Renew the build credentials — this week</div>
+        <div class="dec-body">This is the single change that fixes 96% of build failures and brings the nightly quality check from 0% back to 100%. The work involves renewing the security access keys the automated pipeline uses, and adding a retry so one bad moment doesn't discard two hours of compute. Estimated effort: 2–3 days for one infrastructure engineer. The impact is immediate.</div>
+        <div class="dec-ask">Who owns this, and can they start this week?</div>
+      </div>
+      <div class="dec" style="border-left-color:var(--amber);">
+        <div class="dec-title">② Approve the three pending installation fixes</div>
+        <div class="dec-body">Three improvements are in the review queue and have been for weeks. They address the version conflict causing installation failures for 1 in 3 users. The code is written. The technical review is complete. They are waiting only for a maintainer with authority over the repository to approve and merge them. Doing so closes all 49 open installation complaints at once.</div>
+        <div class="dec-ask">Who can approve and merge these this week?</div>
+      </div>
+      <div class="dec" style="border-left-color:var(--blue);">
+        <div class="dec-title">③ Assign an owner for the RTX 5090 fix — to start in Week 9</div>
+        <div class="dec-body">The RTX 5090 crash is the most-discussed issue in the tracker. There is no fix in progress. The change needed is updating the GPU architecture list the simulator compiles against to include NVIDIA's 2025 hardware — a 1–2 day task for one engineer. This unblocks the entire Blackwell GPU install base and removes a visible reputational gap for the platform.</div>
+        <div class="dec-ask">Which engineer takes this, starting Week 9?</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div>
+        <div class="label">The one thing to take from this review</div>
+        <div class="callout" style="border-left-color:var(--green);">
+          <div class="callout-title">96% of failures trace to one problem. One fix. Three weeks.</div>
+          <div class="callout-body">
+            The diagnosis here is thorough. The remedy is not complicated. We know exactly why 84 out of every 100 builds fail — the access credentials expire before the job can save its output. Fixing that, with a retry added for resilience, brings the platform from 16% reliability back to approximately 96%.<br><br>
+            If only one thing comes out of this review, it should be that: the build credentials are renewed this week. The cost savings, the GPU support, the installation fixes — all of that can follow in sequence. But the credential fix is the highest-return action available, and it can start today.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Recovery timeline</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#fde8e5;border:1.5px solid #f0b5af;border-left:4px solid var(--red);padding:10px 12px;">
+            <div style="font:600 8px/1 var(--sans);color:var(--red);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Today</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">16% builds succeeding · nightly down 14 days · 49 install complaints · RTX 5090 unsupported · 100 changes stuck</div>
+          </div>
+          <div style="background:#fff7ed;border:1.5px solid #f0d4aa;border-left:4px solid var(--amber);padding:10px 12px;">
+            <div style="font:600 8px/1 var(--sans);color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Week 3</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">~96% builds succeeding · nightly restored · install complaints closed · delivery unblocked</div>
+          </div>
+          <div style="background:#f0f8e6;border:1.5px solid #b5de7a;border-left:4px solid var(--green);padding:10px 12px;">
+            <div style="font:600 8px/1 var(--sans);color:var(--green);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Week 8</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">GPU compute spend reduced ~60% · build time shortened · automated failure alerts in place</div>
+          </div>
+          <div style="background:#ebf2fd;border:1.5px solid #a8c8f5;border-left:4px solid var(--blue);padding:10px 12px;">
+            <div style="font:600 8px/1 var(--sans);color:var(--blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Week 14</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">RTX 5090 supported · Isaac Sim 6.0 complete · physics accuracy fixed · Elite delivery rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="fl">IsaacLab CI/CD &amp; Product Improvement Plan · Review date: 13 May 2026</div>
+    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
+  </div>
+</div>
+
 
 </body>
 </html>

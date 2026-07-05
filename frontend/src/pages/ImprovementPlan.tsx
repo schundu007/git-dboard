@@ -11,7 +11,8 @@ import { getImprovementPlan, getIssuesAnalysis, getActiveRepo } from '../lib/api
 import { useRepoSlug } from '../lib/hooks'
 import BusinessReport from '../components/BusinessReport'
 import { TabBar } from '../components/ui/TabBar'
-import { CurrentArchSVG, TargetArchSVG } from '../components/CICDArchitectures'
+import { TargetArchSVG } from '../components/CICDArchitectures'
+import LiveCICDPipeline from '../components/LiveCICDPipeline'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -780,17 +781,20 @@ function CICDArchitectureSection() {
           ))}
         </div>
       </div>
-      <div className={clsx(
-        'p-2 w-full',
-        view === 'current' ? 'bg-[#060c18]' : 'bg-[#060c06]',
-      )} style={{ aspectRatio: '1000 / 480' }}>
-        {view === 'current' ? <CurrentArchSVG /> : <TargetArchSVG />}
+      <div
+        className={clsx(
+          'p-2 w-full',
+          view === 'current' ? 'bg-[#060c18] min-h-[320px]' : 'bg-[#060c06]',
+        )}
+        style={view === 'current' ? undefined : { aspectRatio: '1000 / 480' }}
+      >
+        {view === 'current' ? <LiveCICDPipeline /> : <TargetArchSVG />}
       </div>
       <div className="px-4 py-2 border-t border-border flex items-center gap-4">
         {view === 'current' ? (
           <>
-            <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Issues</span>
-            <span className="text-[10px] text-[#ef4444] font-mono">No BuildKit cache · No ECR pull-through · No SBOM · No observability</span>
+            <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Live</span>
+            <span className="text-[10px] text-gray-500 font-mono">Actual workflows for the selected repo · stages inferred from names · click a workflow to open it on GitHub</span>
           </>
         ) : (
           <>

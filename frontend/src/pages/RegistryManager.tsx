@@ -498,9 +498,46 @@ const REGISTRY_ROWS = [
   { feature: 'Lifecycle TTL cleanup', ngc: false, ghcr: true  },
 ]
 
-function RegistryComparison({ repoSlug }: { repoSlug: string }) {
-  const owner = repoSlug.split('/')[0] ?? 'isaac-sim'
-  const repo  = repoSlug.split('/')[1] ?? 'isaaclab'
+function RegistryComparison({ repoSlug, isIsaacLab }: { repoSlug: string; isIsaacLab: boolean }) {
+  const [owner = '', repo = ''] = repoSlug.split('/')
+  const ownerL = owner.toLowerCase()
+  const repoL = repo.toLowerCase()
+
+  // Generic repos don't publish to NVIDIA NGC — show a GHCR-only view instead of
+  // an NGC-vs-GHCR comparison that implies an nvcr.io presence they don't have.
+  if (!isIsaacLab) {
+    return (
+      <div>
+        <div className="section-head">Container Registry</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-2 px-3 text-gray-500 font-medium">Feature</th>
+                <th className="text-center py-2 px-3 text-gray-400 font-mono">GHCR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {REGISTRY_ROWS.map(r => (
+                <tr key={r.feature} className="border-t border-border/50 hover:bg-surface-2/30">
+                  <td className="py-2 px-3 text-gray-300">{r.feature}</td>
+                  <td className="py-2 px-3 text-center">{r.ghcr ? '✅' : '❌'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-2 text-[10px]">
+          <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
+            <p className="text-gray-500 mb-0.5">GHCR</p>
+            <code className="text-gray-400 font-mono">ghcr.io/{ownerL}/{repoL}</code>
+            <p className="text-gray-400 mt-0.5">Auth: GITHUB_TOKEN / PAT</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="section-head">Registry Comparison</div>
@@ -527,12 +564,12 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
       <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">NGC</p>
-          <code className="text-gray-400 font-mono">nvcr.io/nvidia/{repo.toLowerCase().replace(/_/g, '-')}</code>
+          <code className="text-gray-400 font-mono">nvcr.io/nvidia/{repoL.replace(/_/g, '-')}</code>
           <p className="text-gray-400 mt-0.5">Auth: NGC_API_KEY</p>
         </div>
         <div className="bg-surface-2 border border-border rounded px-2 py-1.5">
           <p className="text-gray-500 mb-0.5">GHCR</p>
-          <code className="text-gray-400 font-mono">ghcr.io/{owner.toLowerCase()}/{repo.toLowerCase()}</code>
+          <code className="text-gray-400 font-mono">ghcr.io/{ownerL}/{repoL}</code>
           <p className="text-gray-400 mt-0.5">Auth: GITHUB_TOKEN / PAT</p>
         </div>
       </div>
@@ -641,8 +678,8 @@ export default function RegistryManager() {
   return (
     <div className="space-y-5">
 
-      {/* Registry info cards — always visible */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Registry info cards — ECR always; NGC only for NVIDIA IsaacLab */}
+      <div className={clsx('grid grid-cols-1 gap-3', isIsaacLab && 'md:grid-cols-2')}>
         {/* ECR */}
         <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -679,7 +716,8 @@ export default function RegistryManager() {
           </div>
         </div>
 
-        {/* NGC */}
+        {/* NGC — NVIDIA-specific; only for IsaacLab repos */}
+        {isIsaacLab && (
         <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-green-950 flex items-center justify-center">
@@ -703,6 +741,7 @@ export default function RegistryManager() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Tab navigation */}
@@ -803,7 +842,7 @@ export default function RegistryManager() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="bg-surface-1 border border-border rounded-xl p-4"><MatrixSection /></div>
-                <div className="bg-surface-1 border border-border rounded-xl p-4"><RegistryComparison repoSlug={repoSlug} /></div>
+                <div className="bg-surface-1 border border-border rounded-xl p-4"><RegistryComparison repoSlug={repoSlug} isIsaacLab={isIsaacLab} /></div>
               </div>
             </>
           ) : (
@@ -814,7 +853,7 @@ export default function RegistryManager() {
                   The Isaac Sim tag naming scheme is specific to the IsaacLab publishing pipeline and does not apply to <span className="text-gray-300">{repoSlug}</span>.
                 </p>
               </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-4"><RegistryComparison repoSlug={repoSlug} /></div>
+              <div className="bg-surface-1 border border-border rounded-xl p-4"><RegistryComparison repoSlug={repoSlug} isIsaacLab={isIsaacLab} /></div>
             </>
           )}
         </div>

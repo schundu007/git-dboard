@@ -369,8 +369,8 @@ export function TargetArchSVG() {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%"
       preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}
-      role="img" aria-label="Target CI/CD architecture for IsaacLab — sources, observability, K8s runner cluster pipeline, and distribution">
-      <title>Target CI/CD architecture for IsaacLab</title>
+      role="img" aria-label="Target CI/CD architecture — sources, observability, K8s runner cluster pipeline, and distribution">
+      <title>Target CI/CD architecture</title>
 
       <defs>
         {/* Arrowhead markers */}
@@ -613,7 +613,7 @@ export function TargetArchSVG() {
           <line x1="8" y1="20" x2="32" y2="20" stroke={BLU} strokeWidth="1.5" opacity="0.5" />
           <circle cx="14" cy="16" r="1.5" fill={BLU} opacity="0.8" />
           <circle cx="14" cy="24" r="1.5" fill={BLU} opacity="0.8" />
-          <text x="22" y="18" fontSize="5" fontFamily="monospace" fontWeight="700" fill={BLU}>ECR</text>
+          <text x="22" y="18" fontSize="5" fontFamily="monospace" fontWeight="700" fill={BLU}>REG</text>
         </symbol>
 
         {/* ── CloudFront globe ── */}
@@ -832,7 +832,7 @@ export function TargetArchSVG() {
           label: 'Build', clr: GRN, fill: '#091a07', arrowMark: 'url(#ta-col-grn)',
           items: [
             { id: '#ta-docker',    name: 'Docker Buildx',    sub: 'ARM64 · x86_64 · C++' },
-            { id: '#ta-docker',    name: 'CUDA + C++ Image', sub: 'Multi-arch Build'      },
+            { id: '#ta-docker',    name: 'Container Image', sub: 'Multi-arch Build'      },
             { id: '#ta-buildkit',  name: 'BuildKit',          sub: 'Layer Cache'           },
             { id: '#ta-syft',      name: 'Artifact',          sub: 'OCI Image'             },
           ],
@@ -842,7 +842,7 @@ export function TargetArchSVG() {
           items: [
             { id: '#ta-compose',    name: 'Compose Stack',  sub: 'Service Up'       },
             { id: '#ta-multirepo',  name: 'Multi-repo',     sub: 'Dependency Graph' },
-            { id: '#ta-python',     name: 'Smoke Tests',    sub: 'ROS 2 e2e'        },
+            { id: '#ta-python',     name: 'Smoke Tests',    sub: 'e2e tests'        },
             { id: '#ta-check',      name: 'Staging Deploy', sub: 'Helm + Argo'      },
           ],
         },
@@ -850,7 +850,7 @@ export function TargetArchSVG() {
           label: 'Nightly', clr: GRN, fill: '#091a07', arrowMark: 'url(#ta-col-grn)',
           items: [
             { id: '#ta-fullreg', name: 'Full Regression', sub: 'Suite'        },
-            { id: '#ta-ros2',    name: 'Isaac ROS',        sub: 'GPU Benchmark'},
+            { id: '#ta-ros2',    name: 'Integration',      sub: 'Benchmark'},
             { id: '#ta-perf',    name: 'Performance',      sub: 'Benchmarks'  },
             { id: '#ta-chaos',   name: 'Chaos / Soak',     sub: 'Stability'   },
           ],
@@ -860,7 +860,7 @@ export function TargetArchSVG() {
           items: [
             { id: '#ta-cosign',  name: 'cosign',     sub: 'Keyless Signing'  },
             { id: '#ta-syft',    name: 'syft',        sub: 'SBOM Generation' },
-            { id: '#ta-ecr',     name: 'ECR Push',    sub: 'nvcr.io + ECR'   },
+            { id: '#ta-ecr',     name: 'Registry Push', sub: 'GHCR + Registry' },
             { id: '#ta-cf',      name: 'CloudFront',  sub: 'Prod CDN'        },
           ],
         },
@@ -969,7 +969,7 @@ export function TargetArchSVG() {
       {([
         { id: '#ta-multistage', label: 'Multi-stage',  sub: 'Dockerfile'      },
         { id: '#ta-buildkit',   label: 'Buildx Cache', sub: 'Layer Dedup'     },
-        { id: '#ta-ptmirror',   label: 'PT Mirror',     sub: 'ARM64+x86+CUDA' },
+        { id: '#ta-ptmirror',   label: 'PT Mirror',     sub: 'ARM64 + x86' },
       ] as const).map((item, i) => {
         const cx = C_XS[0] + 42 + i * 97
         return (
@@ -1005,10 +1005,10 @@ export function TargetArchSVG() {
       {/* ECR + CDN Distribution (blue) */}
       <rect x={C_XS[2]} y={C_Y} width={C_BOX_W} height={C_H} rx="8"
         fill="#060810" stroke={BLU} strokeOpacity="0.55" strokeWidth="1" />
-      <text x={C_XS[2] + 8} y={C_Y + 13} fill={BLU} fontSize="7" fontWeight="700" letterSpacing="1.2" fontFamily="monospace">ECR + CDN DISTRIBUTION</text>
+      <text x={C_XS[2] + 8} y={C_Y + 13} fill={BLU} fontSize="7" fontWeight="700" letterSpacing="1.2" fontFamily="monospace">REGISTRY + CDN DISTRIBUTION</text>
       <text x={C_XS[2] + 8} y={C_Y + 23} fill={BLU} fontSize="6.5" fontFamily="monospace" opacity="0.65">↑ push + distribute → Release column</text>
       {([
-        { id: '#ta-ecr',       label: 'ECR PT Cache',  sub: 'us-east-1 · eu-west-1' },
+        { id: '#ta-ecr',       label: 'Registry Cache', sub: 'multi-region'          },
         { id: '#ta-cf',        label: 'CloudFront',     sub: 'Global CDN'             },
         { id: '#ta-multiarch', label: 'Multi-arch',     sub: 'Manifests'              },
       ] as const).map((item, i) => {
@@ -1022,15 +1022,15 @@ export function TargetArchSVG() {
         )
       })}
 
-      {/* GPU Infrastructure — SLURM + Slinky (NVIDIA green) */}
+      {/* Compute / runner autoscaling */}
       <rect x={C_XS[3]} y={C_Y} width={C_BOX_W} height={C_H} rx="8"
         fill="#06100a" stroke={GPU} strokeOpacity="0.55" strokeWidth="1" />
-      <text x={C_XS[3] + 8} y={C_Y + 13} fill={GPU} fontSize="7" fontWeight="700" letterSpacing="1.2" fontFamily="monospace">GPU INFRA · MIG</text>
-      <text x={C_XS[3] + 8} y={C_Y + 23} fill={GPU} fontSize="6.5" fontFamily="monospace" opacity="0.65">SLURM · Slinky · MIG partitioning</text>
+      <text x={C_XS[3] + 8} y={C_Y + 13} fill={GPU} fontSize="7" fontWeight="700" letterSpacing="1.2" fontFamily="monospace">COMPUTE · RUNNERS</text>
+      <text x={C_XS[3] + 8} y={C_Y + 23} fill={GPU} fontSize="6.5" fontFamily="monospace" opacity="0.65">Autoscaling · GPU · spot fallback</text>
       {([
-        { id: '#ta-slurm',  label: 'SLURM',   sub: 'Workload Sched.'  },
-        { id: '#ta-slinky', label: 'Slinky',   sub: 'K8s Operator'    },
-        { id: '#ta-mig',    label: 'MIG',       sub: 'GPU Partitioning'},
+        { id: '#ta-slurm',  label: 'Autoscale', sub: 'Runner pool'    },
+        { id: '#ta-slinky', label: 'K8s Ops',   sub: 'Operator'       },
+        { id: '#ta-mig',    label: 'Spot',      sub: 'Cost fallback'  },
       ] as const).map((item, i) => {
         const cx = C_XS[3] + 42 + i * 97
         return (

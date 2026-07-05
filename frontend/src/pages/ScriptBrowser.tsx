@@ -194,13 +194,13 @@ async function fetchContent(owner: string, repo: string, path: string): Promise<
 
 // ─── Explain / Issues / Deep Dive content (keyed by lang) ────────────────────
 
-// JD skill tags by language — aligned to NVIDIA Senior DevOps Engineer, Robotics (JR2014821)
+// Concept tags by language
 const JD_CONCEPTS: Record<string, string[]> = {
-  bash: ['set -euo pipefail', 'multi-repo orchestration', 'SLURM job submission', 'Singularity/Apptainer', 'Docker build/push', 'self-hosted runner setup', 'CI entrypoint design', 'artifact staging'],
-  python: ['release automation', 'semantic versioning', 'ECR/ACR artifact publishing', 'CI pipeline orchestration', 'subprocess.run', 'GITHUB_STEP_SUMMARY', 'health-check automation', 'multi-repo dependency resolution'],
-  yaml: ['pre-merge validation', 'nightly test pipeline', 'release pipeline', 'multi-arch builds (ARM64/x86-64)', 'self-hosted GPU runners', 'reusable workflows (workflow_call)', 'matrix strategy', 'ECR image publishing', 'concurrency/cancel-in-progress', 'permissions: least privilege'],
-  dockerfile: ['multi-stage build', 'multi-arch (buildx/QEMU)', 'NVIDIA CUDA base image', 'ROS 2 base image', 'ARM64/Graviton target', 'layer cache efficiency', 'distroless/minimal final stage', 'ENTRYPOINT signal handling'],
-  makefile: ['phony targets', 'variable overrides', 'parallel build (-j)', 'cross-compilation', 'colcon/CMake integration', 'ROS 2 workspace build'],
+  bash: ['set -euo pipefail', 'multi-repo orchestration', 'batch/HPC job submission', 'container runtime', 'Docker build/push', 'self-hosted runner setup', 'CI entrypoint design', 'artifact staging'],
+  python: ['release automation', 'semantic versioning', 'registry artifact publishing', 'CI pipeline orchestration', 'subprocess.run', 'GITHUB_STEP_SUMMARY', 'health-check automation', 'multi-repo dependency resolution'],
+  yaml: ['pre-merge validation', 'nightly test pipeline', 'release pipeline', 'multi-arch builds (ARM64/x86-64)', 'self-hosted runners', 'reusable workflows (workflow_call)', 'matrix strategy', 'registry image publishing', 'concurrency/cancel-in-progress', 'permissions: least privilege'],
+  dockerfile: ['multi-stage build', 'multi-arch (buildx/QEMU)', 'pinned base image', 'ARM64 target', 'layer cache efficiency', 'distroless/minimal final stage', 'ENTRYPOINT signal handling'],
+  makefile: ['phony targets', 'variable overrides', 'parallel build (-j)', 'cross-compilation', 'build-system integration', 'reproducible builds'],
 }
 
 function describeScript(path: string): { summary: string; steps: string[]; concepts: string[] } {
@@ -217,44 +217,44 @@ function describeScript(path: string): { summary: string; steps: string[]; conce
   const isMultiArch = filename.toLowerCase().includes('arm') || filename.toLowerCase().includes('aarch') || filename.toLowerCase().includes('multiarch') || filename.toLowerCase().includes('multi-arch')
 
   const summary: Record<string, string> = {
-    bash: `Shell script at \`${path}\`. In NVIDIA's Isaac robotics platform, shell scripts orchestrate multi-step build/test/deploy flows — setting up ROS 2 workspace environments, invoking colcon or CMake, managing Docker image builds, coordinating SLURM job submissions for GPU cluster testing, and wrapping Isaac Lab or Isaac Sim launch sequences for CI runners.`,
-    python: `Python automation script at \`${path}\`. Python is the preferred language in NVIDIA's Isaac CI for build matrix resolution, test result aggregation into \`$GITHUB_STEP_SUMMARY\`, semantic version bumping, artifact publishing to ECR, and multi-repo dependency graph management across Isaac ROS packages.`,
+    bash: `Shell script at \`${path}\`. Shell scripts orchestrate multi-step build/test/deploy flows — setting up the build/runtime environment, invoking the project's build command, managing Docker image builds, coordinating batch/HPC scheduler jobs (e.g. SLURM) for heavier test runs, and wrapping application launch sequences for CI runners.`,
+    python: `Python automation script at \`${path}\`. Python is a common choice for CI glue: build matrix resolution, test result aggregation into \`$GITHUB_STEP_SUMMARY\`, semantic version bumping, artifact publishing to a container registry, and multi-repo dependency graph management.`,
     yaml: isRelease
-      ? `Release pipeline workflow at \`${filename}\`. Release pipelines in Isaac publish versioned Docker images to NVIDIA's container registries (NGC/ECR), generate changelogs, tag the git tree with semantic versions, and distribute pre-built ROS 2 packages via CDN-backed artifact stores.`
+      ? `Release pipeline workflow at \`${filename}\`. Release pipelines publish versioned Docker images to a container registry (e.g. GHCR/ECR), generate changelogs, tag the git tree with semantic versions, and distribute pre-built packages via artifact stores.`
       : isNightly
-      ? `Nightly scheduled workflow at \`${filename}\`. Nightly pipelines in the Isaac platform execute the full test matrix — all ROS 2 package combinations, GPU hardware tests on self-hosted runners, SLURM cluster integration tests — and publish a pass/fail report to the GitHub step summary and Slack.`
+      ? `Nightly scheduled workflow at \`${filename}\`. Nightly pipelines execute the full test matrix — all build/platform combinations, longer-running integration tests on self-hosted runners, optional batch/HPC scheduler jobs — and publish a pass/fail report to the GitHub step summary and Slack.`
       : isPremerge
-      ? `Pre-merge CI workflow at \`${filename}\`. Pre-merge pipelines run fast, parallelised smoke tests to gate every pull request: lint, unit tests, colcon build on ubuntu/x86-64, and optionally ARM64 cross-build validation. Failures block the merge queue.`
-      : `GitHub Actions workflow at \`${filename}\`. Defines the trigger events, runner configuration, and steps to build, test, or deploy components of the Isaac robotics platform.`,
+      ? `Pre-merge CI workflow at \`${filename}\`. Pre-merge pipelines run fast, parallelised smoke tests to gate every pull request: lint, unit tests, a build on ubuntu/x86-64, and optionally ARM64 cross-build validation. Failures block the merge queue.`
+      : `GitHub Actions workflow at \`${filename}\`. Defines the trigger events, runner configuration, and steps to build, test, or deploy the project.`,
     dockerfile: isMultiArch
-      ? `Multi-architecture Dockerfile at \`${path}\`. Builds images for both x86-64 and ARM64 (Jetson/Graviton) targets using Docker buildx and QEMU emulation. Isaac ROS containers must run on Jetson AGX Orin (ARM64) and x86-64 development machines, requiring verified multi-arch manifests published to NVIDIA NGC or ECR.`
-      : `Dockerfile at \`${path}\`. Isaac robotics containers extend NVIDIA's CUDA or L4T base images to layer ROS 2, colcon workspace artifacts, and runtime dependencies. Pinned base image digests ensure reproducible builds across pre-merge, nightly, and release pipelines.`,
-    makefile: `Makefile at \`${path}\`. Provides \`make\` targets for common Isaac Lab / Isaac ROS development workflows: \`make build\` (colcon workspace), \`make test\` (pytest/GTest), \`make docker-build\` (multi-arch image), \`make lint\` (ament_cpplint, clang-format), and \`make clean\`.`,
+      ? `Multi-architecture Dockerfile at \`${path}\`. Builds images for both x86-64 and ARM64 targets using Docker buildx and QEMU emulation. Containers that must run on ARM64 targets and x86-64 development machines require verified multi-arch manifests published to a container registry (e.g. GHCR/ECR).`
+      : `Dockerfile at \`${path}\`. Containers extend a base image to layer the build/runtime environment, compiled artifacts, and runtime dependencies. Pinned base image digests ensure reproducible builds across pre-merge, nightly, and release pipelines.`,
+    makefile: `Makefile at \`${path}\`. Provides \`make\` targets for common development workflows: \`make build\` (the project's build), \`make test\` (the test suite), \`make docker-build\` (multi-arch image), \`make lint\`, and \`make clean\`.`,
   }
 
   const steps: Record<string, string[]> = {
     bash: [
       'Shebang + `set -euo pipefail` establish interpreter and strict failure mode — any unset var or failed command aborts immediately.',
-      'Environment validation: required vars (NGC_API_KEY, ROS_DISTRO, TARGET_ARCH) are checked before side effects occur.',
-      'ROS 2 workspace or Isaac Lab environment is sourced (`source /opt/ros/$ROS_DISTRO/setup.bash`).',
-      'Core logic runs: `colcon build`, `docker buildx build --platform linux/amd64,linux/arm64`, or SLURM `sbatch` invocation.',
+      'Environment validation: required vars (e.g. REGISTRY_TOKEN, BUILD_VERSION, TARGET_ARCH) are checked before side effects occur.',
+      'The build/runtime environment is sourced or activated (e.g. `source ./scripts/env.sh` or activating a virtualenv).',
+      'Core logic runs: the project build, `docker buildx build --platform linux/amd64,linux/arm64`, or a batch/HPC scheduler submission (e.g. SLURM `sbatch`).',
       'Artifacts are staged and `trap cleanup EXIT` ensures temporary resources are removed even on failure.',
     ],
     python: [
       'Module-level imports and constants define the build matrix, registry endpoints, and version constraints.',
       'CLI args or environment variables parameterise the run (dry-run, target platform, version override).',
-      'Core logic executes: resolve multi-repo dependency graph, build Docker manifests, publish to ECR, or aggregate test cell JSON into a status table.',
+      'Core logic executes: resolve the multi-repo dependency graph, build Docker manifests, publish to a container registry, or aggregate test cell JSON into a status table.',
       'Results are written to `$GITHUB_STEP_SUMMARY` as a Markdown table and to stdout for pipeline log capture.',
       'Non-zero exit on any failure propagates cleanly to the GitHub Actions runner.',
     ],
     yaml: isRelease ? [
       '`on: push: tags:` triggers on semantic version tags (e.g. `v*`).',
-      'Build job: checks out repo, authenticates to NGC/ECR, runs `docker buildx build --platform linux/amd64,linux/arm64 --push`.',
-      'Publish job: generates changelog, creates GitHub Release, uploads `.whl`/`.deb` artifacts.',
-      'Notify job: posts success/failure to Slack channel with image digest and changelog link.',
+      'Build job: checks out repo, authenticates to the container registry, runs `docker buildx build --platform linux/amd64,linux/arm64 --push`.',
+      'Publish job: generates changelog, creates GitHub Release, uploads build artifacts (e.g. `.whl`/`.deb`).',
+      'Notify job: posts success/failure to a Slack channel with image digest and changelog link.',
     ] : isNightly ? [
       '`on: schedule: cron` triggers at a fixed UTC time (e.g. `0 3 * * *`).',
-      'Matrix job fans out across Isaac Sim versions and ROS 2 distros on self-hosted GPU runners.',
+      'Matrix job fans out across the build matrix (e.g. version × platform) on self-hosted runners.',
       'Each cell runs the full test suite, uploads a JSON result artifact, and sets `continue-on-error: true` to collect all results.',
       'Summary job downloads all cell artifacts, merges them into a Markdown table, and writes to `$GITHUB_STEP_SUMMARY`.',
     ] : [
@@ -264,17 +264,17 @@ function describeScript(path: string): { summary: string; steps: string[]; conce
       'Required status checks must pass before the PR is mergeable — enforced via branch protection rules.',
     ],
     dockerfile: [
-      '`FROM` selects a pinned NVIDIA base image (CUDA, L4T, or ROS 2) by digest for bit-for-bit reproducibility.',
-      '`RUN apt-get` layers install ROS 2 packages and build dependencies, ordered for maximum cache reuse.',
-      '`COPY` brings in `colcon.meta`, `requirements.txt`, or pre-built wheel artifacts.',
-      '`RUN colcon build` or `pip install` completes the workspace build inside the container.',
-      '`ENTRYPOINT`/`CMD` wrap `ros2 launch` or the Isaac application entry point with PID 1 signal handling via `exec`.',
+      '`FROM` selects a pinned base image by digest for bit-for-bit reproducibility.',
+      '`RUN apt-get` layers install system packages and build dependencies, ordered for maximum cache reuse.',
+      '`COPY` brings in manifests (e.g. `requirements.txt`, lockfiles) or pre-built artifacts.',
+      '`RUN` completes the build (e.g. `make build` or `pip install`) inside the container.',
+      '`ENTRYPOINT`/`CMD` wrap the application entry point with PID 1 signal handling via `exec`.',
     ],
     makefile: [
       '`.PHONY` declares all non-file targets to prevent false-up-to-date matches.',
-      'Variables at the top (`ROS_DISTRO ?= humble`, `ARCH ?= amd64`) allow CI overrides without editing the file.',
-      '`build` target invokes `colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release`.',
-      '`test` target runs `colcon test` followed by `colcon test-result --verbose`.',
+      'Variables at the top (e.g. `BUILD_TYPE ?= Release`, `ARCH ?= amd64`) allow CI overrides without editing the file.',
+      '`build` target invokes the project build with configurable flags.',
+      '`test` target runs the test suite and reports results.',
       '`docker-build` target invokes `docker buildx build --platform linux/amd64,linux/arm64`.',
     ],
   }
@@ -286,59 +286,59 @@ function describeScript(path: string): { summary: string; steps: string[]; conce
   }
 }
 
-// Issues keyed by lang — targeted at NVIDIA Isaac robotics CI/CD context
+// Common issues keyed by language
 const COMMON_ISSUES: Record<string, Array<{ title: string; severity: 'critical' | 'high' | 'medium'; description: string; fix: string }>> = {
   bash: [
     {
       title: 'Missing `set -euo pipefail` in CI entrypoint',
       severity: 'high',
-      description: 'Without `set -e`, a failed `colcon build` or Docker push is silently ignored and the script continues. Without `set -u`, an unset `$ROS_DISTRO` or `$TARGET_ARCH` expands to empty — passing empty values to cmake or docker buildx without error. Without `set -o pipefail`, `colcon test 2>&1 | tee results.log` hides a test failure if `tee` succeeds. All three together are mandatory for CI scripts.',
+      description: 'Without `set -e`, a failed build or Docker push is silently ignored and the script continues. Without `set -u`, an unset `$BUILD_VERSION` or `$TARGET_ARCH` expands to empty — passing empty values to the build or docker buildx without error. Without `set -o pipefail`, `make test 2>&1 | tee results.log` hides a test failure if `tee` succeeds. All three together are mandatory for CI scripts.',
       fix: 'Add `set -euo pipefail` as the second line. For subshells and sourced scripts that must not abort the parent, wrap in `( set -euo pipefail; ... )` or use `|| { echo "step failed"; exit 1; }`.',
     },
     {
-      title: 'ROS sourcing inside CI without isolation',
+      title: 'Sourcing an environment script inside CI without isolation',
       severity: 'medium',
-      description: '`source /opt/ros/$ROS_DISTRO/setup.bash` modifies `$PATH`, `$PYTHONPATH`, `$LD_LIBRARY_PATH`, and `$CMAKE_PREFIX_PATH`. If multiple jobs run on the same self-hosted runner without environment isolation, sourcing an overlay workspace can pollute subsequent jobs with stale package paths.',
-      fix: 'Run each CI job in a fresh Docker container (`runs-on: [self-hosted, gpu]` + `container: image: ...`) or prefix each step with `source /opt/ros/$ROS_DISTRO/setup.bash` inside the step shell, not at the script level.',
+      description: 'Sourcing an environment setup script modifies `$PATH`, `$PYTHONPATH`, `$LD_LIBRARY_PATH`, and similar. If multiple jobs run on the same self-hosted runner without environment isolation, sourcing an overlay environment can pollute subsequent jobs with stale paths.',
+      fix: 'Run each CI job in a fresh Docker container (`runs-on: [self-hosted]` + `container: image: ...`) or source the environment inside the step shell, not at a persistent script level.',
     },
     {
-      title: 'SLURM sbatch not checking job submission result',
+      title: 'Batch scheduler submission not checking result',
       severity: 'high',
-      description: '`sbatch job.sh` returns immediately with a job ID. The script continues assuming submission succeeded. If the SLURM scheduler rejects the job (queue full, wrong partition, missing GRES), the error is silently discarded and downstream steps wait forever or run on missing results.',
-      fix: 'Capture the job ID and check the exit code: `JOB_ID=$(sbatch --parsable job.sh) || { echo "sbatch failed"; exit 1; }`. Use `squeue -j $JOB_ID` and `sacct -j $JOB_ID` to poll completion and capture exit status.',
+      description: 'A submission to a batch/HPC scheduler (e.g. `sbatch job.sh`) returns immediately with a job ID. The script continues assuming submission succeeded. If the scheduler rejects the job (queue full, wrong partition, missing resources), the error is silently discarded and downstream steps wait forever or run on missing results.',
+      fix: 'Capture the job ID and check the exit code: `JOB_ID=$(sbatch --parsable job.sh) || { echo "sbatch failed"; exit 1; }`. Then poll completion and capture the exit status (e.g. via `squeue`/`sacct`).',
     },
   ],
   yaml: [
     {
-      title: 'Pre-merge workflow runs on self-hosted GPU runner for every PR',
+      title: 'Expensive jobs run on self-hosted runners for every PR',
       severity: 'high',
-      description: 'Running GPU-accelerated tests on every PR commit is expensive and creates runner contention. External contributors\' PRs (forks) trigger the workflow but cannot access secrets, causing silent failures or misleading status checks. NVIDIA Isaac disables GPU runner tests for fork PRs explicitly.',
-      fix: 'Gate GPU jobs with `if: github.event.pull_request.head.repo.full_name == github.repository`. For forks, run only lint, unit tests, and colcon build on GitHub-hosted runners. Use `concurrency: cancel-in-progress: true` to cancel stale runs on push.',
+      description: 'Running heavy, resource-intensive tests on every PR commit is expensive and creates runner contention. External contributors\' PRs (forks) trigger the workflow but cannot access secrets, causing silent failures or misleading status checks. Fork PRs should be gated explicitly.',
+      fix: 'Gate expensive jobs with `if: github.event.pull_request.head.repo.full_name == github.repository`. For forks, run only lint, unit tests, and a plain build on GitHub-hosted runners. Use `concurrency: cancel-in-progress: true` to cancel stale runs on push.',
     },
     {
       title: 'Nightly matrix not capturing per-cell failures',
       severity: 'critical',
-      description: 'A nightly matrix job with `fail-fast: false` and `continue-on-error: true` suppresses individual cell failures — the overall workflow reports "success" even when 3 of 12 Isaac Sim × ROS distro combinations failed. The post-merge signal is wrong.',
+      description: 'A nightly matrix job with `fail-fast: false` and `continue-on-error: true` suppresses individual cell failures — the overall workflow reports "success" even when 3 of 12 version × platform combinations failed. The signal is wrong.',
       fix: 'Each matrix cell should upload a structured JSON result artifact. A final summary job downloads all artifacts, checks each cell\'s `status` field, and fails the workflow (`exit 1`) if any cell failed. Write the full matrix table to `$GITHUB_STEP_SUMMARY` for visibility.',
     },
     {
       title: 'Missing `permissions:` block on release workflow',
       severity: 'medium',
-      description: 'Without `permissions: contents: write`, the workflow cannot create GitHub Releases or push tags. Without `packages: write`, it cannot push to GHCR. Without an explicit `id-token: write`, OIDC-based ECR authentication fails. Implicit permissions from repo defaults are fragile and change with org policy.',
-      fix: 'Add explicit `permissions:` block scoped to the minimum required: `contents: write` (releases/tags), `packages: write` (GHCR), `id-token: write` (OIDC for ECR). Deny all others with `permissions: {}` at workflow level and override per job.',
+      description: 'Without `permissions: contents: write`, the workflow cannot create GitHub Releases or push tags. Without `packages: write`, it cannot push to GHCR. Without an explicit `id-token: write`, OIDC-based registry authentication (e.g. ECR) fails. Implicit permissions from repo defaults are fragile and change with org policy.',
+      fix: 'Add explicit `permissions:` block scoped to the minimum required: `contents: write` (releases/tags), `packages: write` (GHCR), `id-token: write` (OIDC for cloud registries). Deny all others with `permissions: {}` at workflow level and override per job.',
     },
   ],
   python: [
     {
       title: 'Build matrix JSON deduplication gap on re-run',
       severity: 'critical',
-      description: 'If a partial re-run uploads a second cell artifact with the same `(isaac_sim_version, image_ext)` key, the dict comprehension `{(c["sim"], c["ext"]): c for c in cells}` silently keeps the last-seen result. An earlier failure retried into success hides a real flake in the summary table.',
+      description: 'If a partial re-run uploads a second cell artifact with the same `(version, platform)` key, the dict comprehension `{(c["version"], c["platform"]): c for c in cells}` silently keeps the last-seen result. An earlier failure retried into success hides a real flake in the summary table.',
       fix: 'Deduplicate by keeping the worst-status result: iterate all cells and update the dict only if the new entry has a worse status (`failed > success > skipped`). Log when a duplicate key is seen: `logger.warning("Duplicate cell %s — keeping worst status", key)`.',
     },
     {
       title: 'Unchecked subprocess in release automation',
       severity: 'high',
-      description: '`subprocess.run(["docker", "push", image])` without `check=True` silently ignores a registry push failure (network error, auth timeout, rate limit). The release script reports success while the image was never published to ECR/NGC.',
+      description: '`subprocess.run(["docker", "push", image])` without `check=True` silently ignores a registry push failure (network error, auth timeout, rate limit). The release script reports success while the image was never published to the registry.',
       fix: 'Always pass `check=True`. Wrap in a retry loop for transient registry errors: use `tenacity.retry` with exponential backoff for `subprocess.CalledProcessError` with exit code 1.',
     },
     {
@@ -350,30 +350,30 @@ const COMMON_ISSUES: Record<string, Array<{ title: string; severity: 'critical' 
   ],
   dockerfile: [
     {
-      title: 'Mutable `nvcr.io/.../l4t-base:latest` base image',
+      title: 'Mutable base-image tag (e.g. `:latest`)',
       severity: 'high',
-      description: 'NVIDIA L4T and CUDA base images are published with both a version tag and `latest`. Using `latest` means the same Dockerfile produces different images on different build dates — breaking reproducibility for nightly and release pipelines. The same `colcon build` may fail against a newer base image if ROS 2 APT keys or package versions shift.',
-      fix: 'Pin to a digest: `FROM nvcr.io/nvidia/l4t-base:35.3.1@sha256:<digest>`. Use Renovate with a `packageRules` entry targeting `nvcr.io` to auto-PR digest updates.',
+      description: 'Base images are often published with both a version tag and `latest`. Using a mutable tag means the same Dockerfile produces different images on different build dates — breaking reproducibility for nightly and release pipelines. The same build may fail against a newer base image if APT keys or package versions shift.',
+      fix: 'Pin to a digest: `FROM registry.example.com/base:1.2.3@sha256:<digest>`. Use Renovate with a `packageRules` entry targeting the registry to auto-PR digest updates.',
     },
     {
       title: 'QEMU binfmt_misc not verified for ARM64 cross-build',
       severity: 'critical',
       description: '`docker buildx build --platform linux/arm64` on an x86-64 runner requires `binfmt_misc` to be mounted and writable. On some self-hosted runners, the kernel module is not loaded or the mount is read-only. The `setup-qemu-action` returns exit 0 even when registration silently fails, and the cross-build fails later with `exec format error`.',
-      fix: 'Add a pre-flight step: `if ! grep -q enabled /proc/sys/fs/binfmt_misc/qemu-aarch64; then echo "QEMU not registered"; exit 1; fi`. Alternatively, use native ARM64 self-hosted runners (Jetson AGX Orin) for final multi-arch validation.',
+      fix: 'Add a pre-flight step: `if ! grep -q enabled /proc/sys/fs/binfmt_misc/qemu-aarch64; then echo "QEMU not registered"; exit 1; fi`. Alternatively, use native ARM64 self-hosted runners for final multi-arch validation.',
     },
     {
-      title: 'ROS 2 workspace built in final image layer (not multi-stage)',
+      title: 'Build performed in the final image layer (not multi-stage)',
       severity: 'medium',
-      description: 'Building the colcon workspace in the final image layer installs all build-time dependencies (ament build tools, cmake, compilers, dev headers) into the production image. A ROS 2 Humble desktop image reaches 8–12 GB. The attack surface includes all build tools.',
-      fix: 'Use a multi-stage build: `FROM ros:humble AS builder` — install build deps and `colcon build`. `FROM ros:humble-ros-base AS runtime` — `COPY --from=builder /opt/ros/overlay_ws/install ./install`. Only the compiled install directory lands in the final image.',
+      description: 'Building in the final image layer installs all build-time dependencies (compilers, dev headers, build tools) into the production image. Images can bloat to many GB, and the attack surface includes all build tools.',
+      fix: 'Use a multi-stage build: `FROM base AS builder` — install build deps and run the build. `FROM base-slim AS runtime` — `COPY --from=builder /app/install ./install`. Only the compiled output lands in the final image.',
     },
   ],
   makefile: [
     {
-      title: 'colcon build target not forwarding CMake args',
+      title: 'Build target not forwarding build flags',
       severity: 'medium',
-      description: '`make build` invoking bare `colcon build` without `--cmake-args` means Release/Debug mode, sanitizer flags, and cross-compilation toolchains are not configurable from CI without editing the Makefile. This prevents the same Makefile from serving both dev (Debug+ASan) and release (Release+stripped) builds.',
-      fix: 'Accept a `CMAKE_ARGS ?=` variable: `colcon build --symlink-install --cmake-args $(CMAKE_ARGS)`. CI then calls `make build CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"` without editing the file.',
+      description: '`make build` invoking a bare build command without forwarding flags means Release/Debug mode, sanitizer flags, and cross-compilation toolchains are not configurable from CI without editing the Makefile. This prevents the same Makefile from serving both dev (Debug+sanitizers) and release (Release+stripped) builds.',
+      fix: 'Accept a `BUILD_ARGS ?=` variable and forward it: `$(BUILD_CMD) $(BUILD_ARGS)`. CI then calls `make build BUILD_ARGS="-DCMAKE_BUILD_TYPE=Release"` without editing the file.',
     },
     {
       title: 'Missing `.PHONY` on `clean` target',
@@ -384,80 +384,80 @@ const COMMON_ISSUES: Record<string, Array<{ title: string; severity: 'critical' 
   ],
 }
 
-// Deep Dive Q&A — aligned to NVIDIA Senior DevOps Engineer Robotics JD requirements
+// Deep Dive Q&A by language
 const DEEP_DIVE: Record<string, Array<{ q: string; a: string }>> = {
   bash: [
     {
-      q: 'How would you structure a shell script that submits SLURM jobs and waits for results in a CI pipeline?',
-      a: '`JOB_ID=$(sbatch --parsable --partition=gpu --gres=gpu:1 --time=02:00:00 job.sh) || { echo "sbatch submission failed"; exit 1; }`. Then poll: `until [[ "$(sacct -j $JOB_ID -o State -n | tr -d " ")" =~ ^(COMPLETED|FAILED|CANCELLED) ]]; do sleep 30; done`. Finally: `[[ $(sacct -j $JOB_ID -o ExitCode -n | tr -d " ") == "0:0" ]] || { echo "SLURM job $JOB_ID failed"; exit 1; }`. This pattern is used in Isaac Lab\'s HPC cluster test submissions to distinguish CI infrastructure failures from product test failures.',
+      q: 'How would you structure a shell script that submits a batch/HPC scheduler job and waits for results in a CI pipeline?',
+      a: 'Using SLURM as an example: `JOB_ID=$(sbatch --parsable --partition=compute --time=02:00:00 job.sh) || { echo "sbatch submission failed"; exit 1; }`. Then poll: `until [[ "$(sacct -j $JOB_ID -o State -n | tr -d " ")" =~ ^(COMPLETED|FAILED|CANCELLED) ]]; do sleep 30; done`. Finally: `[[ $(sacct -j $JOB_ID -o ExitCode -n | tr -d " ") == "0:0" ]] || { echo "job $JOB_ID failed"; exit 1; }`. This pattern distinguishes CI infrastructure failures from product test failures.',
     },
     {
       q: 'How do you build and push a multi-architecture Docker image (x86-64 + ARM64) from a CI shell script?',
-      a: 'Set up buildx: `docker buildx create --use --name multi-arch-builder`. Then build and push in one step: `docker buildx build --platform linux/amd64,linux/arm64 --push -t $ECR_REGISTRY/$IMAGE:$TAG -f Dockerfile .`. For NVIDIA Jetson targets (ARM64/aarch64), verify the ARM64 base image exists before building: `docker manifest inspect $BASE_IMAGE:$TAG | jq ".manifests[].platform.architecture"`. If the CUDA base has no ARM64 manifest for the requested version, fail the script early with a clear message rather than producing a broken multi-arch manifest.',
+      a: 'Set up buildx: `docker buildx create --use --name multi-arch-builder`. Then build and push in one step: `docker buildx build --platform linux/amd64,linux/arm64 --push -t $REGISTRY/$IMAGE:$TAG -f Dockerfile .`. For ARM64 targets, verify the ARM64 base image exists before building: `docker manifest inspect $BASE_IMAGE:$TAG | jq ".manifests[].platform.architecture"`. If the base image has no ARM64 manifest for the requested version, fail the script early with a clear message rather than producing a broken multi-arch manifest.',
     },
     {
       q: 'How do you distinguish an infrastructure failure from a product failure when triaging CI?',
-      a: 'Infrastructure failures exhibit patterns: runner-level (same job fails on different PRs at the same time, job never starts, SSH connection refused), environment-level (package install fails, disk full, GPU not available), or transient (retry succeeds immediately). Product failures are consistent for the same code: test assertion fails, compilation error for a specific change, runtime segfault on a specific input. In shell scripts: capture stderr separately (`2>infra.log`), check for known infra error patterns (`grep -qE "No space left|Connection refused|CUDA error" infra.log`), and emit a distinct exit code or annotation (`echo "::error::INFRASTRUCTURE_FAILURE detected"`) so the CI dashboard can categorise it without manual triage.',
+      a: 'Infrastructure failures exhibit patterns: runner-level (same job fails on different PRs at the same time, job never starts, SSH connection refused), environment-level (package install fails, disk full, resource not available), or transient (retry succeeds immediately). Product failures are consistent for the same code: test assertion fails, compilation error for a specific change, runtime segfault on a specific input. In shell scripts: capture stderr separately (`2>infra.log`), check for known infra error patterns (`grep -qE "No space left|Connection refused|OOMKilled" infra.log`), and emit a distinct exit code or annotation (`echo "::error::INFRASTRUCTURE_FAILURE detected"`) so the CI dashboard can categorise it without manual triage.',
     },
     {
       q: 'Why use `exec "$@"` at the end of a Docker entrypoint script?',
-      a: '`exec` replaces the shell process with the given command, making it PID 1. Without `exec`, the shell is PID 1 and the application runs as a child. On `docker stop`, Docker sends SIGTERM to PID 1 — the shell. The shell may or may not forward it to the child, and `SIGTERM` handling in shell is inconsistent. With `exec "$@"`, the application is PID 1 and receives SIGTERM directly, enabling graceful shutdown (closing DB connections, flushing logs). Critical for ROS 2 nodes that need to call lifecycle shutdown hooks on termination.',
+      a: '`exec` replaces the shell process with the given command, making it PID 1. Without `exec`, the shell is PID 1 and the application runs as a child. On `docker stop`, Docker sends SIGTERM to PID 1 — the shell. The shell may or may not forward it to the child, and `SIGTERM` handling in shell is inconsistent. With `exec "$@"`, the application is PID 1 and receives SIGTERM directly, enabling graceful shutdown (closing DB connections, flushing logs). Critical for any long-running service that needs to run shutdown hooks on termination.',
     },
   ],
   yaml: [
     {
       q: 'How do you structure pre-merge, nightly, and release pipelines in a single GitHub Actions repo?',
-      a: 'Three separate workflow files with different triggers. Pre-merge (`ci-premerge.yml`): `on: pull_request`, runs fast lint + unit test + colcon build on GitHub-hosted runners; gates merges via branch protection required status checks; uses `concurrency: cancel-in-progress: true`. Nightly (`ci-nightly.yml`): `on: schedule: cron`, runs full test matrix across Isaac Sim versions on self-hosted GPU runners with `fail-fast: false`; final summary job aggregates results and fails if any cell failed. Release (`ci-release.yml`): `on: push: tags: ["v*"]`, builds multi-arch Docker images, publishes to ECR/NGC, creates GitHub Release with changelog. Sharing logic: use `workflow_call` to factor common build steps into a reusable `_build.yml` called by all three.',
+      a: 'Three separate workflow files with different triggers. Pre-merge (`ci-premerge.yml`): `on: pull_request`, runs fast lint + unit test + build on GitHub-hosted runners; gates merges via branch protection required status checks; uses `concurrency: cancel-in-progress: true`. Nightly (`ci-nightly.yml`): `on: schedule: cron`, runs the full test matrix across versions and platforms on self-hosted runners with `fail-fast: false`; final summary job aggregates results and fails if any cell failed. Release (`ci-release.yml`): `on: push: tags: ["v*"]`, builds multi-arch Docker images, publishes to a container registry, creates GitHub Release with changelog. Sharing logic: use `workflow_call` to factor common build steps into a reusable `_build.yml` called by all three.',
     },
     {
       q: 'How do you prevent fork PRs from accessing secrets while still giving them CI feedback?',
-      a: 'GitHub Actions restricts secrets on `pull_request` events from forks — `secrets.*` resolves to empty. Use `pull_request_target` with care (it runs with maintainer permissions — never check out untrusted code). Better: use `if: github.event.pull_request.head.repo.full_name == github.repository` to gate jobs that need secrets (GPU runners, ECR push). For fork PRs, run only the subset that needs no secrets: lint, colcon build, unit tests on GitHub-hosted runners. Gate the "requires GPU" jobs on a `workflow_dispatch` or a maintainer applying a label. Isaac Lab\'s CI disables runner reporting for fork PRs exactly this way.',
+      a: 'GitHub Actions restricts secrets on `pull_request` events from forks — `secrets.*` resolves to empty. Use `pull_request_target` with care (it runs with maintainer permissions — never check out untrusted code). Better: use `if: github.event.pull_request.head.repo.full_name == github.repository` to gate jobs that need secrets (self-hosted runners, registry push). For fork PRs, run only the subset that needs no secrets: lint, build, unit tests on GitHub-hosted runners. Gate the privileged jobs on a `workflow_dispatch` or a maintainer applying a label.',
     },
     {
-      q: 'How do you manage self-hosted GPU runner availability in a CI matrix?',
-      a: 'Tag runners by hardware capability: `[self-hosted, gpu, a100]`, `[self-hosted, gpu, jetson-agx-orin]`, `[self-hosted, cpu, arm64]`. Use `runs-on: ${{ matrix.runner }}` in the matrix to direct each cell to the right hardware. Set `timeout-minutes` to prevent runaway GPU jobs from blocking the queue. For queue depth management: set `max-parallel` in the matrix to avoid saturating the runner pool. Monitor runner utilisation with GitHub\'s runner API or Prometheus exporters — a queue depth above 10 is a signal to add runner capacity.',
+      q: 'How do you manage self-hosted runner availability in a CI matrix?',
+      a: 'Tag runners by capability: `[self-hosted, linux, x64]`, `[self-hosted, linux, arm64]`, `[self-hosted, gpu]`. Use `runs-on: ${{ matrix.runner }}` in the matrix to direct each cell to the right hardware. Set `timeout-minutes` to prevent runaway jobs from blocking the queue. For queue depth management: set `max-parallel` in the matrix to avoid saturating the runner pool. Monitor runner utilisation with GitHub\'s runner API or Prometheus exporters — a queue depth above 10 is a signal to add runner capacity.',
     },
     {
-      q: 'How do you publish a multi-arch Docker image to ECR in a release workflow?',
-      a: 'Authenticate with OIDC (preferred over static credentials): set `permissions: id-token: write`, use `aws-actions/configure-aws-credentials` with `role-to-assume`. Then: `aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY`. Build and push: `docker buildx build --platform linux/amd64,linux/arm64 --push -t $ECR_REGISTRY/$REPO:$VERSION -t $ECR_REGISTRY/$REPO:latest .`. Capture the image digest from the push output and record it in the GitHub Release notes and `$GITHUB_STEP_SUMMARY` so downstream consumers can pin to the immutable digest rather than the mutable tag.',
+      q: 'How do you publish a multi-arch Docker image to a cloud registry (e.g. ECR) in a release workflow?',
+      a: 'Authenticate with OIDC (preferred over static credentials): set `permissions: id-token: write`, use `aws-actions/configure-aws-credentials` with `role-to-assume`. Then: `aws ecr get-login-password | docker login --username AWS --password-stdin $REGISTRY`. Build and push: `docker buildx build --platform linux/amd64,linux/arm64 --push -t $REGISTRY/$REPO:$VERSION -t $REGISTRY/$REPO:latest .`. Capture the image digest from the push output and record it in the GitHub Release notes and `$GITHUB_STEP_SUMMARY` so downstream consumers can pin to the immutable digest rather than the mutable tag.',
     },
   ],
   python: [
     {
       q: 'How do you build a nightly build matrix summary that correctly captures per-cell failures?',
-      a: 'Each matrix cell writes a JSON file: `{"sim": "4.2.0", "ext": "cpu", "status": "failed", "url": "$RUN_URL", "duration": 312}` and uploads it as an artifact named `cell-${{ matrix.sim }}-${{ matrix.ext }}`. The summary job downloads all artifacts with `actions/download-artifact`, reads each JSON, builds a dict keyed on `(sim, ext)` keeping the worst status (failed > success > skipped), renders a Markdown table to `$GITHUB_STEP_SUMMARY`, and calls `sys.exit(1)` if any cell failed. This is the pattern used in Isaac Lab\'s `resolve-matrix.py` and `build-summary.py` scripts.',
+      a: 'Each matrix cell writes a JSON file: `{"version": "4.2.0", "platform": "linux/amd64", "status": "failed", "url": "$RUN_URL", "duration": 312}` and uploads it as an artifact named `cell-${{ matrix.version }}-${{ matrix.platform }}`. The summary job downloads all artifacts with `actions/download-artifact`, reads each JSON, builds a dict keyed on `(version, platform)` keeping the worst status (failed > success > skipped), renders a Markdown table to `$GITHUB_STEP_SUMMARY`, and calls `sys.exit(1)` if any cell failed.',
     },
     {
-      q: 'How would you automate semantic version bumping across a multi-repo Isaac ROS workspace?',
-      a: 'Read the current version from `package.xml` (`<version>` tag) or `setup.py`. Parse as semver. Determine bump type from commit messages since last tag: `feat:` bumps minor, `fix:`/`refactor:` bumps patch, `BREAKING CHANGE:` in footer bumps major (Conventional Commits). Write the new version back, commit, and tag: `git tag -a v$NEW_VERSION -m "release $NEW_VERSION"`. For multi-repo: process dependency order using `colcon graph` to determine which packages depend on which, and bump leaf packages first. Publish updated `.whl` or `.deb` packages to ECR/Artifactory before bumping dependents.',
+      q: 'How would you automate semantic version bumping across a multi-repo workspace?',
+      a: 'Read the current version from the project manifest (e.g. `pyproject.toml`, `package.json`, or a `VERSION` file). Parse as semver. Determine bump type from commit messages since last tag: `feat:` bumps minor, `fix:`/`refactor:` bumps patch, `BREAKING CHANGE:` in footer bumps major (Conventional Commits). Write the new version back, commit, and tag: `git tag -a v$NEW_VERSION -m "release $NEW_VERSION"`. For multi-repo: resolve the dependency graph to determine which packages depend on which, and bump leaf packages first. Publish updated packages to the registry before bumping dependents.',
     },
     {
       q: 'How do you write a health-check automation script that distinguishes infra failures from test failures?',
-      a: 'Run the test command in a subprocess capturing stdout and stderr separately: `result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)`. Classify: parse stderr for known infra patterns (`"No space left"`, `"CUDA error"`, `"Cannot connect"`, `"OOMKilled"`) — these are infrastructure failures. Parse stdout for test output patterns (`FAILED`, `AssertionError`, `Segmentation fault`) — these are product failures. Emit structured output: `{"status": "infra_failure"|"product_failure"|"success", "exit_code": N, "stderr_excerpt": ...}`. The CI summary job aggregates these and routes infra failures to the platform oncall, product failures to the engineering team.',
+      a: 'Run the test command in a subprocess capturing stdout and stderr separately: `result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=300)`. Classify: parse stderr for known infra patterns (`"No space left"`, `"Cannot connect"`, `"OOMKilled"`) — these are infrastructure failures. Parse stdout for test output patterns (`FAILED`, `AssertionError`, `Segmentation fault`) — these are product failures. Emit structured output: `{"status": "infra_failure"|"product_failure"|"success", "exit_code": N, "stderr_excerpt": ...}`. The CI summary job aggregates these and routes infra failures to the platform oncall, product failures to the engineering team.',
     },
   ],
   dockerfile: [
     {
-      q: 'How do you build an Isaac ROS container that runs on both Jetson (ARM64) and x86-64?',
-      a: 'Use a multi-stage Dockerfile with an `ARG TARGETPLATFORM` build arg populated automatically by `docker buildx`. In the builder stage: `FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/l4t-base:35.3.1 AS builder` for ARM64, or `FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04 AS builder` for x86-64. Use `RUN case "$TARGETPLATFORM" in "linux/arm64") ... ;; "linux/amd64") ... ;; esac` for platform-specific package installs. Build and push: `docker buildx build --platform linux/amd64,linux/arm64 --push`. Verify both manifests exist: `docker manifest inspect $IMAGE | jq ".manifests[].platform"`.',
+      q: 'How do you build a container image that runs on both ARM64 and x86-64?',
+      a: 'Use a multi-stage Dockerfile with an `ARG TARGETPLATFORM` build arg populated automatically by `docker buildx`. In the builder stage: `FROM --platform=$TARGETPLATFORM base:tag AS builder`. Use `RUN case "$TARGETPLATFORM" in "linux/arm64") ... ;; "linux/amd64") ... ;; esac` for platform-specific package installs. Build and push: `docker buildx build --platform linux/amd64,linux/arm64 --push`. Verify both manifests exist: `docker manifest inspect $IMAGE | jq ".manifests[].platform"`.',
     },
     {
-      q: 'How do you minimise Isaac ROS Docker image size for CI without losing reproducibility?',
-      a: 'Multi-stage build: `FROM ros:humble AS builder` — install build deps, `colcon build --merge-install`. `FROM ros:humble-ros-base AS runtime` — `COPY --from=builder /opt/colcon_ws/install /opt/colcon_ws/install`. Strip debug symbols in the builder: `RUN strip --strip-debug /opt/colcon_ws/install/**/*.so`. Remove APT cache in the same `RUN` layer it was created: `RUN apt-get install -y ... && rm -rf /var/lib/apt/lists/*`. Use `--squash` or BuildKit `--mount=type=cache` for APT and pip to avoid cache layers in the final image. Pin base image by digest and generate a `docker.lock` file recording the exact layer digests used.',
+      q: 'How do you minimise Docker image size for CI without losing reproducibility?',
+      a: 'Multi-stage build: `FROM base AS builder` — install build deps and run the build. `FROM base-slim AS runtime` — `COPY --from=builder /app/install /app/install`. Strip debug symbols in the builder: `RUN strip --strip-debug /app/install/**/*.so`. Remove the APT cache in the same `RUN` layer it was created: `RUN apt-get install -y ... && rm -rf /var/lib/apt/lists/*`. Use BuildKit `--mount=type=cache` for APT and pip to avoid cache layers in the final image. Pin the base image by digest and generate a lock file recording the exact layer digests used.',
     },
     {
-      q: 'What is the L4T base image and why does it matter for Isaac ROS on Jetson?',
-      a: 'L4T (Linux for Tegra) is NVIDIA\'s customised Linux distribution for Jetson hardware. The `nvcr.io/nvidia/l4t-base` image is built from the same kernel and BSP as the Jetson OS, ensuring that GPU drivers, CUDA, and hardware accelerators (DLA, VPI) are ABI-compatible with the Jetson\'s host kernel. Building Isaac ROS containers on top of `l4t-base` rather than vanilla `ubuntu:22.04` ensures that CUDA libraries link against the correct Tegra driver version. The L4T version must exactly match the JetPack version flashed on the device — a container built for JetPack 5.1.2 (L4T 35.3.1) will not run correctly on a Jetson flashed with JetPack 5.1.3 (L4T 35.4.1).',
+      q: 'Why pin a base image by digest rather than by tag?',
+      a: 'A tag like `base:1.2.3` is mutable — the maintainer can re-push it, so the same Dockerfile can resolve to different bytes over time, breaking reproducibility for nightly and release pipelines. A digest (`base@sha256:<digest>`) is content-addressed and immutable: it always resolves to the exact same layers. Pin the base image by digest so builds are bit-for-bit reproducible, and use a tool like Renovate to auto-PR digest bumps when the upstream tag moves. This also mitigates a supply-chain risk where a compromised upstream re-pushes a malicious image under an existing tag.',
     },
   ],
   makefile: [
     {
-      q: 'How do you integrate `colcon build` into a Makefile for a multi-package ROS 2 workspace?',
-      a: '`build` target: `colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) $(CMAKE_EXTRA_ARGS) 2>&1 | tee build.log; [ $${PIPESTATUS[0]} -eq 0 ]`. The `PIPESTATUS` check ensures `tee` success does not mask colcon failure. `test` target: `colcon test --return-code-on-test-failure 2>&1 | tee test.log; colcon test-result --verbose`. `lint` target: `ament_cpplint --output=vs7 $$(colcon list --names-only)`. Accept `CMAKE_EXTRA_ARGS ?=` for CI overrides (sanitizers, cross-compilation toolchain). This makes the same Makefile usable for local dev and CI without modification.',
+      q: 'How do you integrate the project build into a Makefile so a pipe failure is not masked?',
+      a: '`build` target: `$(BUILD_CMD) --build-type=$(BUILD_TYPE) $(BUILD_EXTRA_ARGS) 2>&1 | tee build.log; [ $${PIPESTATUS[0]} -eq 0 ]`. The `PIPESTATUS` check ensures `tee` success does not mask a build failure. `test` target: `$(TEST_CMD) 2>&1 | tee test.log; [ $${PIPESTATUS[0]} -eq 0 ]`. Accept `BUILD_EXTRA_ARGS ?=` for CI overrides (sanitizers, cross-compilation toolchain). This makes the same Makefile usable for local dev and CI without modification.',
     },
     {
-      q: 'How would you add a cross-compilation target to a Makefile for ARM64/Jetson?',
-      a: 'Add a `cross-build` target: `docker run --rm --platform linux/arm64 -v $(PWD):/ws -w /ws $TOOLCHAIN_IMAGE colcon build --cmake-args -DCMAKE_TOOLCHAIN_FILE=/opt/cross/aarch64.cmake`. Or use a QEMU-enabled buildx: `make cross-build ARCH=aarch64`. Define `ARCH ?= x86_64` at the top and derive the toolchain: `TOOLCHAIN = $(if $(filter aarch64,$(ARCH)),/opt/cross/aarch64.cmake,)`. In CI, the nightly matrix calls `make build ARCH=x86_64` and `make build ARCH=aarch64` in parallel matrix jobs, each on the appropriate runner.',
+      q: 'How would you add a cross-compilation target to a Makefile for ARM64?',
+      a: 'Add a `cross-build` target: `docker run --rm --platform linux/arm64 -v $(PWD):/ws -w /ws $TOOLCHAIN_IMAGE $(BUILD_CMD) --toolchain=/opt/cross/aarch64.cmake`. Or use a QEMU-enabled buildx: `make cross-build ARCH=aarch64`. Define `ARCH ?= x86_64` at the top and derive the toolchain: `TOOLCHAIN = $(if $(filter aarch64,$(ARCH)),/opt/cross/aarch64.cmake,)`. In CI, the nightly matrix calls `make build ARCH=x86_64` and `make build ARCH=aarch64` in parallel matrix jobs, each on the appropriate runner.',
     },
   ],
 }

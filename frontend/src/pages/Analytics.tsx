@@ -214,14 +214,6 @@ function FailureRateChart() {
   const { data, isLoading } = useFailureAnalysis(slug, runs)
   const jobs: any[] = data?.jobs ?? []
 
-  const chartData = jobs.map((j) => ({
-    name: j.name.replace('test-', '').replace('-compat', ''),
-    failure_rate: j.failure_rate,
-    failed: j.failed,
-    total: j.total,
-    streak: j.consecutive_failures,
-  }))
-
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
@@ -245,35 +237,8 @@ function FailureRateChart() {
         <p className="text-gray-400 text-sm text-center py-6">No data.</p>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={Math.max(jobs.length * 36, 120)}>
-            <BarChart data={chartData} layout="vertical" barSize={14}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e4e2" horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v) => `${v}%`} />
-              <YAxis type="category" dataKey="name" tick={{ fill: '#86939e', fontSize: 9 }} width={160} />
-              <Tooltip
-                {...TOOLTIP_STYLE}
-                formatter={(v: any, _: any, props: any) => [
-                  `${v}% (${props.payload.failed}/${props.payload.total})`,
-                  'failure rate',
-                ]}
-              />
-              <Bar dataKey="failure_rate" radius={[0, 3, 3, 0]}>
-                {chartData.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={
-                      entry.failure_rate >= 50 ? '#ff1b2d' :
-                      entry.failure_rate >= 20 ? '#ff1b2d' :
-                      entry.failure_rate > 0  ? '#a1a1aa' : '#84cc16'
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-
-          {/* Detail table */}
-          <div className="mt-3 border-t border-border pt-3 space-y-1">
+          {/* Detail list */}
+          <div className="space-y-1">
             {jobs.map((j) => (
               <div key={j.name} className="flex items-center justify-between text-[10px]">
                 <span className="text-gray-400 truncate max-w-[220px]">{j.name}</span>

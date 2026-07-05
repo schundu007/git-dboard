@@ -27,10 +27,11 @@ import {
   getPRGateOverview, getActiveRepo,
   getHealthDora, getBuildStats,
   getHealthCiTriage, getHealthPipelinePerf, getHealthRunnerHealth,
-  getBuildUsage,
+  getBuildUsage, getWorkflowsWithStatus,
 } from '../lib/api'
 import { useCountUp } from '../hooks/useCountUp'
 import IssuesPanel from '../components/IssuesPanel'
+import { classifyWorkflowStage, WORKFLOW_STAGE_ORDER } from '../components/LiveCICDPipeline'
 import { useRepoSlug } from '../lib/hooks'
 
 // ── SLO Definitions ───────────────────────────────────────────────────────────
@@ -406,7 +407,7 @@ const PIPELINE_STAGES: {
   { id: 'premerge',  label: 'Pre-merge',     sub: 'pytest · docs',   icon: FlaskConical,   accent: 'text-accent-teal',     dot: 'bg-accent-teal'      },
   { id: 'image',     label: 'Image Build',   sub: 'base · ros2 · xr',icon: Box,            accent: 'text-accent-purple',   dot: 'bg-accent-purple'    },
   { id: 'gpu',       label: 'GPU Assign',    sub: 'sim test matrix', icon: Server,         accent: 'text-accent-yellow',   dot: 'bg-accent-yellow'    },
-  { id: 'registry',  label: 'Registry Push', sub: 'NGC · GHCR',      icon: Upload,         accent: 'text-accent-green',    dot: 'bg-accent-green'     },
+  { id: 'registry',  label: 'Registry Push', sub: 'ghcr · ecr',      icon: Upload,         accent: 'text-accent-green',    dot: 'bg-accent-green'     },
 ]
 
 // ── Build matrix helpers ──────────────────────────────────────────────────────
@@ -1529,11 +1530,17 @@ export default function ControlPlane() {
   const { data: buildStats } = useQuery({ queryKey: [slug, 'build-stats-ctrl'], queryFn: () => getBuildStats('', 14), staleTime: 120_000 })
   const { data: doraData }   = useQuery({ queryKey: [slug, 'health-dora'], queryFn: () => getHealthDora(), staleTime: 120_000, refetchInterval: 300_000 })
   const { data: usageData }  = useQuery({ queryKey: [slug, 'build-usage'], queryFn: getBuildUsage, staleTime: 300_000, refetchInterval: 300_000 })
+  const { data: wfStatus }   = useQuery({ queryKey: [slug, 'ctrl-workflows'], queryFn: getWorkflowsWithStatus, staleTime: 60_000, refetchInterval: 120_000 })
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
   const openPRs = summary?.prs?.open ?? 0
   const prsTodayCount = summary?.prs?.prs_today ?? 0
+
+  // NGC (nvcr.io/nvidia/…) is NVIDIA's private registry — only meaningful for IsaacLab.
+  // The backend fabricates an nvcr.io path + "unknown" status for every repo, so gate on
+  // the repo identity, not on push-status.
+  const isIsaacLab = slug.toLowerCase().includes('isaaclab')
 
   const runners: any[] = runnersData?.runners ?? []
   const rOnline = runners.filter((r) => r.status === 'online')
@@ -1550,10 +1557,36 @@ export default function ControlPlane() {
     ? new Date(latestNightly.updated_at).toUTCString().slice(17, 22) + ' UTC'
     : '–'
 
+  // CI Pipeline flow — derived from the ACTIVE repo's real workflows (not hardcoded).
+  // Each canonical stage is shown only if the repo has a workflow that maps to it;
+  // the status dot aggregates that stage's latest run states.
+  const STAGE_META: Record<string, { label: string; icon: LucideIcon; accent: string }> = {
+    premerge: { label: 'Pre-merge', icon: GitPullRequest, accent: 'text-gray-300' },
+    test:     { label: 'Test',      icon: FlaskConical,   accent: 'text-accent-blue' },
+    build:    { label: 'Build',     icon: Box,            accent: 'text-accent-purple' },
+    nightly:  { label: 'Nightly',   icon: Moon,           accent: 'text-accent-teal' },
+    release:  { label: 'Release',   icon: Upload,         accent: 'text-accent-green' },
+  }
+  const wfList: any[] = wfStatus?.workflows ?? []
+  const flowStages = WORKFLOW_STAGE_ORDER
+    .map((id) => {
+      const meta = STAGE_META[id]
+      const wfs = wfList.filter((w) => classifyWorkflowStage(w.filename ?? '', w.name ?? '') === id)
+      if (wfs.length === 0) return null
+      const anyFail = wfs.some((w) => w.last_status === 'failure' || w.last_status === 'timed_out')
+      const anyRun  = wfs.some((w) => ['in_progress', 'queued', 'pending'].includes(w.last_status))
+      const anyOk   = wfs.some((w) => w.last_status === 'success')
+      const dot = anyFail ? 'bg-accent-red' : anyRun ? 'bg-accent-yellow' : anyOk ? 'bg-accent-green' : 'bg-gray-500'
+      const sub = wfs.length === 1 ? wfs[0].filename : `${wfs.length} workflows`
+      return { id, label: meta.label, sub, icon: meta.icon, accent: meta.accent, dot }
+    })
+    .filter(Boolean) as { id: string; label: string; sub: string; icon: LucideIcon; accent: string; dot: string }[]
+
   // Image matrix: Extension × Sim Version
-  const imgExts: string[] = imageMatrix?.extensions ?? ['base', 'ros2', 'cloudxr', 'ngc-slim']
-  const simVersions: string[] = imageMatrix?.sim_versions ?? ['4.5', '5.0', '5.1']
+  const imgExts: string[] = imageMatrix?.extensions ?? []
+  const simVersions: string[] = imageMatrix?.sim_versions ?? []
   const imgMatrixData: Record<string, Record<string, any>> = imageMatrix?.matrix ?? {}
+  const hasImgMatrix = imgExts.length > 0 && simVersions.length > 0
 
   const repoSlug = activeRepo?.active?.slug ?? ''
 
@@ -1707,10 +1740,15 @@ export default function ControlPlane() {
           <p className="text-[10px] text-gray-500 font-mono">{activeRepo?.active?.slug ?? ''}</p>
         </div>
         <div className="px-5 py-5">
+          {flowStages.length === 0 ? (
+            <div className="py-6 text-center text-[11px] text-gray-500">
+              {wfStatus ? 'No GitHub Actions workflows detected for this repo.' : 'Loading workflows…'}
+            </div>
+          ) : (
           <div className="flex items-stretch gap-0">
-            {PIPELINE_STAGES.map((stage, i) => {
+            {flowStages.map((stage, i) => {
               const Icon = stage.icon
-              const isLast = i === PIPELINE_STAGES.length - 1
+              const isLast = i === flowStages.length - 1
               return (
                 <div key={stage.id} className="flex items-stretch flex-1 min-w-0">
                   {/* Stage card */}
@@ -1751,6 +1789,7 @@ export default function ControlPlane() {
               )
             })}
           </div>
+          )}
         </div>
       </div>
 
@@ -1833,7 +1872,7 @@ export default function ControlPlane() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head">
             <h2 className="text-base font-bold text-white">
               Build Status
-              <span className="text-xs text-gray-500 font-normal ml-2">· Isaac Sim versions</span>
+              <span className="text-xs text-gray-500 font-normal ml-2">· image build matrix</span>
             </h2>
             {imageMatrix?.run_date && (
               <a href={imageMatrix.run_url} target="_blank" rel="noreferrer"
@@ -1844,6 +1883,11 @@ export default function ControlPlane() {
           </div>
           <div className="p-4 space-y-3">
 
+          {!hasImgMatrix ? (
+            <div className="py-6 text-center text-[11px] text-gray-500">
+              No image build matrix published for this repo.
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
@@ -1882,6 +1926,7 @@ export default function ControlPlane() {
               </tbody>
             </table>
           </div>
+          )}
 
           <div className="flex items-center gap-4 text-[9px] text-gray-400 pt-1">
             <span className="flex items-center gap-1"><CheckCircle size={10} className="text-accent-green" /> pass</span>
@@ -1901,27 +1946,35 @@ export default function ControlPlane() {
         </div>
       </div>
 
-      {/* ── Failure Triage ────────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionDivider icon={AlertTriangle} title="Failure Triage" subtitle="Infra vs product vs flaky failures" />
-        <TriageTab />
-      </section>
+      {/* Failure Triage, Pipeline Performance, and Runner Health used to be
+          re-hosted here in full. They duplicated the dedicated /monitoring,
+          /builds, and /infra pages, and the DevOps Intelligence KPI strip above
+          already summarizes them. Removed to declutter the overview; use the
+          "Detailed views" links below or the sidebar for the full pages. */}
 
-      {/* ── Pipeline Performance ──────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionDivider icon={Timer} title="Pipeline Performance" subtitle="Duration trends & P95 latency per workflow" />
-        <PerfTab />
-      </section>
-
-      {/* ── Runner Health ─────────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionDivider icon={Cpu} title="Runner Health" subtitle="GPU runner utilization & live status" />
-        <RunnersTab />
-      </section>
+      {/* ── Detailed views ────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { to: '/monitoring', icon: AlertTriangle, title: 'Failure Triage', sub: 'Infra vs product vs flaky', accent: 'text-accent-red' },
+          { to: '/builds',     icon: Timer,         title: 'Pipeline Performance', sub: 'Duration trends & P95 latency', accent: 'text-accent-blue' },
+          { to: '/infra',      icon: Cpu,           title: 'Runner Health', sub: 'GPU utilization & live status', accent: 'text-nvidia' },
+        ].map(({ to, icon: Icon, title, sub, accent }) => (
+          <NavLink key={to} to={to}
+            className="flex items-center gap-3 bg-surface-1 border border-border rounded-xl px-4 py-3 hover:border-gray-500/60 transition-colors group">
+            <Icon size={16} className={accent} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-semibold text-white truncate">{title}</p>
+              <p className="text-[10px] text-gray-500 font-mono truncate">{sub}</p>
+            </div>
+            <ChevronRight size={13} className="text-gray-600 group-hover:text-gray-300" />
+          </NavLink>
+        ))}
+      </div>
 
       {/* ── Infrastructure strip ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* NGC Registry */}
+        {/* NGC Registry — NVIDIA-specific (nvcr.io/nvidia/…); only for IsaacLab repos */}
+        {isIsaacLab && (
         <div className="bg-surface-1 border border-border rounded-xl p-3 flex items-center gap-3 card-appear transition-colors hover:border-border-strong">
           <div className="w-8 h-8 rounded-lg bg-accent-green/10 border border-accent-green/20 flex items-center justify-center flex-shrink-0">
             <Boxes size={14} className="text-accent-green" />
@@ -1929,13 +1982,14 @@ export default function ControlPlane() {
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold text-white">NVIDIA NGC</p>
             <p className="text-[10px] text-gray-400 font-mono truncate">
-              {`nvcr.io/nvidia/${(activeRepo?.active?.repo ?? 'isaac-lab').toLowerCase().replace(/_/g, '-')}`}
+              {`nvcr.io/nvidia/${(activeRepo?.active?.repo ?? '').toLowerCase().replace(/_/g, '-')}`}
             </p>
           </div>
           {pushStatus?.ngc?.status === 'success' && <span className="flex items-center gap-1 text-[9px] text-accent-green bg-accent-green/10 border border-accent-green/30 px-2 py-0.5 rounded font-semibold flex-shrink-0"><CheckCircle size={9} /> passed</span>}
           {pushStatus?.ngc?.status === 'failure' && <span className="flex items-center gap-1 text-[9px] text-accent-red bg-accent-red/10 border border-accent-red/30 px-2 py-0.5 rounded font-semibold flex-shrink-0"><XCircle size={9} /> failed</span>}
           {(!pushStatus?.ngc?.status || pushStatus?.ngc?.status === 'unavailable') && <span className="text-[9px] text-gray-500 bg-surface-3 border border-border px-2 py-0.5 rounded flex-shrink-0">—</span>}
         </div>
+        )}
 
         {/* GHCR */}
         <div className="bg-surface-1 border border-border rounded-xl p-3 flex items-center gap-3 card-appear card-appear-1 transition-colors hover:border-border-strong">
@@ -1945,7 +1999,7 @@ export default function ControlPlane() {
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold text-white">GHCR</p>
             <p className="text-[10px] text-gray-400 font-mono truncate">
-              {`ghcr.io/${(activeRepo?.active?.owner ?? 'isaac-sim').toLowerCase()}/${(activeRepo?.active?.repo ?? 'isaaclab').toLowerCase()}`}
+              {`ghcr.io/${(activeRepo?.active?.owner ?? '').toLowerCase()}/${(activeRepo?.active?.repo ?? '').toLowerCase()}`}
             </p>
           </div>
           {pushStatus?.ghcr?.status === 'success' && <span className="flex items-center gap-1 text-[9px] text-accent-green bg-accent-green/10 border border-accent-green/30 px-2 py-0.5 rounded font-semibold flex-shrink-0"><CheckCircle size={9} /> passed</span>}

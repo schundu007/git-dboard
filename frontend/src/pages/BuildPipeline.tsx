@@ -20,7 +20,7 @@ import {
   triggerBuild, rerunBuild, rerunFailedJobs, cancelBuild, buildLogsWS,
   getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly,
 } from '../lib/api'
-import { useRepoSlug } from '../lib/hooks'
+import { useRepoSlug, useActiveRepoName } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
 import LogViewer, { LogLine } from '../components/LogViewer'
 import type { WorkflowRun, Job } from '../lib/types'
@@ -879,8 +879,10 @@ function DeploymentsPanel() {
   // Build environment list: pinned first, then from API, de-duped
   const knownEnvNames: string[] = (envsData?.environments ?? []).map((e: any) => e.name)
   const deploymentEnvs: string[] = data?.environments ?? []
+  // Only environments the active repo actually has (from the API / real deployments).
+  // The old hardcoded PINNED_ENVS were IsaacLab-specific and showed as phantom envs
+  // on every other repo, so they are no longer prepended.
   const envNames: string[] = Array.from(new Set([
-    ...PINNED_ENVS,
     ...knownEnvNames,
     ...deploymentEnvs,
   ]))
@@ -1533,6 +1535,17 @@ function nightlyCellStyle(status: string | undefined) {
 
 // ── Nightly: job matrix ──────────────────────────────────────────────────────
 
+// GitHub returns raw job names with `::` scoping and unexpanded matrix
+// expressions, e.g. `Windows::${{ matrix.variant.family }}::${{ matrix.build_variant_label }}`.
+// Render them as readable plain text: `Windows / {variant.family} / {build_variant_label}`.
+function prettyJobName(raw: string): string {
+  return raw
+    .replace(/\$\{\{\s*matrix\.([\w.]+)\s*\}\}/g, '{$1}')
+    .replace(/\$\{\{\s*([\w.]+)\s*\}\}/g, '{$1}')
+    .replace(/\s*::\s*/g, ' / ')
+    .trim()
+}
+
 function NightlyMatrixTable() {
   const slug = useRepoSlug()
   const [days, setDays] = useState<1 | 3 | 7 | 14 | 130>(14)
@@ -1613,7 +1626,7 @@ function NightlyMatrixTable() {
                   <td className="pr-4 py-1 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       {isFlaky && <Zap size={9} className="text-accent-yellow flex-shrink-0" />}
-                      <span className={clsx('text-gray-300 truncate max-w-[200px]', isFlaky && 'text-accent-yellow')}>{name}</span>
+                      <span className={clsx('text-gray-300 truncate max-w-[200px]', isFlaky && 'text-accent-yellow')} title={name}>{prettyJobName(name)}</span>
                     </div>
                   </td>
                   {dates.map((d) => {
@@ -1809,6 +1822,7 @@ function NightlyRecentRuns() {
 
 export default function BuildPipeline() {
   const slug = useRepoSlug()
+  const repoName = useActiveRepoName()
   const [mode, setMode] = useState<MainMode>('runs')
   const [mgmtTab, setMgmtTab] = useState<MgmtTab>('caches')
   const [workflow, setWorkflow] = useState<string | 'all'>('all')
@@ -1826,6 +1840,19 @@ export default function BuildPipeline() {
   const { mutate: triggerNight, isPending: triggeringNight } = useMutation({
     mutationFn: () => triggerNightly(nightlyRef),
   })
+
+  // Filter tabs derived from the ACTIVE repo's real workflows (pinned first, else all),
+  // capped so the sub-nav stays compact — replaces the old hardcoded IsaacLab PINNED list.
+  const { data: subnavWorkflows } = useQuery({
+    queryKey: [slug, 'build-subnav-workflows'],
+    queryFn: getWorkflowsWithStatus,
+    staleTime: 60_000,
+  })
+  const pinnedTabs: { filename: string; label: string }[] = (() => {
+    const wfs: any[] = subnavWorkflows?.workflows ?? []
+    const chosen = (wfs.some((w) => w.pinned) ? wfs.filter((w) => w.pinned) : wfs).slice(0, 8)
+    return chosen.map((w) => ({ filename: w.filename, label: w.name || w.filename }))
+  })()
 
   return (
     <div className="space-y-4">
@@ -1904,7 +1931,7 @@ export default function BuildPipeline() {
               workflow === 'all' ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
             All Runs
           </button>
-          {PINNED.map((w) => (
+          {pinnedTabs.map((w) => (
             <button key={w.filename} onClick={() => setWorkflow(w.filename)}
               className={clsx('px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
                 workflow === w.filename ? 'bg-surface-3 text-white' : 'bg-surface-2 text-gray-400 hover:bg-surface-3 hover:text-gray-200')}>
@@ -1959,7 +1986,7 @@ export default function BuildPipeline() {
         <div className="space-y-5">
           <NightlyTrendChart />
           <div className="bg-surface-1 border border-border rounded-xl p-4">
-            <div className="section-head">Isaac Sim Compatibility Matrix</div>
+            <div className="section-head">{repoName ? `${repoName} Compatibility Matrix` : 'Nightly Compatibility Matrix'}</div>
             <NightlyMatrixTable />
           </div>
           <NightlyRecentRuns />

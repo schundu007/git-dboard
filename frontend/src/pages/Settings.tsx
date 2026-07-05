@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getRepos, getActiveRepo, addRepo, deleteRepo, activateRepo,
   deactivateRepo, testRepoConnection, setRepoBusinessUnit, getGroups,
+  getAIConfig, updateAIConfig,
 } from '../lib/api'
 import { cn } from '../lib/cn'
 import { useTheme } from '../contexts/ThemeContext'
@@ -401,6 +402,104 @@ function AlertRulesSection() {
   )
 }
 
+const PROVIDER_META: Record<string, { label: string; placeholder: string; docs: string }> = {
+  gemini:    { label: 'Gemini (Google)',    placeholder: 'AIza...',           docs: 'https://aistudio.google.com/app/apikey' },
+  deepseek:  { label: 'DeepSeek',          placeholder: 'sk-...',            docs: 'https://platform.deepseek.com/api_keys' },
+  anthropic: { label: 'Claude (Anthropic)', placeholder: 'sk-ant-api03-...', docs: 'https://console.anthropic.com/settings/keys' },
+}
+const FALLBACK_ORDER = ['gemini', 'deepseek', 'anthropic']
+
+function AIProviderSection() {
+  const qc = useQueryClient()
+  const { data, isLoading } = useQuery({ queryKey: ['ai-config'], queryFn: getAIConfig, staleTime: 30_000 })
+  const [keys, setKeys] = useState<Record<string, string>>({})
+  const [saved, setSaved] = useState(false)
+
+  const mut = useMutation({
+    mutationFn: updateAIConfig,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ai-config'] }); setSaved(true); setTimeout(() => setSaved(false), 2000) },
+  })
+
+  const activeProvider: string = data?.provider ?? 'anthropic'
+  const providers: any[] = data?.providers ?? []
+
+  const switchProvider = (id: string) => mut.mutate({ provider: id })
+  const saveKey = (id: string) => {
+    const k = keys[id]?.trim()
+    if (!k) return
+    mut.mutate({ [`${id}_key`]: k })
+    setKeys(prev => ({ ...prev, [id]: '' }))
+  }
+
+  return (
+    <SectionCard title="AI Provider">
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-[12px] text-gray-400"><Loader2 size={12} className="animate-spin" />Loading…</div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-[11px] text-gray-400">Fallback order: <span className="font-mono text-gray-300">Gemini → DeepSeek → Claude</span>. If the active provider has no key or fails, the next one with a key is used automatically.</p>
+          {providers.filter((p: any) => FALLBACK_ORDER.includes(p.id)).sort((a: any, b: any) => FALLBACK_ORDER.indexOf(a.id) - FALLBACK_ORDER.indexOf(b.id)).map((p: any, idx: number) => {
+            const meta = PROVIDER_META[p.id] ?? { label: p.name, placeholder: 'API key...', docs: '#' }
+            const isActive = p.id === activeProvider
+            return (
+              <div key={p.id} className={cn('rounded-lg border p-3 space-y-2 transition-colors', isActive ? 'border-nvidia/40 bg-nvidia/[.04]' : 'border-border bg-surface-2')}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">#{idx + 1}</span>
+                  {idx < FALLBACK_ORDER.length - 1 && <span className="text-[9px] text-gray-600">↓ fallback</span>}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className={cn('w-2 h-2 rounded-full flex-shrink-0', isActive ? 'bg-nvidia animate-pulse' : 'bg-surface-3 border border-border')} />
+                    <span className="text-[12px] font-semibold text-white">{meta.label}</span>
+                    <span className="text-[10px] font-mono text-gray-500">{p.model}</span>
+                    {p.has_key && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-nvidia/10 border border-nvidia/20 text-nvidia font-semibold uppercase tracking-wider">
+                        {p.key_source === 'env' ? 'env' : 'key set'}
+                      </span>
+                    )}
+                  </div>
+                  {!isActive && (
+                    <button
+                      onClick={() => switchProvider(p.id)}
+                      disabled={mut.isPending}
+                      className="text-[11px] px-3 py-1 rounded-lg border border-nvidia/30 text-nvidia hover:bg-nvidia/10 transition-colors disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <Zap size={10} /> Use this
+                    </button>
+                  )}
+                  {isActive && <span className="text-[10px] font-bold text-nvidia uppercase tracking-wider">Active</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="password"
+                    value={keys[p.id] ?? ''}
+                    onChange={e => setKeys(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    placeholder={p.masked_key ?? meta.placeholder}
+                    className="flex-1 bg-surface-3 border border-border rounded-lg px-3 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 font-mono"
+                  />
+                  <button
+                    onClick={() => saveKey(p.id)}
+                    disabled={!keys[p.id]?.trim() || mut.isPending}
+                    className="text-[11px] px-3 py-1.5 rounded-lg bg-surface-3 border border-border text-gray-300 hover:border-nvidia/40 hover:text-white transition-colors disabled:opacity-40"
+                  >
+                    Save
+                  </button>
+                  <a href={meta.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-nvidia transition-colors whitespace-nowrap">
+                    Get key ↗
+                  </a>
+                </div>
+                {p.masked_key && <p className="text-[10px] text-gray-500 font-mono">Current: {p.masked_key}</p>}
+              </div>
+            )
+          })}
+          {saved && <p className="text-[11px] text-nvidia">Saved ✓</p>}
+          {mut.isError && <p className="text-[11px] text-accent-red">{(mut.error as Error)?.message}</p>}
+        </div>
+      )}
+    </SectionCard>
+  )
+}
+
 export default function Settings() {
   const qc = useQueryClient()
   const [form, setForm] = useState<RepoForm>(EMPTY_FORM)
@@ -597,7 +696,7 @@ export default function Settings() {
                   <input
                     value={form.owner}
                     onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
-                    placeholder="e.g. isaac-sim"
+                    placeholder="e.g. my-org"
                     className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
                   />
                 </div>
@@ -671,9 +770,25 @@ export default function Settings() {
                   {addMut.isPending ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
                   {activateOnAdd ? 'Add & switch' : 'Add repository'}
                 </button>
-                {addMut.isError && (
-                  <span className="text-[11px] text-accent-red">{String(addMut.error)}</span>
-                )}
+                {addMut.isError && (() => {
+                  const msg = (addMut.error as Error)?.message ?? ''
+                  const alreadyAdded = msg.toLowerCase().includes('already added')
+                  return (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-accent-red/[.08] border border-accent-red/20 text-accent-red text-[11px]">
+                      <span className="flex-1">{alreadyAdded ? 'Repository already added.' : msg}</span>
+                      {alreadyAdded && form.owner && form.repo && (
+                        <a
+                          href={`https://github.com/${form.owner}/${form.repo}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-accent-red/80 hover:text-accent-red whitespace-nowrap"
+                        >
+                          Open on GitHub ↗
+                        </a>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           )}
@@ -734,7 +849,7 @@ export default function Settings() {
                                   if (e.key === 'Escape') setEditingUnitId(null)
                                 }}
                                 list={`units-${r.id}`}
-                                placeholder="e.g. isaac_ros"
+                                placeholder="e.g. platform"
                                 className="bg-surface-3 border border-nvidia/40 rounded px-1.5 py-0.5 text-[10px] text-white font-mono focus:outline-none w-32"
                               />
                               <datalist id={`units-${r.id}`}>
@@ -834,6 +949,7 @@ export default function Settings() {
 
         {/* ── Other settings ── */}
         <AppearanceSection />
+        <AIProviderSection />
         <ApiSection />
         <GitHubSection />
         <RefreshSection />

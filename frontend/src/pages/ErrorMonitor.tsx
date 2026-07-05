@@ -149,27 +149,35 @@ function ErrorPatternsPanel() {
   if (!patterns.length) return <p className="text-[11px] text-gray-500 py-4 text-center">No error patterns recorded</p>
 
   return (
-    <div className="space-y-1.5">
-      {patterns.slice(0, 12).map((p, i) => (
-        <div key={i} className="bg-surface-2 border border-border rounded-lg px-3 py-2.5">
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-[10px] font-mono text-red-400 break-all leading-4 flex-1">{p.pattern}</p>
-            <span className="text-[11px] font-semibold tabular-nums text-neutral-300 flex-shrink-0">×{p.count}</span>
-          </div>
-          {p.sources?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {p.sources.slice(0, 3).map((s: string) => (
-                <span key={s} className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-gray-500 font-mono">{s}</span>
-              ))}
-            </div>
-          )}
-          {p.last_seen && (
-            <p className="text-[9px] text-gray-400 mt-1">
-              Last seen {formatDistanceToNow(new Date(p.last_seen), { addSuffix: true })}
-            </p>
-          )}
-        </div>
-      ))}
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b border-border text-[9px] uppercase tracking-wider text-gray-500">
+            <th className="py-1.5 pr-3 font-medium">Pattern</th>
+            <th className="py-1.5 pr-3 font-medium text-right">Count</th>
+            <th className="py-1.5 pr-3 font-medium">Sources</th>
+            <th className="py-1.5 font-medium whitespace-nowrap">Last seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {patterns.slice(0, 12).map((p, i) => (
+            <tr key={i} className="border-b border-border hover:bg-surface-2 transition-colors align-top">
+              <td className="py-2 pr-3 text-[10px] font-mono text-red-400 break-all leading-4 max-w-[420px]">{p.pattern}</td>
+              <td className="py-2 pr-3 text-[11px] font-semibold tabular-nums text-neutral-300 text-right whitespace-nowrap">×{p.count}</td>
+              <td className="py-2 pr-3">
+                <div className="flex flex-wrap gap-1">
+                  {(p.sources ?? []).slice(0, 3).map((s: string) => (
+                    <span key={s} className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-gray-500 font-mono">{s}</span>
+                  ))}
+                </div>
+              </td>
+              <td className="py-2 text-[9px] text-gray-400 whitespace-nowrap">
+                {p.last_seen ? formatDistanceToNow(new Date(p.last_seen), { addSuffix: true }) : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
