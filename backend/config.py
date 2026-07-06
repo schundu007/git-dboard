@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     CLUSTER_KEY_PATH: str = ""
     CLUSTER_SCHEDULER: str = "slurm"  # slurm | pbs
 
-    DATABASE_URL: str = "sqlite+aiosqlite:///./isaaclab_dashboard.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./gitpulse.db"
 
     class Config:
         env_file = ".env"

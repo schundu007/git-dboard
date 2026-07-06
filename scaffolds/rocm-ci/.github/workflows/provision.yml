@@ -1,0 +1,186 @@
+name: provision
+
+# Provisioning pipeline for the rocm-ci IaC platform.
+# Triggered by git-dboard's /provision/dispatch (workflow_dispatch) — the DEFAULT,
+# auditable path. Uses GitHub OIDC to assume an AWS role (NO static keys).
+# Flow: security-gates -> [build-amis?] -> plan (+OPA/Trivy/AI risk gate) -> apply (env approval).
+#
+# Inputs match exactly what routers/provision.py sends:
+#   action: plan | apply   |   build_amis: true|false   |   enable_k8s: true|false
+#
+# Required repo settings (Settings -> Secrets and variables -> Actions):
+#   Variables: AWS_PROVISION_ROLE_ARN  (the OIDC role to assume; least-privilege for provisioning)
+#              AWS_REGION              (optional; defaults below)
+#   Secrets:   ANTHROPIC_API_KEY       (optional; enables the AI plan-risk gate)
+#   Environment "production" with required reviewers = the approval gate before apply.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "plan or apply"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      build_amis:
+        description: "Build golden AMIs (Packer) before apply"
+        type: boolean
+        default: false
+      enable_k8s:
+        description: "Enable EKS + ARC cache stack"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write   # required for OIDC federation to AWS
+  contents: read
+
+concurrency:
+  group: provision-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
+  TF_WORKDIR: infra/env/prod
+
+jobs:
+  # ---------------- 1. shift-left security gates (no AWS creds) ----------------
+  security-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: terraform fmt (check)
+        run: terraform fmt -check -recursive
+
+      - name: terraform validate
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Trivy IaC scan (fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: infra
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: gitleaks (secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ---------------- 2. optional: golden AMIs via Packer ----------------
+  build-amis:
+    needs: security-gates
+    if: ${{ inputs.build_amis }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-packer@v3
+      - name: packer build
+        working-directory: packer
+        run: |
+          packer init .
+          packer build -timestamp-ui .
+
+  # ---------------- 3. plan + policy gates + AI risk gate ----------------
+  plan:
+    needs: [security-gates, build-amis]
+    # build-amis is skipped when build_amis=false; skipped deps don't block.
+    if: ${{ always() && needs.security-gates.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: terraform init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init -backend-config=backend.hcl
+
+      - name: terraform plan
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: |
+          terraform plan -out=tfplan -input=false \
+            -var="enable_k8s=${{ inputs.enable_k8s }}"
+          terraform show -json tfplan > tfplan.json
+
+      - name: OPA / conftest policy gate
+        run: |
+          if ls infra/policies/*.rego >/dev/null 2>&1; then
+            curl -sSL -o /usr/local/bin/conftest https://github.com/open-policy-agent/conftest/releases/latest/download/conftest || true
+            command -v conftest >/dev/null 2>&1 || { echo "installing conftest via go/pkg skipped"; }
+            conftest test "${TF_WORKDIR}/tfplan.json" --policy infra/policies
+          else
+            echo "no infra/policies/*.rego — skipping OPA gate"
+          fi
+
+      - name: AI plan-risk gate (blocks high-risk before apply)
+        if: ${{ inputs.action == 'apply' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -f ai/plan-risk/analyze.py ] && [ -n "${ANTHROPIC_API_KEY}" ]; then
+            python ai/plan-risk/analyze.py "${TF_WORKDIR}/tfplan.json"
+          else
+            echo "AI risk gate skipped (no analyze.py or ANTHROPIC_API_KEY)"
+          fi
+
+      - name: upload tfplan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: |
+            ${{ env.TF_WORKDIR }}/tfplan
+            ${{ env.TF_WORKDIR }}/tfplan.json
+          retention-days: 5
+
+  # ---------------- 4. apply — behind environment approval ----------------
+  apply:
+    needs: plan
+    if: ${{ inputs.action == 'apply' }}
+    runs-on: ubuntu-latest
+    environment: production   # <-- required reviewers = manual approval gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: download tfplan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: ${{ env.TF_WORKDIR }}
+
+      - name: terraform init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init -backend-config=backend.hcl
+
+      - name: terraform apply
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform apply -auto-approve -input=false tfplan

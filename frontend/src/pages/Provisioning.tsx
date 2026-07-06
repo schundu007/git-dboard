@@ -1,116 +1,173 @@
-// frontend/src/pages/Provisioning.tsx
-// Two execution paths: CI dispatch (default, auditable) and break-glass direct
-// apply (opt-in). Shows provision.yml run status.
-import { useEffect, useState } from "react";
+// Provisioning — two execution paths: CI dispatch (default, auditable) and
+// break-glass direct apply (opt-in). Repo target toggles between the live
+// active repo and a custom/fork. Shows provision.yml run status.
+import { useEffect, useState } from 'react'
+import { Rocket, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react'
+import clsx from 'clsx'
+import { useRepoSlug } from '../lib/hooks'
 
-const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
 
-type Run = { id: number; status: string; conclusion: string; event: string; created: string; url: string };
+type Run = { id: number; status: string; conclusion: string; event: string; created: string; url: string }
+
+const conc = (c: string) =>
+  c === 'success' ? 'text-accent-green' : c === 'failure' ? 'text-accent-red' : 'text-accent-yellow'
 
 export default function Provisioning() {
-  const [repo, setRepo] = useState("schundu007/rocm-ci");
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [buildAmis, setBuildAmis] = useState(false);
-  const [enableK8s, setEnableK8s] = useState(false);
-  const [bg, setBg] = useState(false);        // break-glass panel
-  const [adminToken, setAdminToken] = useState(""); // X-Admin-Token for break-glass
-  const [busy, setBusy] = useState("");
+  const activeSlug = useRepoSlug()
+  const [mode, setMode] = useState<'active' | 'custom'>('active')
+  const [custom, setCustom] = useState('schundu007/rocm-ci')
+  const repo = mode === 'active' ? activeSlug : custom
+
+  const [runs, setRuns] = useState<Run[]>([])
+  const [buildAmis, setBuildAmis] = useState(false)
+  const [enableK8s, setEnableK8s] = useState(false)
+  const [bg, setBg] = useState(false)
+  const [adminToken, setAdminToken] = useState('')
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string } | null>(null)
 
   async function loadRuns() {
+    if (!repo) return
     try {
-      const r = await fetch(`${API}/provision/runs?repo=${encodeURIComponent(repo)}`);
-      if (r.ok) setRuns(await r.json());
-    } catch {}
+      const r = await fetch(`${API}/provision/runs?repo=${encodeURIComponent(repo)}`)
+      if (r.ok) setRuns(await r.json())
+    } catch { /* ignore */ }
   }
-  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, 15000); return () => clearInterval(t); }, [repo]);
+  async function checkPreflight() {
+    if (!repo) { setPf(null); return }
+    try {
+      const r = await fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)
+      setPf(await r.json())
+    } catch { setPf(null) }
+  }
+  useEffect(() => { loadRuns(); checkPreflight(); const t = setInterval(loadRuns, 15000); return () => clearInterval(t) }, [repo])
 
   async function dispatch(action: string) {
-    setBusy(action);
+    setBusy(action); setMsg(null)
+    // preflight: verify repo + provision.yml before dispatching (avoids raw 404)
+    try {
+      const pr = await (await fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)).json()
+      setPf(pr)
+      if (!pr.ok) { setBusy(''); setMsg({ ok: false, text: pr.message }); return }
+    } catch { /* fall through to dispatch */ }
     const r = await fetch(`${API}/provision/dispatch`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo, action, build_amis: buildAmis, enable_k8s: enableK8s }),
-    });
-    setBusy("");
-    alert(r.ok ? `Dispatched (${action})` : `Failed: ${await r.text()}`);
-    loadRuns();
+    })
+    setBusy('')
+    setMsg({ ok: r.ok, text: r.ok ? `Dispatched provision.yml (${action}) → ${repo}` : `Failed: ${await r.text()}` })
+    loadRuns()
   }
 
   async function breakGlass() {
-    if (!adminToken) { alert("Admin token required for break-glass (X-Admin-Token / PROVISION_ADMIN_TOKEN)."); return; }
-    if (!confirm("BREAK-GLASS: run terraform apply directly on the server, bypassing CI approval. Continue?")) return;
-    setBusy("bg-apply");
-    const authHeaders = { "Content-Type": "application/json", "X-Admin-Token": adminToken };
-    // plan first (runs AI risk gate), then apply with confirm (apply re-runs the gate server-side)
-    const p = await fetch(`${API}/provision/plan`, {
-      method: "POST", headers: authHeaders, body: JSON.stringify({}),
-    });
-    if (!p.ok) { setBusy(""); alert(`plan failed: ${await p.text()}`); return; }
+    if (!adminToken) { setMsg({ ok: false, text: 'Admin token required for break-glass (X-Admin-Token / PROVISION_ADMIN_TOKEN).' }); return }
+    if (!confirm('BREAK-GLASS: run terraform apply directly on the server, bypassing CI approval. Continue?')) return
+    setBusy('bg-apply'); setMsg(null)
+    const authHeaders = { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken }
+    const p = await fetch(`${API}/provision/plan`, { method: 'POST', headers: authHeaders, body: JSON.stringify({}) })
+    if (!p.ok) { setBusy(''); setMsg({ ok: false, text: `plan failed: ${await p.text()}` }); return }
     const a = await fetch(`${API}/provision/apply`, {
-      method: "POST", headers: authHeaders,
-      body: JSON.stringify({ confirm: true, var_enable_k8s: enableK8s }),
-    });
-    setBusy("");
-    alert(a.ok ? "Applied (break-glass)." : `apply failed: ${await a.text()}`);
+      method: 'POST', headers: authHeaders, body: JSON.stringify({ confirm: true, var_enable_k8s: enableK8s }),
+    })
+    setBusy('')
+    setMsg({ ok: a.ok, text: a.ok ? 'Applied (break-glass).' : `apply failed: ${await a.text()}` })
   }
 
-  const conc = (c: string) =>
-    c === "success" ? "text-emerald-400" : c === "failure" ? "text-rose-400" : "text-amber-400";
-
   return (
-    <div className="p-6 max-w-5xl mx-auto text-slate-200">
-      <h1 className="text-xl font-semibold">Provisioning</h1>
-      <p className="text-sm text-slate-400 mb-4">
-        Default path = dispatch the CI pipeline (OIDC + OPA/Trivy/AI gates + environment approval). Break-glass = direct apply.
-      </p>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <Rocket size={18} className="text-nvidia" />
+        <h1 className="text-lg font-semibold text-white">Provisioning</h1>
+        <span className="text-[11px] text-gray-500 ml-1">CI dispatch (OIDC + OPA/Trivy/AI gates + approval) · break-glass direct apply</span>
+      </div>
 
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-4">
-        <input className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm mb-3"
-               value={repo} onChange={e => setRepo(e.target.value)} />
-        <div className="flex gap-4 text-sm mb-3">
-          <label className="flex gap-2 items-center"><input type="checkbox" checked={buildAmis} onChange={e => setBuildAmis(e.target.checked)} /> build AMIs first</label>
-          <label className="flex gap-2 items-center"><input type="checkbox" checked={enableK8s} onChange={e => setEnableK8s(e.target.checked)} /> enable EKS+cache</label>
+      <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
+        {/* repo target toggle — both options */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Target repo</span>
+          <div className="flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
+            {(['active', 'custom'] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={clsx('px-2.5 py-0.5 rounded text-[10px] transition-colors', mode === m ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
+                {m === 'active' ? 'Active repo' : 'Custom / fork'}
+              </button>
+            ))}
+          </div>
+          {mode === 'active' ? (
+            <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{activeSlug || '—'}</span>
+          ) : (
+            <input value={custom} onChange={e => setCustom(e.target.value)} placeholder="owner/repo"
+              className="flex-1 min-w-[220px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
+          )}
+          {pf && (
+            <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
+              {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
+            </span>
+          )}
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => dispatch("plan")} disabled={!!busy}
-                  className="bg-cyan-500 text-slate-900 font-semibold rounded-lg px-4 py-2">
-            {busy === "plan" ? "…" : "Dispatch Plan"}
+        {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
+
+        <div className="flex gap-4 text-[11px] text-gray-400">
+          <label className="flex gap-1.5 items-center cursor-pointer"><input type="checkbox" checked={buildAmis} onChange={e => setBuildAmis(e.target.checked)} /> build AMIs first</label>
+          <label className="flex gap-1.5 items-center cursor-pointer"><input type="checkbox" checked={enableK8s} onChange={e => setEnableK8s(e.target.checked)} /> enable EKS + cache</label>
+        </div>
+
+        <div className="flex gap-2 flex-wrap items-center">
+          <button onClick={() => dispatch('plan')} disabled={!!busy || !repo}
+            className="flex items-center gap-1.5 bg-nvidia text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+            {busy === 'plan' ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />} Dispatch Plan
           </button>
-          <button onClick={() => dispatch("apply")} disabled={!!busy}
-                  className="border border-amber-600 text-amber-300 rounded-lg px-4 py-2">
-            {busy === "apply" ? "…" : "Dispatch Apply (needs approval)"}
+          <button onClick={() => dispatch('apply')} disabled={!!busy || !repo}
+            className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">
+            {busy === 'apply' ? '…' : 'Dispatch Apply (needs approval)'}
           </button>
-          <button onClick={() => setBg(!bg)} className="ml-auto text-xs text-slate-500 underline">
-            {bg ? "hide" : "show"} break-glass
+          <button onClick={() => setBg(!bg)} className="ml-auto text-[10px] text-gray-500 hover:text-gray-300 underline">
+            {bg ? 'hide' : 'show'} break-glass
           </button>
         </div>
+
         {bg && (
-          <div className="mt-3 border border-rose-800 bg-rose-950/30 rounded-lg p-3">
-            <div className="text-rose-300 text-sm font-semibold mb-1">Break-glass (direct apply)</div>
-            <div className="text-xs text-slate-400 mb-2">
-              Bypasses CI approval. Runs server-side terraform plan (with AI risk gate) then apply. Use only for demos/urgent fixes.
-            </div>
+          <div className="border border-accent-red/30 bg-accent-red/[0.05] rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-accent-red text-[11px] font-semibold"><AlertTriangle size={12} /> Break-glass (direct apply)</div>
+            <p className="text-[10px] text-gray-500">Bypasses CI approval. Runs server-side terraform plan (with AI risk gate) then apply. Demos / urgent fixes only.</p>
             <input type="password" value={adminToken} onChange={e => setAdminToken(e.target.value)}
-                   placeholder="X-Admin-Token (PROVISION_ADMIN_TOKEN)"
-                   className="w-full bg-slate-950 border border-rose-800 rounded-lg px-3 py-2 font-mono text-xs mb-2" />
+              placeholder="X-Admin-Token (PROVISION_ADMIN_TOKEN)"
+              className="w-full bg-surface-2 border border-accent-red/30 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none" />
             <button onClick={breakGlass} disabled={!!busy}
-                    className="bg-rose-600 text-white rounded-lg px-4 py-2 text-sm">
-              {busy === "bg-apply" ? "applying…" : "Plan + Apply directly"}
+              className="bg-accent-red text-white rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+              {busy === 'bg-apply' ? 'applying…' : 'Plan + Apply directly'}
             </button>
           </div>
         )}
+
+        {msg && <p className={clsx('text-[11px]', msg.ok ? 'text-accent-green' : 'text-accent-red')}>{msg.text}</p>}
       </div>
 
-      <h2 className="text-sm font-mono uppercase tracking-wide text-slate-400 mb-2">provision.yml runs</h2>
-      <div className="space-y-2">
-        {runs.map(r => (
-          <a key={r.id} href={r.url} target="_blank" rel="noreferrer"
-             className="flex justify-between items-center bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm hover:border-slate-600">
-            <span className="font-mono text-xs text-slate-500">{r.event} · {new Date(r.created).toLocaleString()}</span>
-            <span className={`font-mono text-xs ${conc(r.conclusion)}`}>{r.conclusion || r.status}</span>
-          </a>
-        ))}
-        {runs.length === 0 && <div className="text-slate-600 text-sm">no runs yet</div>}
+      {/* runs */}
+      <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">provision.yml runs</span>
+          <span className="ml-auto text-[10px] text-gray-500 font-mono">{repo}</span>
+        </div>
+        {runs.length === 0 ? (
+          <div className="py-8 text-center text-[12px] text-gray-500">No provision runs yet.</div>
+        ) : (
+          <table className="w-full text-xs">
+            <tbody>
+              {runs.map(r => (
+                <tr key={r.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40">
+                  <td className="px-4 py-2 text-[10px] font-mono text-gray-500">{r.event}</td>
+                  <td className="px-2 py-2 text-[10px] text-gray-500">{new Date(r.created).toLocaleString()}</td>
+                  <td className="px-2 py-2 text-right"><span className={clsx('text-[11px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || r.status}</span></td>
+                  <td className="px-4 py-2 text-right"><a href={r.url} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-nvidia inline-flex"><ExternalLink size={11} /></a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
-  );
+  )
 }

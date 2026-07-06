@@ -1,116 +1,167 @@
-// frontend/src/pages/InfraGap.tsx
-// Current-vs-target infra/security gap analysis for a connected repo.
-// Repo status is sourced upstream (GitPulse/GitHub); this page shows the
-// INFRA/SECURITY delta and lets you provision the gaps. No repo re-analysis.
-import { useState } from "react";
+// Infra & Security Gap — current (repo + live AWS) vs target. Repo target
+// toggles between the live active repo and a custom/fork. Scores the delta and
+// lets you provision the gaps via the CI dispatch path.
+import { useState, useEffect } from 'react'
+import { Gauge, Loader2 } from 'lucide-react'
+import clsx from 'clsx'
+import { useRepoSlug } from '../lib/hooks'
+
+const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
 
 type Check = {
-  id: string; category: string; title: string; target: string; fix: string;
-  severity: "low" | "medium" | "high"; status: "OK" | "PARTIAL" | "GAP";
-  in_repo: boolean | null; in_aws: boolean | null;
-};
+  id: string; category: string; title: string; target: string; fix: string
+  severity: 'low' | 'medium' | 'high'; status: 'OK' | 'PARTIAL' | 'GAP'
+  in_repo: boolean | null; in_aws: boolean | null
+}
 type GapReport = {
-  aws: { reachable: boolean; account?: string; error?: string };
-  score: { ok: number; partial: number; total: number; pct: number };
-  by_category: Record<string, { ok: number; total: number }>;
-  checks: Check[];
-  actions: { id: string; title: string; fix: string; severity: string; status: string }[];
-};
+  aws: { reachable: boolean; account?: string; error?: string }
+  score: { ok: number; partial: number; total: number; pct: number }
+  by_category: Record<string, { ok: number; total: number }>
+  checks: Check[]
+  actions: { id: string; title: string; fix: string; severity: string; status: string }[]
+}
 
-const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
 const chip = (s: string) =>
-  s === "OK" ? "bg-emerald-900/40 text-emerald-300 border-emerald-700"
-  : s === "PARTIAL" ? "bg-amber-900/40 text-amber-300 border-amber-700"
-  : "bg-rose-900/40 text-rose-300 border-rose-700";
+  s === 'OK' ? 'bg-accent-green/15 text-accent-green'
+  : s === 'PARTIAL' ? 'bg-accent-yellow/15 text-accent-yellow'
+  : 'bg-accent-red/15 text-accent-red'
 
 export default function InfraGap() {
-  const [repo, setRepo] = useState("schundu007/rocm-ci");
-  const [prefix, setPrefix] = useState("myrock");
-  const [data, setData] = useState<GapReport | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const activeSlug = useRepoSlug()
+  const [mode, setMode] = useState<'active' | 'custom'>('active')
+  const [custom, setCustom] = useState('schundu007/rocm-ci')
+  const repo = mode === 'active' ? activeSlug : custom
+  const [prefix, setPrefix] = useState('myrock')
+  const [data, setData] = useState<GapReport | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [busy, setBusy] = useState('')
+  const [err, setErr] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string } | null>(null)
+
+  useEffect(() => {
+    if (!repo) { setPf(null); return }
+    fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)
+      .then(r => r.json()).then(setPf).catch(() => setPf(null))
+  }, [repo])
 
   async function analyze() {
-    setLoading(true); setErr("");
+    setLoading(true); setErr(''); setMsg(null)
     try {
       const r = await fetch(`${API}/gap/analyze`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ repo, prefix }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      setData(await r.json());
-    } catch (e: any) { setErr(String(e.message || e)); }
-    finally { setLoading(false); }
+      })
+      if (!r.ok) throw new Error(await r.text())
+      setData(await r.json())
+    } catch (e: any) { setErr(String(e.message || e)) }
+    finally { setLoading(false) }
   }
 
   async function provision(action: string) {
+    setBusy(action); setMsg(null)
+    // preflight: verify repo + provision.yml before dispatching (avoids raw 404)
+    try {
+      const pr = await (await fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)).json()
+      setPf(pr)
+      if (!pr.ok) { setBusy(''); setMsg({ ok: false, text: pr.message }); return }
+    } catch { /* fall through */ }
     const r = await fetch(`${API}/provision/dispatch`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo, action }),
-    });
-    alert(r.ok ? `Dispatched provision.yml (${action}). Check Actions.` : `Failed: ${await r.text()}`);
+    })
+    setBusy('')
+    setMsg({ ok: r.ok, text: r.ok ? `Dispatched provision.yml (${action}) → ${repo}. Check Actions.` : `Failed: ${await r.text()}` })
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto text-slate-200">
-      <h1 className="text-xl font-semibold">Infra & Security Gap</h1>
-      <p className="text-sm text-slate-400 mb-4">
-        Current (repo + live AWS) vs target (rocm-ci). Repo status comes from GitPulse; this scores the infra/security delta.
-      </p>
-
-      <div className="flex flex-wrap gap-2 items-center bg-slate-900 border border-slate-700 rounded-xl p-3 mb-4">
-        <input className="flex-1 min-w-[220px] bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm"
-               value={repo} onChange={e => setRepo(e.target.value)} placeholder="owner/repo" />
-        <input className="w-40 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm"
-               value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix" />
-        <button onClick={analyze} className="bg-cyan-500 text-slate-900 font-semibold rounded-lg px-4 py-2">
-          {loading ? "Analyzing…" : "Analyze"}
-        </button>
-        <button onClick={() => provision("plan")} className="border border-slate-600 rounded-lg px-3 py-2 text-sm">Plan (CI)</button>
-        <button onClick={() => provision("apply")} className="border border-amber-600 text-amber-300 rounded-lg px-3 py-2 text-sm">Apply (CI)</button>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <Gauge size={18} className="text-nvidia" />
+        <h1 className="text-lg font-semibold text-white">Infra &amp; Security Gap</h1>
+        <span className="text-[11px] text-gray-500 ml-1">current (repo + live AWS) vs target · scores the infra/security delta</span>
       </div>
 
-      {err && <div className="text-rose-400 text-sm mb-3">{err}</div>}
+      <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Target repo</span>
+          <div className="flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
+            {(['active', 'custom'] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={clsx('px-2.5 py-0.5 rounded text-[10px] transition-colors', mode === m ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
+                {m === 'active' ? 'Active repo' : 'Custom / fork'}
+              </button>
+            ))}
+          </div>
+          {mode === 'active' ? (
+            <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{activeSlug || '—'}</span>
+          ) : (
+            <input value={custom} onChange={e => setCustom(e.target.value)} placeholder="owner/repo"
+              className="flex-1 min-w-[200px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
+          )}
+          <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
+            className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
+          {pf && (
+            <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
+              {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
+            </span>
+          )}
+        </div>
+        {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={analyze} disabled={loading || !repo}
+            className="flex items-center gap-1.5 bg-nvidia text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Analyze
+          </button>
+          <button onClick={() => provision('plan')} disabled={!!busy || !repo}
+            className="border border-border text-gray-300 rounded-lg px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
+          <button onClick={() => provision('apply')} disabled={!!busy || !repo}
+            className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
+        </div>
+        {err && <p className="text-[11px] text-accent-red break-words">{err}</p>}
+        {msg && <p className={clsx('text-[11px] break-words', msg.ok ? 'text-accent-green' : 'text-accent-red')}>{msg.text}</p>}
+      </div>
 
       {data && (
         <>
-          <div className="flex items-center gap-4 mb-4 flex-wrap">
-            <div className="text-3xl font-bold">{data.score.ok}/{data.score.total}</div>
-            <div className="flex-1 min-w-[180px] h-2 bg-slate-800 rounded overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400" style={{ width: `${data.score.pct}%` }} />
+          {/* score strip */}
+          <div className="bg-surface-1 border border-border rounded-xl px-4 py-3 flex items-center gap-4 flex-wrap">
+            <div className="text-[20px] font-bold tabular-nums text-white leading-none">{data.score.ok}<span className="text-gray-500 text-sm font-normal">/{data.score.total}</span></div>
+            <div className="flex-1 min-w-[180px] h-2 bg-surface-2 rounded-full overflow-hidden">
+              <div className={clsx('h-full rounded-full', data.score.pct >= 80 ? 'bg-accent-green' : data.score.pct >= 50 ? 'bg-accent-yellow' : 'bg-accent-red')} style={{ width: `${data.score.pct}%` }} />
             </div>
-            <div className="font-mono text-xs text-slate-400">
-              {data.score.pct}% ready · {data.score.partial} partial ·
-              AWS {data.aws.reachable ? `✓ ${data.aws.account}` : "✗ unreachable"}
+            <div className="font-mono text-[10px] text-gray-500">
+              {data.score.pct}% ready · {data.score.partial} partial · AWS {data.aws.reachable ? <span className="text-accent-green">✓ {data.aws.account}</span> : <span className="text-accent-red">✗ unreachable</span>}
             </div>
           </div>
 
-          <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))" }}>
+          {/* checks grouped by category — tables */}
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))' }}>
             {Object.keys(data.by_category).map(cat => (
-              <div key={cat} className="bg-slate-900 border border-slate-700 rounded-xl p-4">
-                <div className="flex justify-between mb-2">
-                  <span className="font-mono text-xs uppercase tracking-wide text-slate-400">{cat}</span>
-                  <span className="font-mono text-xs text-slate-500">
-                    {data.by_category[cat].ok}/{data.by_category[cat].total}
-                  </span>
+              <div key={cat} className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{cat}</span>
+                  <span className="text-[10px] font-mono text-gray-500">{data.by_category[cat].ok}/{data.by_category[cat].total}</span>
                 </div>
-                {data.checks.filter(c => c.category === cat).map(c => (
-                  <div key={c.id} className="border border-slate-800 rounded-lg p-2.5 mb-2 bg-slate-950/50">
-                    <div className="flex gap-2 items-start">
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${chip(c.status)}`}>{c.status}</span>
-                      <span className="text-sm break-words">{c.title}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-1 font-mono">
-                      repo:{c.in_repo === null ? "n/a" : c.in_repo ? "yes" : "no"} · aws:{c.in_aws === null ? "n/a" : c.in_aws ? "yes" : "no"}
-                    </div>
-                    {c.status !== "OK" && <div className="text-xs text-amber-300/80 mt-1 break-words">→ {c.fix}</div>}
-                  </div>
-                ))}
+                <table className="w-full text-xs">
+                  <tbody>
+                    {data.checks.filter(c => c.category === cat).map(c => (
+                      <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 align-top">
+                        <td className="pl-4 pr-2 py-2 w-0"><span className={clsx('inline-block text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded', chip(c.status))}>{c.status}</span></td>
+                        <td className="px-2 py-2">
+                          <span className="block text-[11px] text-gray-200 leading-snug">{c.title}</span>
+                          <span className="block text-[9px] text-gray-600 font-mono mt-0.5">repo:{c.in_repo === null ? 'n/a' : c.in_repo ? 'yes' : 'no'} · aws:{c.in_aws === null ? 'n/a' : c.in_aws ? 'yes' : 'no'}</span>
+                          {c.status !== 'OK' && <span className="block text-[10px] text-accent-yellow/80 mt-0.5">→ {c.fix}</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ))}
           </div>
         </>
       )}
     </div>
-  );
+  )
 }

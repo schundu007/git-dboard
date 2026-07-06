@@ -122,7 +122,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="IsaacLab Dashboard API",
+    title="GitPulse API",
     version="1.0.0",
     lifespan=lifespan,
 )

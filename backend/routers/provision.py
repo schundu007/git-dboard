@@ -75,6 +75,36 @@ async def runs(repo: str):
             for w in data]
 
 
+@router.get("/preflight")
+async def preflight(repo: str):
+    """Verify the target repo is reachable and has a dispatchable provision.yml,
+    so the UI can show an actionable message instead of a raw 404."""
+    async with httpx.AsyncClient(timeout=20) as c:
+        rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=gh._headers())
+        if rr.status_code == 404:
+            return {"ok": False, "repo": repo, "reason": "repo_not_found",
+                    "message": f"Repo '{repo}' not found, or the active token has no access to it. "
+                               f"Check the name, and that Settings' PAT can reach this repo."}
+        if rr.status_code >= 400:
+            return {"ok": False, "repo": repo, "reason": "repo_error",
+                    "message": f"Cannot access '{repo}' (HTTP {rr.status_code})."}
+
+        wr = await c.get(f"{GITHUB_API}/repos/{repo}/actions/workflows/provision.yml",
+                         headers=gh._headers())
+        if wr.status_code == 404:
+            return {"ok": False, "repo": repo, "reason": "workflow_missing",
+                    "message": f"'{repo}' has no .github/workflows/provision.yml. "
+                               f"Add that workflow (with 'on: workflow_dispatch') to enable provisioning."}
+        if wr.status_code >= 400:
+            return {"ok": False, "repo": repo, "reason": "workflow_error",
+                    "message": f"Cannot read provision.yml on '{repo}' (HTTP {wr.status_code})."}
+
+        wf = wr.json()
+        return {"ok": True, "repo": repo, "workflow_id": wf.get("id"),
+                "state": wf.get("state"),
+                "message": f"Ready — provision.yml found on '{repo}'."}
+
+
 # ---------- 2. BREAK-GLASS (direct apply, admin-gated) ----------
 class ApplyRequest(BaseModel):
     workdir: str = "infra/env/prod"   # server-side checkout path of rocm-ci
