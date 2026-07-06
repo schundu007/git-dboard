@@ -115,6 +115,11 @@ async def _restore_active_repo():
 async def lifespan(app: FastAPI):
     await init_db()
     await _restore_active_repo()
+    try:
+        from routers.provision import _apply_aws_creds
+        await _apply_aws_creds()  # apply UI-stored AWS creds to the process env
+    except Exception as exc:
+        logger.warning("apply AWS creds: %s", exc)
     ingest_task = asyncio.create_task(_auto_ingest_loop())
     asyncio.create_task(_warm_stats_cache())
     pr_automation.start_scheduler()  # starts paused (enabled=False by default)

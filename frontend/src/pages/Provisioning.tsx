@@ -69,6 +69,10 @@ export default function Provisioning() {
   const [configuring, setConfiguring] = useState(false)
   const [conn, setConn] = useState<Record<string, { ok: boolean; text: string }>>({})
   const [testing, setTesting] = useState('')
+  const [showAwsForm, setShowAwsForm] = useState(false)
+  const [awsAkid, setAwsAkid] = useState('')
+  const [awsSecret, setAwsSecret] = useState('')
+  const [savingAws, setSavingAws] = useState(false)
 
   async function createPR() {
     setScaffolding(true); setMsg(null)
@@ -149,6 +153,22 @@ export default function Provisioning() {
     } catch (e: any) { setConn(c => ({ ...c, [kind]: { ok: false, text: String(e.message || e) } })) }
     finally { setTesting('') }
   }
+  async function saveAwsCreds() {
+    if (!awsAkid || !awsSecret) return
+    setSavingAws(true); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/aws-creds`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key_id: awsAkid, secret_access_key: awsSecret, region: awsRegion || 'us-east-1' }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'Failed to save AWS creds' }); return }
+      setAwsSecret(''); setAwsAkid(''); setShowAwsForm(false)
+      setMsg({ ok: true, text: 'AWS credentials saved (server-side) and applied — no Railway/CLI needed.' })
+      testConn('aws')
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setSavingAws(false) }
+  }
   const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
   useEffect(() => { loadPrereqs() }, [repo, pf?.repo])
@@ -213,7 +233,28 @@ export default function Provisioning() {
             </div>
           ))}
         </div>
-        <p className="text-[9px] text-gray-600">Add keys in Settings → AI Provider (Claude) and the repo switcher (GitHub PAT); AWS via backend creds. Test verifies each is live.</p>
+        <div>
+          <button onClick={() => setShowAwsForm(v => !v)} className="text-[10px] text-brand hover:underline">
+            {showAwsForm ? 'hide' : '+ add AWS key'}
+          </button>
+          {showAwsForm && (
+            <div className="mt-2 space-y-2 border-t border-border pt-2">
+              <div className="flex gap-2 flex-wrap">
+                <input value={awsAkid} onChange={e => setAwsAkid(e.target.value)} placeholder="AWS_ACCESS_KEY_ID"
+                  className="flex-1 min-w-[160px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+                <input value={awsRegion} onChange={e => setAwsRegion(e.target.value)} placeholder="region"
+                  className="w-28 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+              </div>
+              <input type="password" value={awsSecret} onChange={e => setAwsSecret(e.target.value)} placeholder="AWS_SECRET_ACCESS_KEY"
+                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+              <button onClick={saveAwsCreds} disabled={savingAws || !awsAkid || !awsSecret}
+                className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+                {savingAws ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save &amp; test
+              </button>
+            </div>
+          )}
+        </div>
+        <p className="text-[9px] text-gray-600">Claude &amp; GitHub keys → Settings / repo switcher. AWS key → "add AWS key" (stored server-side, applied live — nothing in Railway or chat). Test verifies each.</p>
       </div>
 
       {/* Prerequisites — GitPulse sets them on the target repo via the GitHub API (no dashboards) */}

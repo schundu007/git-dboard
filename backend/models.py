@@ -51,6 +51,14 @@ class AISettings(Base):
     cohere_key = Column(String(500), nullable=True)
 
 
+class AwsSettings(Base):
+    __tablename__ = "aws_settings"
+    id = Column(Integer, primary_key=True, default=1)
+    access_key_id = Column(String(200), nullable=True)
+    secret_access_key = Column(String(500), nullable=True)
+    region = Column(String(50), default="us-east-1")
+
+
 class RepoConfig(Base):
     __tablename__ = "repo_configs"
     id = Column(Integer, primary_key=True)

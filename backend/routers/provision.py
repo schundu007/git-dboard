@@ -226,6 +226,67 @@ async def github_test():
             "has_workflow": "workflow" in scopes}
 
 
+class AwsCredsRequest(BaseModel):
+    access_key_id: str
+    secret_access_key: str
+    region: str = "us-east-1"
+
+
+async def _apply_aws_creds() -> bool:
+    """Load stored AWS creds from the DB into the process env so the read-only gap
+    scan (boto3 default chain) uses them — no Railway env editing needed."""
+    from database import AsyncSessionLocal
+    from models import AwsSettings
+    from sqlalchemy import select
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(AwsSettings).where(AwsSettings.id == 1))).scalar_one_or_none()
+    if row and row.access_key_id and row.secret_access_key:
+        os.environ["AWS_ACCESS_KEY_ID"] = row.access_key_id
+        os.environ["AWS_SECRET_ACCESS_KEY"] = row.secret_access_key
+        os.environ["AWS_REGION"] = row.region or "us-east-1"
+        try:
+            from services.aws_state import read_aws_state
+            read_aws_state.cache_clear()
+        except Exception:
+            pass
+        return True
+    return False
+
+
+@router.post("/aws-creds")
+async def set_aws_creds(req: AwsCredsRequest):
+    """Store AWS creds from the UI (server-side settings, like the AI keys) and apply
+    them live — so the gap scan works without pasting keys into Railway or chat."""
+    from database import AsyncSessionLocal
+    from models import AwsSettings
+    from sqlalchemy import select
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(AwsSettings).where(AwsSettings.id == 1))).scalar_one_or_none()
+        if not row:
+            row = AwsSettings(id=1)
+            db.add(row)
+        row.access_key_id = req.access_key_id.strip()
+        row.secret_access_key = req.secret_access_key.strip()
+        row.region = (req.region or "us-east-1").strip()
+        await db.commit()
+    await _apply_aws_creds()
+    return {"ok": True, "region": req.region}
+
+
+@router.get("/aws-creds")
+async def get_aws_creds():
+    """Masked current AWS creds for the UI (never returns the secret)."""
+    from database import AsyncSessionLocal
+    from models import AwsSettings
+    from sqlalchemy import select
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(select(AwsSettings).where(AwsSettings.id == 1))).scalar_one_or_none()
+    if not row or not row.access_key_id:
+        return {"configured": False, "region": os.environ.get("AWS_REGION", "us-east-1")}
+    ak = row.access_key_id
+    return {"configured": True, "access_key_id_masked": f"{ak[:4]}…{ak[-4:]}", "region": row.region}
+
+
 @router.get("/runs")
 async def runs(repo: str):
     """Latest provisioning runs (provision.yml + ai-remediate.yml), newest first."""
