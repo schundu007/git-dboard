@@ -144,10 +144,14 @@ export default function Provisioning() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Rocket size={18} className="text-brand" />
-        <h1 className="text-lg font-semibold text-white">Provisioning</h1>
-        <span className="text-[11px] text-gray-500 ml-1">CI dispatch (OIDC + OPA/Trivy/AI gates + approval) · break-glass direct apply</span>
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-lg bg-brand/10 ring-1 ring-brand/25 flex items-center justify-center">
+          <Rocket size={17} className="text-brand" />
+        </div>
+        <div>
+          <h1 className="text-lg font-semibold text-white leading-tight">Provisioning</h1>
+          <p className="text-[11px] text-gray-500">CI dispatch (OIDC · OPA/Trivy/AI gates · approval) · break-glass direct apply</p>
+        </div>
       </div>
 
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
@@ -255,6 +259,14 @@ export default function Provisioning() {
           <div className="py-8 text-center text-[12px] text-gray-500">No provision runs yet.</div>
         ) : (
           <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-500 font-semibold px-4 py-2">Event</th>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-500 font-semibold px-2 py-2">Started</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-500 font-semibold px-2 py-2">Status</th>
+                <th className="px-4 py-2 w-0"></th>
+              </tr>
+            </thead>
             <tbody>
               {runs.map(r => (
                 <tr key={r.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40">

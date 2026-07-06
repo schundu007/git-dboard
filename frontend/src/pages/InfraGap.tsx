@@ -167,8 +167,8 @@ export default function InfraGap() {
           <span className="text-[11px] text-gray-300 flex-1 min-w-0">{pf.message || (pf.ok ? 'Provisioning ready' : 'Not dispatchable')}</span>
           {pf.ok ? (
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={() => provision('plan')} disabled={!!busy} className="border border-border text-gray-300 rounded-lg px-3 py-1 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
-              <button onClick={() => provision('apply')} disabled={!!busy} className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
+              <button onClick={() => provision('plan')} disabled={!!busy || !data} title={!data ? 'Run Analyze first' : undefined} className="border border-border text-gray-300 rounded-lg px-3 py-1 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
+              <button onClick={() => provision('apply')} disabled={!!busy || !data} title={!data ? 'Run Analyze first' : undefined} className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
             </div>
           ) : (pf.reason === 'workflow_missing' || pf.reason === 'no_write') && (
             <button onClick={enableViaFork} disabled={enabling}
