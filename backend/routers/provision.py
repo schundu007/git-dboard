@@ -200,6 +200,27 @@ async def prereqs(repo: str):
             "anthropic_secret":   await exists("actions/secrets/ANTHROPIC_API_KEY"),
             "production_env":     await exists("environments/production"),
         }
+        # role name comes from the AWS_PROVISION_ROLE_ARN variable (fallback to the bootstrap default)
+        role_name = "gitpulse-ci-provision"
+        v = await c.get(f"{GITHUB_API}/repos/{repo}/actions/variables/AWS_PROVISION_ROLE_ARN", headers=h)
+        if v.status_code == 200 and "/" in (v.json().get("value") or ""):
+            role_name = v.json()["value"].rsplit("/", 1)[-1]
+
+    # AWS-side: does the OIDC provider + the provisioning role ACTUALLY exist in AWS?
+    try:
+        import boto3
+        iam = boto3.client("iam")
+        provs = iam.list_open_id_connect_providers().get("OpenIDConnectProviderList", [])
+        checks["aws_oidc_provider"] = any("token.actions.githubusercontent.com" in p["Arn"] for p in provs)
+        try:
+            iam.get_role(RoleName=role_name)
+            checks["aws_oidc_role"] = True
+        except Exception:
+            checks["aws_oidc_role"] = False
+    except Exception:
+        checks["aws_oidc_provider"] = False
+        checks["aws_oidc_role"] = False
+
     return {"repo": repo, "checks": checks, "ready": all(checks.values())}
 
 
