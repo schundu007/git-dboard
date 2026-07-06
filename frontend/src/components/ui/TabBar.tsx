@@ -28,10 +28,9 @@ export function TabBar<T extends string>({
   return (
     <div
       className={cn(
-        'flex items-center gap-1 p-1 rounded-xl border',
-        'bg-gradient-to-br from-surface-2 to-surface-2/60',
-        'border-border/60',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_3px_rgba(0,0,0,0.25)]',
+        // Flat, solid container. No gradient / inset-highlight chrome — the rest
+        // of the system is flat and sharp; this was the lone gradient surface.
+        'flex items-center gap-1 p-1 rounded-xl border bg-surface-2 border-border/60',
         className,
       )}
     >
@@ -44,9 +43,9 @@ export function TabBar<T extends string>({
             size === 'md' ? 'px-3.5 py-2 text-[12px]' : 'px-3 py-1.5 text-[11px]',
             isActive(id)
               ? [
-                  'bg-surface-3 text-white',
-                  'border border-border/80',
-                  'shadow-[0_2px_8px_rgba(0,0,0,0.35),0_0_0_1px_rgba(118,185,0,0.14),0_0_12px_rgba(118,185,0,0.08)]',
+                  // Active state = raised solid surface + border + brand icon.
+                  // No green glow shadow (decorative-glow ban).
+                  'bg-surface-3 text-neutral-50 border border-border/80',
                 ]
               : [
                   'text-neutral-500 border border-transparent',
@@ -75,10 +74,6 @@ export function TabBar<T extends string>({
             >
               {badge}
             </span>
-          )}
-          {/* Active indicator bar */}
-          {isActive(id) && (
-            <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-brand/60" />
           )}
         </button>
       ))}

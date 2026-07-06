@@ -324,9 +324,10 @@ export default function InfraGap() {
             {Object.entries(data.by_category).map(([cat, s]) => {
               const pct = s.total ? Math.round(s.ok / s.total * 100) : 0
               const bar = pct === 100 ? 'bg-accent-green' : pct > 0 ? 'bg-accent-yellow' : 'bg-accent-red'
-              const edge = pct === 100 ? 'border-l-accent-green/60' : pct > 0 ? 'border-l-accent-yellow/60' : 'border-l-accent-red/60'
               return (
-                <div key={cat} className={clsx('bg-surface-1 border border-border border-l-2 rounded-xl overflow-hidden', edge)}>
+                // Health color is carried by the progress bar + the OK/PARTIAL/GAP
+                // chips below; no colored side-stripe (side-stripe ban).
+                <div key={cat} className="bg-surface-1 border border-border rounded-xl overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-border">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-300">{cat}</span>

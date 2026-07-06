@@ -245,10 +245,7 @@ export default function ScriptPlayground() {
                 className={cn(
                   'relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium flex-1 justify-center transition-all duration-150 border',
                   activeTab === tab.id
-                    ? [
-                        'bg-surface-3 text-white border-border/80',
-                        'shadow-[0_2px_8px_rgba(0,0,0,0.35),0_0_0_1px_rgba(118,185,0,0.14),0_0_12px_rgba(118,185,0,0.08)]',
-                      ]
+                    ? ['bg-surface-3 text-neutral-50 border-border/80']
                     : 'text-neutral-500 border-transparent hover:text-neutral-200 hover:bg-surface-3/30',
                 )}
               >

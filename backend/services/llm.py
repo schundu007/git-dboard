@@ -10,8 +10,9 @@ PROVIDERS = {
     "anthropic": {"name": "Claude (Anthropic)", "model": "claude-sonnet-5"},
 }
 
-# Tried in order — first provider with a key wins; falls back on error too
-FALLBACK_ORDER = ["gemini", "deepseek", "anthropic"]
+# Tried in order — first provider with a key wins; falls back on error too.
+# Claude (Anthropic) is the default/primary provider.
+FALLBACK_ORDER = ["anthropic", "gemini", "deepseek"]
 
 ENV_KEY_MAP = {
     "gemini":    "GEMINI_API_KEY",
@@ -24,7 +25,7 @@ async def get_settings() -> AISettings:
     async with AsyncSessionLocal() as db:
         row = await db.scalar(select(AISettings).where(AISettings.id == 1))
         if not row:
-            row = AISettings(id=1, provider="gemini")
+            row = AISettings(id=1, provider="anthropic")
             db.add(row)
             await db.commit()
             await db.refresh(row)
@@ -38,7 +39,7 @@ def _resolve_key(row: AISettings, provider: str) -> str | None:
 
 async def call(prompt: str, system: str) -> str:
     row = await get_settings()
-    primary = row.provider or "gemini"
+    primary = row.provider or "anthropic"
 
     # Build ordered list: primary first, then remaining fallbacks in order
     order = [primary] + [p for p in FALLBACK_ORDER if p != primary]
@@ -56,7 +57,7 @@ async def call(prompt: str, system: str) -> str:
 
     if last_error:
         raise last_error
-    raise ValueError("No AI provider keys configured. Add a Gemini key in Settings → AI Provider.")
+    raise ValueError("No AI provider keys configured. Set ANTHROPIC_API_KEY (or add a key in Settings → AI Provider).")
 
 
 async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:

@@ -39,7 +39,7 @@ export default function Header() {
   return (
     <header className={cn(
       'h-[52px] flex-shrink-0 flex items-center gap-3 px-4',
-      'border-b border-border bg-surface-1/90 backdrop-blur-sm z-10 sticky top-0',
+      'border-b border-border bg-surface-1 z-10 sticky top-0',
     )}>
 
       {/* Mobile hamburger */}
@@ -58,7 +58,7 @@ export default function Header() {
 
       {/* Page title */}
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <h1 className="text-[15px] font-semibold leading-none truncate text-white">
+        <h1 className="text-[15px] font-semibold leading-none truncate text-neutral-50">
           {pageTitle}
         </h1>
 

@@ -132,14 +132,20 @@ async def auto_fix(req: AutoFixRequest):
 
 @router.get("/runs")
 async def runs(repo: str):
-    """Latest provision.yml runs (for the UI status panel)."""
-    url = f"{GITHUB_API}/repos/{repo}/actions/workflows/provision.yml/runs?per_page=10"
+    """Latest provisioning runs (provision.yml + ai-remediate.yml), newest first."""
+    out: list[dict] = []
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.get(url, headers=gh._headers())
-    data = r.json().get("workflow_runs", [])
-    return [{"id": w["id"], "status": w["status"], "conclusion": w["conclusion"],
-             "event": w["event"], "created": w["created_at"], "url": w["html_url"]}
-            for w in data]
+        for wf in ("provision.yml", "ai-remediate.yml"):
+            r = await c.get(f"{GITHUB_API}/repos/{repo}/actions/workflows/{wf}/runs?per_page=8",
+                            headers=gh._headers())
+            if r.status_code != 200:
+                continue
+            for w in r.json().get("workflow_runs", []):
+                out.append({"id": w["id"], "status": w["status"], "conclusion": w["conclusion"],
+                            "event": w["event"], "created": w["created_at"], "url": w["html_url"],
+                            "workflow": wf.replace(".yml", "")})
+    out.sort(key=lambda x: x["created"], reverse=True)
+    return out[:10]
 
 
 # Map common CI failure signatures → the gap check that fixes them (for one-click Guide).
