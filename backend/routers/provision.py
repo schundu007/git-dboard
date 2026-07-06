@@ -171,7 +171,7 @@ jobs:
 
 
 @router.post("/scaffold")
-async def scaffold(repo: str, path: str = ".github/workflows/provision.yml"):
+async def scaffold(repo: str, path: str = ".github/workflows/provision.yml", dry_run: bool = False):
     """One-click: commit provision.yml + open a PR on the target repo.
     If the token can't write to the live repo, fall back to forking it and
     opening the PR from the fork (standard contribution flow)."""
@@ -225,6 +225,12 @@ async def scaffold(repo: str, path: str = ".github/workflows/provision.yml"):
         put = await c.put(f"{GITHUB_API}/repos/{work_repo}/contents/{path}", headers=h, json=put_body)
         if put.status_code not in (200, 201):
             raise HTTPException(put.status_code, f"commit file on '{work_repo}': {put.text}")
+
+        if dry_run:  # verify fork+commit without opening a PR on the target
+            return {"ok": True, "dry_run": True, "via_fork": via_fork, "work_repo": work_repo,
+                    "branch": branch,
+                    "file_url": f"https://github.com/{work_repo}/blob/{branch}/{path}",
+                    "note": f"dry-run: committed to {'fork' if via_fork else 'repo'} '{work_repo}'; upstream PR skipped"}
 
         work_owner = work_repo.split("/")[0]
         head = f"{work_owner}:{branch}" if via_fork else branch
