@@ -278,9 +278,68 @@ jobs:
 """
 
 
+_MCP_JSON = """{
+  "mcpServers": {
+    "terraform": { "command": "docker", "args": ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.0.0"] },
+    "github": { "command": "docker", "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server:v1.5.0"], "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GH_PAT}" } },
+    "aws": { "command": "uvx", "args": ["awslabs.aws-api-mcp-server@1.3.46"], "env": { "AWS_REGION": "${AWS_REGION}" } }
+  }
+}
+"""
+
+_REMEDIATE_YAML = """name: ai-remediate
+# Agentic auto-fix for one infra/security gap (dispatched by GitPulse /provision/auto-fix).
+# A Claude agent wired to Terraform + GitHub + AWS MCP (.mcp.json) closes ONE gap under OIDC.
+on:
+  workflow_dispatch:
+    inputs:
+      check_id: { description: "Gap id to remediate", type: string, required: true }
+      apply: { description: "Apply now (else plan-only + PR)", type: boolean, default: false }
+      prefix: { description: "AWS resource prefix", type: string, default: "myrock" }
+permissions: { id-token: write, contents: write, pull-requests: write }
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.apply && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "1.9.8" }
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Run remediation agent (Terraform + GitHub + AWS MCP)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_PAT: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "::error::ANTHROPIC_API_KEY secret not set"; exit 1; }
+          git checkout -b "ai-remediate/${{ inputs.check_id }}-${GITHUB_RUN_ID}"
+          claude -p "You are a DevOps remediation agent for ${{ github.repository }}. Close exactly ONE gap: '${{ inputs.check_id }}' (AWS prefix '${{ inputs.prefix }}'). Use the terraform, github and aws MCP servers with idempotent Terraform in infra/ on the S3 remote-state backend. If apply=${{ inputs.apply }} is false, plan + commit + open a PR; if true, terraform apply for just this change under OIDC. Never touch unrelated resources. End with a verify command." \\
+            --mcp-config .mcp.json --permission-mode acceptEdits \\
+            --allowedTools "Bash,Read,Write,Edit,mcp__terraform,mcp__github,mcp__aws" 2>&1 | tee agent.log
+      - name: Open remediation PR (plan mode)
+        if: ${{ !inputs.apply }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          if git diff --quiet HEAD; then echo "no changes"; exit 0; fi
+          git config user.name gitpulse-agent
+          git config user.email gitpulse-agent@users.noreply.github.com
+          git add -A && git commit -m "ai-remediate: ${{ inputs.check_id }}"
+          git push -u origin HEAD
+          gh pr create --fill --title "AI remediation: ${{ inputs.check_id }}" --body "Automated remediation by GitPulse. Review before merge." || true
+"""
+
+
 @router.post("/scaffold")
 async def scaffold(repo: str, path: str = ".github/workflows/provision.yml",
-                   dry_run: bool = False, to_default: bool = False):
+                   dry_run: bool = False, to_default: bool = False, full: bool = True):
     """One-click: add provision.yml so the repo (or your fork of it) becomes
     dispatchable. If the token can't write the live repo, fork it first.
     - to_default=True: commit straight to the (fork's) default branch → dispatchable now.
@@ -327,17 +386,22 @@ async def scaffold(repo: str, path: str = ".github/workflows/provision.yml",
             if br.status_code not in (201, 422):  # 422 = branch already exists
                 raise HTTPException(br.status_code, f"create branch on '{work_repo}': {br.text}")
 
-        existing = await c.get(f"{GITHUB_API}/repos/{work_repo}/contents/{path}?ref={commit_branch}", headers=h)
-        put_body = {
-            "message": "ci: add provision.yml (via gitpulse)",
-            "content": base64.b64encode(_STARTER_YAML.encode()).decode(),
-            "branch": commit_branch,
-        }
-        if existing.status_code == 200:
-            put_body["sha"] = existing.json()["sha"]
-        put = await c.put(f"{GITHUB_API}/repos/{work_repo}/contents/{path}", headers=h, json=put_body)
-        if put.status_code not in (200, 201):
-            raise HTTPException(put.status_code, f"commit file on '{work_repo}': {put.text}")
+        # Commit provision.yml plus (full=True) the agentic auto-fix files.
+        files = [(path, _STARTER_YAML)]
+        if full:
+            files += [(".github/workflows/ai-remediate.yml", _REMEDIATE_YAML), (".mcp.json", _MCP_JSON)]
+        for fpath, content in files:
+            existing = await c.get(f"{GITHUB_API}/repos/{work_repo}/contents/{fpath}?ref={commit_branch}", headers=h)
+            put_body = {
+                "message": f"ci: add {fpath.split('/')[-1]} (via gitpulse)",
+                "content": base64.b64encode(content.encode()).decode(),
+                "branch": commit_branch,
+            }
+            if existing.status_code == 200:
+                put_body["sha"] = existing.json()["sha"]
+            put = await c.put(f"{GITHUB_API}/repos/{work_repo}/contents/{fpath}", headers=h, json=put_body)
+            if put.status_code not in (200, 201):
+                raise HTTPException(put.status_code, f"commit {fpath} on '{work_repo}': {put.text}")
 
         if dry_run:  # verify fork+commit without opening a PR on the target
             return {"ok": True, "dry_run": True, "via_fork": via_fork, "work_repo": work_repo,

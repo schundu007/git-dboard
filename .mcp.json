@@ -3,16 +3,16 @@
   "mcpServers": {
     "terraform": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "hashicorp/terraform-mcp-server"]
+      "args": ["run", "-i", "--rm", "hashicorp/terraform-mcp-server:1.0.0"]
     },
     "github": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server:v1.5.0"],
       "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GH_PAT}" }
     },
     "aws": {
       "command": "uvx",
-      "args": ["awslabs.aws-api-mcp-server@latest"],
+      "args": ["awslabs.aws-api-mcp-server@1.3.46"],
       "env": { "AWS_REGION": "${AWS_REGION}" }
     }
   }
