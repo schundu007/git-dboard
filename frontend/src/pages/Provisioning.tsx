@@ -105,6 +105,7 @@ export default function Provisioning() {
     } catch { setPf(null) }
   }
   useEffect(() => { loadRuns(); checkPreflight(); const t = setInterval(loadRuns, 15000); return () => clearInterval(t) }, [repo])
+  useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(null), 4000); return () => clearTimeout(t) }, [msg])
 
   async function dispatch(action: string) {
     setBusy(action); setMsg(null)
@@ -117,7 +118,7 @@ export default function Provisioning() {
     const j = await r.json().catch(() => ({}))
     setBusy('')
     if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
-    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}${j.via_fork ? ' · via your fork (no write on live repo)' : ''}` })
+    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
     loadRuns()
   }
 
@@ -148,10 +149,8 @@ export default function Provisioning() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Repo</span>
           <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
-          {pf && (
-            <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
-              {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
-            </span>
+          {pf && !pf.ok && (
+            <span className="text-[10px] font-medium text-accent-red">✗ not dispatchable</span>
           )}
         </div>
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}

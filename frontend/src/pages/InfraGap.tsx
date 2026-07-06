@@ -43,6 +43,7 @@ export default function InfraGap() {
       .then(r => r.json()).then(setPf).catch(() => setPf(null))
   }
   useEffect(() => { checkPreflight() }, [repo])
+  useEffect(() => { if (!msg && !err) return; const t = setTimeout(() => { setMsg(null); setErr('') }, 4000); return () => clearTimeout(t) }, [msg, err])
 
   async function enableViaFork() {
     setEnabling(true); setMsg(null)
@@ -80,7 +81,7 @@ export default function InfraGap() {
     const j = await r.json().catch(() => ({}))
     setBusy('')
     if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
-    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}${j.via_fork ? ' · via your fork' : ''}. Check Actions.` })
+    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
   }
 
   return (
@@ -97,10 +98,8 @@ export default function InfraGap() {
           <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
           <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
             className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
-          {pf && (
-            <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
-              {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
-            </span>
+          {pf && !pf.ok && (
+            <span className="text-[10px] font-medium text-accent-red">✗ not dispatchable</span>
           )}
         </div>
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
