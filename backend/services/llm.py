@@ -5,9 +5,9 @@ from database import AsyncSessionLocal
 from models import AISettings
 
 PROVIDERS = {
-    "gemini":    {"name": "Gemini (Google)",    "model": "gemini-1.5-pro"},
+    "gemini":    {"name": "Gemini (Google)",    "model": "gemini-2.5-flash"},
     "deepseek":  {"name": "DeepSeek",           "model": "deepseek-chat"},
-    "anthropic": {"name": "Claude (Anthropic)", "model": "claude-sonnet-4-6"},
+    "anthropic": {"name": "Claude (Anthropic)", "model": "claude-sonnet-5"},
 }
 
 # Tried in order — first provider with a key wins; falls back on error too
@@ -63,7 +63,7 @@ async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
     if provider == "anthropic":
         from anthropic import AsyncAnthropic
         msg = await AsyncAnthropic(api_key=key).messages.create(
-            model="claude-sonnet-4-6", max_tokens=4096,
+            model=PROVIDERS["anthropic"]["model"], max_tokens=4096,
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -71,7 +71,7 @@ async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
 
     if provider == "gemini":
         payload = {
-            "model": "gemini-1.5-pro",
+            "model": PROVIDERS["gemini"]["model"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
             "max_tokens": 4096,
         }
@@ -85,7 +85,7 @@ async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
 
     if provider == "deepseek":
         payload = {
-            "model": "deepseek-chat",
+            "model": PROVIDERS["deepseek"]["model"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
             "max_tokens": 4096,
         }
