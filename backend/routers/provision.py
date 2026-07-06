@@ -398,9 +398,9 @@ def _plan_and_gate(req: "ApplyRequest") -> tuple[str, dict]:
     if rc not in (0, 2):
         raise HTTPException(500, f"plan failed:\n{out}")
     _run(["bash", "-c", "terraform show -json tfplan > tfplan.json"], wd)
-    # AI risk gate (best-effort; requires ANTHROPIC_API_KEY + analyze.py in checkout)
+    # AI risk gate (best-effort; requires ANTHROPIC_GITPULSE_API_KEY + analyze.py in checkout)
     risk: dict = {"skipped": True, "blocked": False}
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if os.environ.get("ANTHROPIC_GITPULSE_API_KEY"):
         repo_root = os.path.dirname(os.path.dirname(os.path.dirname(wd))) or "."
         rc2, rout = _run(["python", "ai/plan-risk/analyze.py", f"{wd}/tfplan.json"], repo_root)
         # convention: non-zero exit from the analyzer == high risk / block

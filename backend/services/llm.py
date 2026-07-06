@@ -17,7 +17,7 @@ FALLBACK_ORDER = ["anthropic", "gemini", "deepseek"]
 ENV_KEY_MAP = {
     "gemini":    "GEMINI_API_KEY",
     "deepseek":  "DEEPSEEK_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
+    "anthropic": "ANTHROPIC_GITPULSE_API_KEY",
 }
 
 
@@ -57,7 +57,7 @@ async def call(prompt: str, system: str) -> str:
 
     if last_error:
         raise last_error
-    raise ValueError("No AI provider keys configured. Set ANTHROPIC_API_KEY (or add a key in Settings → AI Provider).")
+    raise ValueError("No AI provider keys configured. Set ANTHROPIC_GITPULSE_API_KEY (or add a key in Settings → AI Provider).")
 
 
 async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
@@ -68,7 +68,8 @@ async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
             system=system,
             messages=[{"role": "user", "content": prompt}],
         )
-        return msg.content[0].text
+        # Newer models can return thinking blocks first — pick the text block(s).
+        return "\n".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
 
     if provider == "gemini":
         payload = {
