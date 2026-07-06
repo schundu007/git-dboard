@@ -287,6 +287,56 @@ async def get_aws_creds():
     return {"configured": True, "access_key_id_masked": f"{ak[:4]}…{ak[-4:]}", "region": row.region}
 
 
+class BootstrapOidcRequest(BaseModel):
+    repo: str                                                      # owner/repo → trust subject
+    role_name: str = "gitpulse-ci-provision"
+    access_key_id: str                                            # TEMPORARY write key (used once, NOT stored)
+    secret_access_key: str
+    region: str = "us-east-1"
+    policy_arn: str = "arn:aws:iam::aws:policy/AdministratorAccess"  # provisioning permissions (scope down later)
+
+
+@router.post("/bootstrap-oidc")
+def bootstrap_oidc(req: BootstrapOidcRequest):
+    """Break the OIDC chicken-and-egg: create the GitHub OIDC provider + a role that
+    trusts repo:<owner>/<repo>:* using a TEMPORARY write key (used once, never stored).
+    Returns the role ARN so the UI can set AWS_PROVISION_ROLE_ARN. After this every
+    provisioning run authenticates via OIDC — no static keys again."""
+    import boto3
+    try:
+        sess = boto3.Session(aws_access_key_id=req.access_key_id.strip(),
+                             aws_secret_access_key=req.secret_access_key.strip(),
+                             region_name=req.region)
+        iam = sess.client("iam")
+        acct = sess.client("sts").get_caller_identity()["Account"]
+        host = "token.actions.githubusercontent.com"
+        provider_arn = f"arn:aws:iam::{acct}:oidc-provider/{host}"
+
+        existing = [p["Arn"] for p in iam.list_open_id_connect_providers().get("OpenIDConnectProviderList", [])]
+        if provider_arn not in existing:
+            iam.create_open_id_connect_provider(
+                Url=f"https://{host}", ClientIDList=["sts.amazonaws.com"],
+                ThumbprintList=["6938fd4d98bab03faadb97b34396831e3780aea1"])
+
+        trust = {"Version": "2012-10-17", "Statement": [{
+            "Effect": "Allow", "Principal": {"Federated": provider_arn},
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {"StringEquals": {f"{host}:aud": "sts.amazonaws.com"},
+                          "StringLike": {f"{host}:sub": f"repo:{req.repo}:*"}}}]}
+        try:
+            role = iam.create_role(RoleName=req.role_name, AssumeRolePolicyDocument=json.dumps(trust),
+                                   Description="GitPulse CI provisioning role (GitHub OIDC)")
+            role_arn = role["Role"]["Arn"]
+        except iam.exceptions.EntityAlreadyExistsException:
+            iam.update_assume_role_policy(RoleName=req.role_name, PolicyDocument=json.dumps(trust))
+            role_arn = iam.get_role(RoleName=req.role_name)["Role"]["Arn"]
+        iam.attach_role_policy(RoleName=req.role_name, PolicyArn=req.policy_arn)
+        return {"ok": True, "role_arn": role_arn, "provider_arn": provider_arn, "account": acct,
+                "message": f"OIDC provider + role '{req.role_name}' ready — set it as AWS_PROVISION_ROLE_ARN."}
+    except Exception as e:
+        raise HTTPException(400, f"OIDC bootstrap failed: {str(e)[:300]}")
+
+
 @router.get("/runs")
 async def runs(repo: str):
     """Latest provisioning runs (provision.yml + ai-remediate.yml), newest first."""

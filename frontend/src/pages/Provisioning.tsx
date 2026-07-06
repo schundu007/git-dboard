@@ -73,6 +73,10 @@ export default function Provisioning() {
   const [awsAkid, setAwsAkid] = useState('')
   const [awsSecret, setAwsSecret] = useState('')
   const [savingAws, setSavingAws] = useState(false)
+  const [showBootstrap, setShowBootstrap] = useState(false)
+  const [bsKey, setBsKey] = useState('')
+  const [bsSecret, setBsSecret] = useState('')
+  const [bootstrapping, setBootstrapping] = useState(false)
 
   async function createPR() {
     setScaffolding(true); setMsg(null)
@@ -168,6 +172,28 @@ export default function Provisioning() {
       testConn('aws')
     } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
     finally { setSavingAws(false) }
+  }
+  async function bootstrapOidc() {
+    const t = pf?.repo || repo
+    if (!t || !bsKey || !bsSecret) return
+    setBootstrapping(true); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/bootstrap-oidc`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: t, access_key_id: bsKey, secret_access_key: bsSecret, region: awsRegion || 'us-east-1' }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'OIDC bootstrap failed' }); return }
+      setBsKey(''); setBsSecret(''); setRoleArn(j.role_arn || '')
+      // auto-set the new role ARN as the repo's AWS_PROVISION_ROLE_ARN
+      await fetch(`${API}/provision/configure`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: t, role_arn: j.role_arn, aws_region: awsRegion, create_prod_env: true }),
+      })
+      setMsg({ ok: true, text: `OIDC ready → ${j.role_arn} (set as AWS_PROVISION_ROLE_ARN)` })
+      loadPrereqs()
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setBootstrapping(false) }
   }
   const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
@@ -293,6 +319,31 @@ export default function Provisioning() {
                 {configuring ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Configure repo
               </button>
               <p className="text-[9px] text-gray-600">Secrets are encrypted (libsodium) before storage in the repo's Actions secrets; also creates the <span className="font-mono">production</span> environment.</p>
+
+              {/* OIDC bootstrap — breaks the chicken-and-egg (create provider + role) */}
+              <div className="border-t border-border pt-2">
+                <button onClick={() => setShowBootstrap(v => !v)} className="text-[10px] text-brand hover:underline">
+                  {showBootstrap ? 'hide' : 'Bootstrap AWS OIDC role (one-time)'}
+                </button>
+                {showBootstrap && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-[9px] text-gray-500 leading-snug">
+                      OIDC needs a one-time write to AWS IAM (can't be created via OIDC). Paste a <b>temporary write key</b> —
+                      it's used once to create the provider + role trusting <span className="font-mono">repo:{pf?.repo || repo}:*</span>, then discarded (never stored). The role ARN is set automatically.
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <input value={bsKey} onChange={e => setBsKey(e.target.value)} placeholder="temp AWS_ACCESS_KEY_ID (write)"
+                        className="flex-1 min-w-[160px] bg-surface-2 border border-accent-yellow/40 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none" />
+                    </div>
+                    <input type="password" value={bsSecret} onChange={e => setBsSecret(e.target.value)} placeholder="temp AWS_SECRET_ACCESS_KEY (write, used once)"
+                      className="w-full bg-surface-2 border border-accent-yellow/40 rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none" />
+                    <button onClick={bootstrapOidc} disabled={bootstrapping || !bsKey || !bsSecret}
+                      className="flex items-center gap-1.5 bg-accent-yellow/15 border border-accent-yellow/40 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/25 disabled:opacity-40">
+                      {bootstrapping ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />} Create OIDC provider + role
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
