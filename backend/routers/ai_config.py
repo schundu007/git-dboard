@@ -58,3 +58,14 @@ async def update_config(body: AIConfigUpdate):
                 setattr(row, field, val.strip() or None)
         await db.commit()
     return {"ok": True, "provider": row.provider}
+
+
+@router.get("/test")
+async def test_ai():
+    """Test the configured AI provider (a tiny real call) — for the UI 'Test' button."""
+    from services import llm
+    try:
+        reply = await llm.call("Reply with the single word: OK", "connectivity test")
+        return {"ok": True, "reply": (reply or "").strip()[:40]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}

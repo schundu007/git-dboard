@@ -61,6 +61,14 @@ export default function Provisioning() {
   const [showStarter, setShowStarter] = useState(false)
   const [copiedYaml, setCopiedYaml] = useState(false)
   const [scaffolding, setScaffolding] = useState(false)
+  const [prereqs, setPrereqs] = useState<{ checks: Record<string, boolean>; ready: boolean } | null>(null)
+  const [showSetup, setShowSetup] = useState(false)
+  const [roleArn, setRoleArn] = useState('')
+  const [awsRegion, setAwsRegion] = useState('us-east-2')
+  const [anthropicKey, setAnthropicKey] = useState('')
+  const [configuring, setConfiguring] = useState(false)
+  const [conn, setConn] = useState<Record<string, { ok: boolean; text: string }>>({})
+  const [testing, setTesting] = useState('')
 
   async function createPR() {
     setScaffolding(true); setMsg(null)
@@ -106,8 +114,44 @@ export default function Provisioning() {
       setPf(await r.json())
     } catch { setPf(null) }
   }
+  async function loadPrereqs() {
+    const t = pf?.repo || repo
+    if (!t) return
+    try { const r = await fetch(`${API}/provision/prereqs?repo=${encodeURIComponent(t)}`); if (r.ok) setPrereqs(await r.json()) } catch { /* ignore */ }
+  }
+  async function configureRepo() {
+    const t = pf?.repo || repo
+    if (!t) return
+    setConfiguring(true); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/configure`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo: t, role_arn: roleArn || undefined, aws_region: awsRegion || undefined, anthropic_key: anthropicKey || undefined, create_prod_env: true }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'configure failed' }); return }
+      const done = Object.entries(j.results || {}).filter(([, v]) => v).map(([k]) => k)
+      setMsg({ ok: true, text: `Configured on ${t}: ${done.join(', ') || 'nothing to set'}` })
+      setAnthropicKey('')  // don't keep the secret in state
+      loadPrereqs()
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setConfiguring(false) }
+  }
+  async function testConn(kind: 'aws' | 'github' | 'ai') {
+    setTesting(kind)
+    const url = kind === 'ai' ? `${API}/ai/test` : `${API}/provision/${kind}-test`
+    try {
+      const r = await fetch(url); const j = await r.json().catch(() => ({}))
+      const text = j.ok
+        ? (kind === 'aws' ? `✓ ${j.account}` : kind === 'github' ? `✓ ${j.login}${j.has_workflow ? ' · workflow✓' : ' · no workflow scope'}` : `✓ ${j.reply || 'ok'}`)
+        : `✗ ${j.error || 'failed'}`
+      setConn(c => ({ ...c, [kind]: { ok: !!j.ok, text } }))
+    } catch (e: any) { setConn(c => ({ ...c, [kind]: { ok: false, text: String(e.message || e) } })) }
+    finally { setTesting('') }
+  }
   const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
+  useEffect(() => { loadPrereqs() }, [repo, pf?.repo])
   // Adaptive polling: fast (3s) while a run is queued/in-progress, relaxed (15s) when idle.
   useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 15000); return () => clearInterval(t) }, [repo, pf?.repo, hasActive])
   useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(null), 4000); return () => clearTimeout(t) }, [msg])
@@ -153,6 +197,65 @@ export default function Provisioning() {
           <p className="text-[11px] text-gray-500">CI dispatch (OIDC · OPA/Trivy/AI gates · approval) · break-glass direct apply</p>
         </div>
       </div>
+
+      {/* Connections — backend integrations; add keys in Settings, verify them live here */}
+      <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">Connections</span>
+        <div className="flex flex-wrap gap-2">
+          {(['aws', 'github', 'ai'] as const).map(k => (
+            <div key={k} className="flex items-center gap-2 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5">
+              <button onClick={() => testConn(k)} disabled={testing === k}
+                className="flex items-center gap-1 text-[11px] font-medium text-brand hover:underline disabled:opacity-40">
+                {testing === k ? <Loader2 size={11} className="animate-spin" /> : null}
+                Test {k === 'ai' ? 'Claude' : k.toUpperCase()}
+              </button>
+              {conn[k] && <span className={clsx('text-[10px] font-mono max-w-[220px] truncate', conn[k].ok ? 'text-accent-green' : 'text-accent-red')}>{conn[k].text}</span>}
+            </div>
+          ))}
+        </div>
+        <p className="text-[9px] text-gray-600">Add keys in Settings → AI Provider (Claude) and the repo switcher (GitHub PAT); AWS via backend creds. Test verifies each is live.</p>
+      </div>
+
+      {/* Prerequisites — GitPulse sets them on the target repo via the GitHub API (no dashboards) */}
+      {prereqs && (
+        <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">Prerequisites</span>
+            <span className={clsx('text-[10px] font-medium', prereqs.ready ? 'text-accent-green' : 'text-accent-yellow')}>
+              {prereqs.ready ? '✓ all set' : 'incomplete'}
+            </span>
+            <button onClick={() => setShowSetup(v => !v)} className="ml-auto text-[10px] text-brand hover:underline">
+              {showSetup ? 'hide' : 'configure'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {Object.entries(prereqs.checks).map(([k, v]) => (
+              <div key={k} className="flex items-center gap-1.5 text-[10px]">
+                <span className={clsx('w-1.5 h-1.5 rounded-full flex-shrink-0', v ? 'bg-accent-green' : 'bg-accent-red')} />
+                <span className="text-gray-400 truncate">{k.replace(/_/g, ' ')}</span>
+              </div>
+            ))}
+          </div>
+          {showSetup && (
+            <div className="border-t border-border pt-3 space-y-2">
+              <p className="text-[10px] text-gray-500">GitPulse sets these on <span className="font-mono">{pf?.repo || repo}</span> for you — no GitHub settings needed.</p>
+              <input value={roleArn} onChange={e => setRoleArn(e.target.value)} placeholder="AWS_PROVISION_ROLE_ARN (arn:aws:iam::…:role/…)"
+                className="w-full bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+              <div className="flex gap-2 flex-wrap">
+                <input value={awsRegion} onChange={e => setAwsRegion(e.target.value)} placeholder="AWS_REGION"
+                  className="w-32 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+                <input type="password" value={anthropicKey} onChange={e => setAnthropicKey(e.target.value)} placeholder="ANTHROPIC_API_KEY (agent secret)"
+                  className="flex-1 min-w-[180px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+              </div>
+              <button onClick={configureRepo} disabled={configuring}
+                className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+                {configuring ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Configure repo
+              </button>
+              <p className="text-[9px] text-gray-600">Secrets are encrypted (libsodium) before storage in the repo's Actions secrets; also creates the <span className="font-mono">production</span> environment.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
         {/* active repo — part of gitpulse, no separate repo picker */}

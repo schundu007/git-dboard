@@ -130,6 +130,102 @@ async def auto_fix(req: AutoFixRequest):
         raise HTTPException(r.status_code, f"auto-fix dispatch failed (is ai-remediate.yml present on the repo?): {r.text}")
 
 
+# ---------- UI-driven prerequisite configuration (no dashboards/CLI) ----------
+def _encrypt_secret(public_key_b64: str, secret_value: str) -> str:
+    """libsodium sealed-box encrypt a value with the repo's Actions public key."""
+    from nacl import encoding, public
+    pk = public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder())
+    return base64.b64encode(public.SealedBox(pk).encrypt(secret_value.encode())).decode()
+
+
+class ConfigureRequest(BaseModel):
+    repo: str
+    role_arn: str | None = None        # → Actions variable AWS_PROVISION_ROLE_ARN
+    aws_region: str | None = None      # → Actions variable AWS_REGION
+    anthropic_key: str | None = None   # → Actions secret ANTHROPIC_API_KEY (encrypted)
+    create_prod_env: bool = True       # → 'production' environment (apply approval)
+
+
+@router.post("/configure")
+async def configure(req: ConfigureRequest):
+    """Set the target repo's CI prerequisites straight from the GitPulse UI — Actions
+    variables, the ANTHROPIC_API_KEY secret (encrypted), and the 'production'
+    environment — so the user never opens GitHub settings."""
+    results: dict[str, bool] = {}
+    async with httpx.AsyncClient(timeout=30) as c:
+        h = gh._headers()
+
+        async def set_var(name: str, val: str) -> bool:
+            u = await c.patch(f"{GITHUB_API}/repos/{req.repo}/actions/variables/{name}",
+                              headers=h, json={"name": name, "value": val})
+            if u.status_code == 404:  # doesn't exist yet → create
+                u = await c.post(f"{GITHUB_API}/repos/{req.repo}/actions/variables",
+                                 headers=h, json={"name": name, "value": val})
+            return u.status_code in (200, 201, 204)
+
+        if req.role_arn:
+            results["AWS_PROVISION_ROLE_ARN"] = await set_var("AWS_PROVISION_ROLE_ARN", req.role_arn)
+        if req.aws_region:
+            results["AWS_REGION"] = await set_var("AWS_REGION", req.aws_region)
+        if req.anthropic_key:
+            pk = await c.get(f"{GITHUB_API}/repos/{req.repo}/actions/secrets/public-key", headers=h)
+            if pk.status_code == 200:
+                enc = _encrypt_secret(pk.json()["key"], req.anthropic_key)
+                sr = await c.put(f"{GITHUB_API}/repos/{req.repo}/actions/secrets/ANTHROPIC_API_KEY",
+                                 headers=h, json={"encrypted_value": enc, "key_id": pk.json()["key_id"]})
+                results["ANTHROPIC_API_KEY"] = sr.status_code in (201, 204)
+            else:
+                results["ANTHROPIC_API_KEY"] = False
+        if req.create_prod_env:
+            er = await c.put(f"{GITHUB_API}/repos/{req.repo}/environments/production", headers=h, json={})
+            results["production_environment"] = er.status_code in (200, 201)
+
+    return {"repo": req.repo, "results": results,
+            "ok": bool(results) and all(results.values())}
+
+
+@router.get("/prereqs")
+async def prereqs(repo: str):
+    """Prerequisite checklist for the UI: which CI settings are already configured."""
+    async with httpx.AsyncClient(timeout=30) as c:
+        h = gh._headers()
+
+        async def exists(path: str) -> bool:
+            return (await c.get(f"{GITHUB_API}/repos/{repo}/{path}", headers=h)).status_code == 200
+
+        checks = {
+            "provision_workflow": await exists("actions/workflows/provision.yml"),
+            "remediate_workflow": await exists("actions/workflows/ai-remediate.yml"),
+            "role_arn_variable":  await exists("actions/variables/AWS_PROVISION_ROLE_ARN"),
+            "anthropic_secret":   await exists("actions/secrets/ANTHROPIC_API_KEY"),
+            "production_env":     await exists("environments/production"),
+        }
+    return {"repo": repo, "checks": checks, "ready": all(checks.values())}
+
+
+@router.get("/aws-test")
+def aws_test():
+    """Test the backend's AWS connection (STS caller identity) — for the UI 'Test' button."""
+    try:
+        import boto3
+        ident = boto3.client("sts", region_name=os.environ.get("AWS_REGION", "us-east-2")).get_caller_identity()
+        return {"ok": True, "account": ident["Account"], "arn": ident["Arn"]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)[:200]}
+
+
+@router.get("/github-test")
+async def github_test():
+    """Test the backend's GitHub token (identity + scopes) — for the UI 'Test' button."""
+    async with httpx.AsyncClient(timeout=15) as c:
+        r = await c.get(f"{GITHUB_API}/user", headers=gh._headers())
+    if r.status_code != 200:
+        return {"ok": False, "error": f"HTTP {r.status_code}: {r.text[:120]}"}
+    scopes = r.headers.get("x-oauth-scopes", "")
+    return {"ok": True, "login": r.json().get("login"), "scopes": scopes,
+            "has_workflow": "workflow" in scopes}
+
+
 @router.get("/runs")
 async def runs(repo: str):
     """Latest provisioning runs (provision.yml + ai-remediate.yml), newest first."""
