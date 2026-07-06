@@ -1,5 +1,5 @@
 // src/types.ts
-// Shared TypeScript types for the IsaacLab PR handler service.
+// Shared TypeScript types for the GitPulse PR handler service.
 // All other modules import from here — no circular deps.
 
 // ─── Check run names ─────────────────────────────────────────────────────────

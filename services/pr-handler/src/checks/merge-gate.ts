@@ -204,7 +204,7 @@ async function attemptAutoMerge(
       pull_number:   prNumber,
       merge_method:  config.MERGE_METHOD,
       commit_title:  `${pr.title} (#${prNumber})`,
-      commit_message: 'Auto-merged by IsaacLab PR handler (auto-merge label)',
+      commit_message: 'Auto-merged by GitPulse PR handler (auto-merge label)',
     });
 
     logger.info({ owner, repo, prNumber, method: config.MERGE_METHOD }, 'Auto-merged PR');

@@ -1,5 +1,5 @@
 // src/app.ts
-// Express server entry point for the IsaacLab PR handler GitHub App.
+// Express server entry point for the GitPulse PR handler GitHub App.
 //
 // Endpoints:
 //   POST /webhook  — receives GitHub webhook events (HMAC-verified)
@@ -64,7 +64,7 @@ export function startServer(): void {
   server.listen(port, host, () => {
     logger.info(
       { port, host, nodeEnv: config.NODE_ENV, repoOwner: config.REPO_OWNER },
-      'IsaacLab PR handler started',
+      'GitPulse PR handler started',
     );
   });
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>IsaacLab · Improvement Plan — May 2026</title>
+<title>the connected repo · Improvement Plan — May 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
 <style>
@@ -148,19 +148,19 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
   <div class="hd">
     <div>
       <div class="eye">Engineering Review · May 2026</div>
-      <div class="hl">IsaacLab &amp; Isaac-Sim — <em>Improvement Plan</em></div>
+      <div class="hl">the connected repo &amp; GPU workloads — <em>Improvement Plan</em></div>
     </div>
-    <div class="hd-label">isaac-sim / IsaacLab</div>
+    <div class="hd-label">your-org / the connected repo</div>
   </div>
 
   <div class="cover-wrap">
     <div class="cover-l">
       <div class="cover-title">The delivery<br>pipeline<br>is <em>broken.</em></div>
       <div class="cover-desc">
-        We reviewed 150 open complaints and 100 pending contributions across the IsaacLab and
-        Isaac-Sim repositories. The findings are straightforward: the automated build pipeline
+        We reviewed 150 open complaints and 100 pending contributions across the the connected repo and
+        GPU workloads repositories. The findings are straightforward: the automated build pipeline
         has been failing at an 84% rate, the overnight quality check has been down for two weeks,
-        and the platform does not run on NVIDIA's current-generation GPUs.<br><br>
+        and the platform does not run on GPU's current-generation GPUs.<br><br>
         This document explains what is wrong, what it is costing, and the practical steps to fix it.
       </div>
     </div>
@@ -195,8 +195,8 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
   </div>
 
   <div class="foot">
-    <div class="fl">Based on 150 open issues and 100 open pull requests · isaac-sim/IsaacLab · 13 May 2026</div>
-    <div class="fr">IsaacLab Improvement Plan</div>
+    <div class="fl">Based on 150 open issues and 100 open pull requests · your-org/the connected repo · 13 May 2026</div>
+    <div class="fr">the connected repo Improvement Plan</div>
   </div>
 </div>
 
@@ -256,8 +256,8 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
           <div class="prob-body">Two components in the software demand incompatible versions of the same dependency. This causes installation to fail, but the installer exits with a "success" status anyway. Users spend hours debugging a problem that is not their code. 49 open complaints describe exactly this. Three pending fixes are written and waiting — they just haven't been approved for release.</div>
         </div>
         <div class="prob" style="border-left-color:var(--amber);">
-          <div class="prob-title">4. The RTX 5090 — NVIDIA's 2025 flagship GPU — crashes immediately on launch</div>
-          <div class="prob-body">IsaacLab has not been updated to support Blackwell-generation GPUs (RTX 5090, RTX 5070 Ti), which were released in early 2025. Users on current-generation hardware hit a crash the moment they try to run a simulation. This is the most-discussed issue in the entire tracker, and there is nothing in progress to address it.</div>
+          <div class="prob-title">4. The latest GPUs — GPU's 2025 flagship GPU — crashes immediately on launch</div>
+          <div class="prob-body">the connected repo has not been updated to support latest-gen-generation GPUs (latest GPUs, RTX 5070 Ti), which were released in early 2025. Users on current-generation hardware hit a crash the moment they try to run a simulation. This is the most-discussed issue in the entire tracker, and there is nothing in progress to address it.</div>
         </div>
       </div>
     </div>
@@ -265,7 +265,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
 
   <div class="foot">
     <div class="fl">Analysis of 150 open issues and 100 open pull requests · 13 May 2026</div>
-    <div class="fr">IsaacLab Improvement Plan</div>
+    <div class="fr">the connected repo Improvement Plan</div>
   </div>
 </div>
 
@@ -318,10 +318,10 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
       <div class="phase-num" style="color:var(--blue);">3</div>
       <div class="phase-body">
         <div class="phase-title">Lead the Field — Current Hardware Support and Long-Term Quality</div>
-        <div class="phase-timeline">Weeks 9–14 · RTX 5090 / Blackwell fully supported · Isaac Sim 6.0 complete · Elite delivery performance</div>
+        <div class="phase-timeline">Weeks 9–14 · latest GPUs / latest-gen fully supported · GPU workloads 6.0 complete · Elite delivery performance</div>
         <div class="phase-items">
-          <div class="phase-item"><strong style="color:var(--ink);">Support RTX 5090 and Blackwell GPUs.</strong> Update the simulator to compile for NVIDIA's 2025 hardware. This is a 1–2 day code change that unblocks every user on current-generation hardware and closes the most-discussed issue in the tracker.</div>
-          <div class="phase-item"><strong style="color:var(--ink);">Complete the Isaac Sim 6.0 migration.</strong> 35% of current complaints reference version 6.0 compatibility. Finishing the migration closes a large cluster of open issues and brings the platform fully up to date with NVIDIA's simulator platform.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Support latest GPUs and latest-gen GPUs.</strong> Update the simulator to compile for GPU's 2025 hardware. This is a 1–2 day code change that unblocks every user on current-generation hardware and closes the most-discussed issue in the tracker.</div>
+          <div class="phase-item"><strong style="color:var(--ink);">Complete the GPU workloads 6.0 migration.</strong> 35% of current complaints reference version 6.0 compatibility. Finishing the migration closes a large cluster of open issues and brings the platform fully up to date with GPU's simulator platform.</div>
           <div class="phase-item"><strong style="color:var(--ink);">Fix the physics data accuracy bug.</strong> A known defect causes robot training algorithms to receive incorrect velocity data without any warning. Researchers may be training on flawed results without realising the simulator is the source of the problem.</div>
           <div class="phase-item"><strong style="color:var(--ink);">Add automated failure alerting.</strong> The 14-day outage was discovered manually. Adding a simple alert when the quality check fails two nights in a row means the team knows within hours — not weeks.</div>
         </div>
@@ -331,7 +331,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
 
   <div class="foot">
     <div class="fl">Phase 1 requires no architectural changes — configuration and credential updates only</div>
-    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
+    <div class="fr">the connected repo Improvement Plan · May 2026</div>
   </div>
 </div>
 
@@ -392,7 +392,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
               <tr><td class="lbl">Nightly quality check</td><td class="bad">0% for 14 days</td><td class="good">Restored to 100%</td><td class="good">100%</td></tr>
               <tr><td class="lbl">Open install complaints</td><td class="bad">49</td><td class="mid">~10</td><td class="good">0</td></tr>
               <tr><td class="lbl">GPU compute spend / week</td><td class="bad">Full rate</td><td class="mid">Unchanged</td><td class="good">~60% lower</td></tr>
-              <tr><td class="lbl">RTX 5090 support</td><td class="bad">Crashes on launch</td><td class="bad">Not yet</td><td class="good">Fully supported</td></tr>
+              <tr><td class="lbl">latest GPUs support</td><td class="bad">Crashes on launch</td><td class="bad">Not yet</td><td class="good">Fully supported</td></tr>
               <tr><td class="lbl">Time to detect a failure</td><td class="bad">Days — found manually</td><td class="good">Hours</td><td class="good">Automated, &lt;2 hours</td></tr>
               <tr><td class="lbl">Delivery performance tier</td><td class="bad">Medium</td><td class="mid">High</td><td class="good">Elite</td></tr>
             </tbody>
@@ -412,7 +412,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
         </div>
         <div class="callout" style="border-left-color:var(--blue);">
           <div class="callout-title">Phase 3 closes a competitive gap that is already visible to users</div>
-          <div class="callout-body">Supporting the RTX 5090 and completing the Isaac Sim 6.0 migration means the platform works on current hardware from day one — not months behind. The Blackwell GPU issue is currently the most-discussed complaint in the tracker. It has no fix in progress.</div>
+          <div class="callout-body">Supporting the latest GPUs and completing the GPU workloads 6.0 migration means the platform works on current hardware from day one — not months behind. The latest-gen GPU issue is currently the most-discussed complaint in the tracker. It has no fix in progress.</div>
         </div>
       </div>
     </div>
@@ -420,7 +420,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
 
   <div class="foot">
     <div class="fl">Outcome projections derived from confirmed root causes — not estimates</div>
-    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
+    <div class="fr">the connected repo Improvement Plan · May 2026</div>
   </div>
 </div>
 
@@ -452,8 +452,8 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
         <div class="dec-ask">Who can approve and merge these this week?</div>
       </div>
       <div class="dec" style="border-left-color:var(--blue);">
-        <div class="dec-title">③ Assign an owner for the RTX 5090 fix — to start in Week 9</div>
-        <div class="dec-body">The RTX 5090 crash is the most-discussed issue in the tracker. There is no fix in progress. The change needed is updating the GPU architecture list the simulator compiles against to include NVIDIA's 2025 hardware — a 1–2 day task for one engineer. This unblocks the entire Blackwell GPU install base and removes a visible reputational gap for the platform.</div>
+        <div class="dec-title">③ Assign an owner for the latest GPUs fix — to start in Week 9</div>
+        <div class="dec-body">The latest GPUs crash is the most-discussed issue in the tracker. There is no fix in progress. The change needed is updating the GPU architecture list the simulator compiles against to include GPU's 2025 hardware — a 1–2 day task for one engineer. This unblocks the entire latest-gen GPU install base and removes a visible reputational gap for the platform.</div>
         <div class="dec-ask">Which engineer takes this, starting Week 9?</div>
       </div>
     </div>
@@ -475,7 +475,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
         <div style="display:flex;flex-direction:column;gap:6px;">
           <div style="background:#fde8e5;border:1.5px solid #f0b5af;border-left:4px solid var(--red);padding:10px 12px;">
             <div style="font:600 8px/1 var(--sans);color:var(--red);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Today</div>
-            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">16% builds succeeding · nightly down 14 days · 49 install complaints · RTX 5090 unsupported · 100 changes stuck</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">16% builds succeeding · nightly down 14 days · 49 install complaints · latest GPUs unsupported · 100 changes stuck</div>
           </div>
           <div style="background:#fff7ed;border:1.5px solid #f0d4aa;border-left:4px solid var(--amber);padding:10px 12px;">
             <div style="font:600 8px/1 var(--sans);color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Week 3</div>
@@ -487,7 +487,7 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
           </div>
           <div style="background:#ebf2fd;border:1.5px solid #a8c8f5;border-left:4px solid var(--blue);padding:10px 12px;">
             <div style="font:600 8px/1 var(--sans);color:var(--blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Week 14</div>
-            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">RTX 5090 supported · Isaac Sim 6.0 complete · physics accuracy fixed · Elite delivery rating</div>
+            <div style="font:400 8px/1.5 var(--sans);color:var(--sub);">latest GPUs supported · GPU workloads 6.0 complete · physics accuracy fixed · Elite delivery rating</div>
           </div>
         </div>
       </div>
@@ -495,8 +495,8 @@ html, body { background: #c8ccd8; font-family: var(--sans); -webkit-print-color-
   </div>
 
   <div class="foot">
-    <div class="fl">IsaacLab CI/CD &amp; Product Improvement Plan · Review date: 13 May 2026</div>
-    <div class="fr">IsaacLab Improvement Plan · May 2026</div>
+    <div class="fl">GPU CI/CD &amp; Product Improvement Plan · Review date: 13 May 2026</div>
+    <div class="fr">the connected repo Improvement Plan · May 2026</div>
   </div>
 </div>
 

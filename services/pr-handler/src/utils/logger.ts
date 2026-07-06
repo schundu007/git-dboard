@@ -11,7 +11,7 @@ export const logger = pino({
     ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
     : undefined,
   base: {
-    service: 'isaaclab-pr-handler',
+    service: 'gitpulse-pr-handler',
     env:     config.NODE_ENV,
   },
   // Redact potentially sensitive fields in log output

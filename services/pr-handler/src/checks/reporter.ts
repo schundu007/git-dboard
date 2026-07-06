@@ -106,7 +106,7 @@ function buildCommentBody(
 
   const lines: string[] = [
     COMMENT_MARKER,
-    `## ${headerIcon} IsaacLab PR checks`,
+    `## ${headerIcon} PR checks`,
     '',
     headerLine,
     '',
