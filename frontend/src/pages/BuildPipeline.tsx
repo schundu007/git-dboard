@@ -22,6 +22,7 @@ import {
 } from '../lib/api'
 import { useRepoSlug, useActiveRepoName } from '../lib/hooks'
 import MultiArchMatrix from '../components/MultiArchMatrix'
+import MultiArchTrends from '../components/MultiArchTrends'
 import StatusBadge from '../components/StatusBadge'
 import LogViewer, { LogLine } from '../components/LogViewer'
 import type { WorkflowRun, Job } from '../lib/types'
@@ -1986,6 +1987,7 @@ export default function BuildPipeline() {
       {mode === 'nightly' && (
         <div className="space-y-5">
           <MultiArchMatrix />
+          <MultiArchTrends />
           <NightlyTrendChart />
           <div className="bg-surface-1 border border-border rounded-xl p-4">
             <div className="section-head">{repoName ? `${repoName} Compatibility Matrix` : 'Nightly Compatibility Matrix'}</div>

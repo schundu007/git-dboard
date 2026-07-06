@@ -285,6 +285,33 @@ async def get_multiarch(days: int = 14):
     return {"days": days, "lanes": lanes, "rows": rows}
 
 
+@router.get("/multiarch-trends")
+async def get_multiarch_trends(days: int = 30):
+    """Build-vs-test failures per day, split by OS (Linux / Windows)."""
+    m = await _build_matrix(days)
+    matrix, dates, job_names = m["matrix"], m["dates"], m["job_names"]
+    test_stages = {"Tests", "PyTorch Tests"}
+
+    by_os: dict[str, dict[str, dict]] = {"Linux": {}, "Windows": {}}
+    for d in dates:
+        for osn in by_os:
+            by_os[osn][d] = {"build": 0, "test": 0}
+    for d in dates:
+        for name in job_names:
+            c = matrix.get(d, {}).get(name)
+            if not c or (c.get("status") or "").lower() != "failure":
+                continue
+            os_, stage = _stage_of(name)
+            if os_ not in by_os:
+                continue
+            by_os[os_][d]["test" if stage in test_stages else "build"] += 1
+
+    def series(osn: str):
+        return [{"date": d, "build": by_os[osn][d]["build"], "test": by_os[osn][d]["test"]} for d in sorted(dates)]
+
+    return {"days": days, "linux": series("Linux"), "windows": series("Windows")}
+
+
 @router.get("/trend")
 async def get_nightly_trend(days: int = 30):
     """Daily pass-rate trend for charting."""
