@@ -115,9 +115,11 @@ export default function InfraGap() {
             className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
             {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Analyze
           </button>
-          <button onClick={() => provision('plan')} disabled={!!busy || !repo}
+          <button onClick={() => provision('plan')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
+            title={pf !== null && !pf.ok ? 'Not dispatchable — enable provisioning via fork first' : undefined}
             className="border border-border text-gray-300 rounded-lg px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
-          <button onClick={() => provision('apply')} disabled={!!busy || !repo}
+          <button onClick={() => provision('apply')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
+            title={pf !== null && !pf.ok ? 'Not dispatchable — enable provisioning via fork first' : undefined}
             className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
         </div>
         {err && <p className="text-[11px] text-accent-red break-words">{err}</p>}
