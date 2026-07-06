@@ -317,7 +317,7 @@ async def merge_pr(pr_number: int, commit_title: str = "", merge_method: str = "
 
 async def get_workflows():
     async with httpx.AsyncClient(timeout=20) as c:
-        r = await c.get(f"{_BASE}/repos/{_repo()}/actions/workflows", headers=_headers())
+        r = await c.get(f"{_BASE}/repos/{_repo()}/actions/workflows", headers=_headers(), params={"per_page": 100})
         r.raise_for_status()
         return r.json()
 

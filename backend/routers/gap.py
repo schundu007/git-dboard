@@ -10,10 +10,11 @@ Mount in app/main.py:
     app.include_router(gap.router)
 """
 from __future__ import annotations
-import os, base64, httpx
+import base64, httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.gap_engine import run_gap
+from services import github_client as gh
 
 router = APIRouter(prefix="/gap", tags=["gap"])
 
