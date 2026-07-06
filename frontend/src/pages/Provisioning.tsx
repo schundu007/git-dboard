@@ -104,7 +104,10 @@ export default function Provisioning() {
       setPf(await r.json())
     } catch { setPf(null) }
   }
-  useEffect(() => { loadRuns(); checkPreflight(); const t = setInterval(loadRuns, 15000); return () => clearInterval(t) }, [repo])
+  const hasActive = runs.some(r => r.status !== 'completed')
+  useEffect(() => { checkPreflight() }, [repo])
+  // Adaptive polling: fast (3s) while a run is queued/in-progress, relaxed (15s) when idle.
+  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 15000); return () => clearInterval(t) }, [repo, hasActive])
   useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(null), 4000); return () => clearTimeout(t) }, [msg])
 
   async function dispatch(action: string) {
@@ -119,7 +122,8 @@ export default function Provisioning() {
     setBusy('')
     if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
     setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
-    loadRuns()
+    // burst-refresh so the freshly-dispatched run surfaces promptly (GitHub lags a few s)
+    loadRuns(); [1500, 4000, 8000].forEach(d => setTimeout(loadRuns, d))
   }
 
   async function breakGlass() {
@@ -237,6 +241,11 @@ export default function Provisioning() {
       <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">provision.yml runs</span>
+          {hasActive && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-medium text-accent-yellow">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-yellow animate-pulse" />live
+            </span>
+          )}
           <span className="ml-auto text-[10px] text-gray-500 font-mono">{repo}</span>
         </div>
         {runs.length === 0 ? (
@@ -248,7 +257,11 @@ export default function Provisioning() {
                 <tr key={r.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40">
                   <td className="px-4 py-2 text-[10px] font-mono text-gray-500">{r.event}</td>
                   <td className="px-2 py-2 text-[10px] text-gray-500">{new Date(r.created).toLocaleString()}</td>
-                  <td className="px-2 py-2 text-right"><span className={clsx('text-[11px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || r.status}</span></td>
+                  <td className="px-2 py-2 text-right">
+                    {r.status !== 'completed'
+                      ? <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-accent-yellow"><Loader2 size={10} className="animate-spin" />{r.status === 'queued' ? 'queued' : 'running'}</span>
+                      : <span className={clsx('text-[11px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || 'done'}</span>}
+                  </td>
                   <td className="px-4 py-2 text-right"><a href={r.url} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-brand inline-flex"><ExternalLink size={11} /></a></td>
                 </tr>
               ))}

@@ -1,8 +1,8 @@
 // Infra & Security Gap — current (repo + live AWS) vs target. Repo target
 // toggles between the live active repo and a custom/fork. Scores the delta and
 // lets you provision the gaps via the CI dispatch path.
-import { useState, useEffect } from 'react'
-import { Gauge, Loader2 } from 'lucide-react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { Gauge, Loader2, AlertTriangle, Cloud, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { useRepoSlug } from '../lib/hooks'
 
@@ -25,6 +25,39 @@ const chip = (s: string) =>
   s === 'OK' ? 'bg-accent-green/15 text-accent-green'
   : s === 'PARTIAL' ? 'bg-accent-yellow/15 text-accent-yellow'
   : 'bg-accent-red/15 text-accent-red'
+
+const sevDot = (sev: string) =>
+  sev === 'high' ? 'bg-accent-red' : sev === 'medium' ? 'bg-accent-yellow' : 'bg-gray-600'
+
+function ReadinessGauge({ pct }: { pct: number }) {
+  const R = 40, C = 2 * Math.PI * R
+  const stroke = pct >= 80 ? '#76b900' : pct >= 50 ? '#d97706' : '#c1442a'
+  return (
+    <div className="relative flex-shrink-0" style={{ width: 104, height: 104 }}>
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <circle cx="52" cy="52" r={R} fill="none" stroke="currentColor" strokeWidth="8" className="text-surface-3" />
+        <circle cx="52" cy="52" r={R} fill="none" stroke={stroke} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 52 52)"
+          style={{ transition: 'stroke-dasharray .9s cubic-bezier(0.22,1,0.36,1)' }} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[26px] font-bold tabular-nums text-white leading-none" style={{ color: stroke }}>{pct}%</span>
+        <span className="text-[8px] uppercase tracking-[0.12em] text-gray-500 mt-1">ready</span>
+      </div>
+    </div>
+  )
+}
+
+function KpiTile({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: string; tone: 'green' | 'yellow' | 'red' | 'muted' }) {
+  const c = tone === 'green' ? 'text-accent-green' : tone === 'yellow' ? 'text-accent-yellow' : tone === 'red' ? 'text-accent-red' : 'text-white'
+  return (
+    <div className="bg-surface-2/40 border border-border rounded-lg px-3 py-2.5">
+      <p className="text-[9px] uppercase tracking-wider text-gray-500 truncate">{label}</p>
+      <p className={clsx('text-[19px] font-bold tabular-nums leading-none mt-1.5', c)}>{value}</p>
+      {sub && <p className="text-[9px] text-gray-600 mt-1 truncate">{sub}</p>}
+    </div>
+  )
+}
 
 export default function InfraGap() {
   const repo = useRepoSlug()  // part of gitpulse: always the live active repo
@@ -84,86 +117,115 @@ export default function InfraGap() {
     setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
   }
 
+  const gaps = data ? data.score.total - data.score.ok - data.score.partial : 0
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Gauge size={18} className="text-brand" />
-        <h1 className="text-lg font-semibold text-white">Infra &amp; Security Gap</h1>
-        <span className="text-[11px] text-gray-500 ml-1">current (repo + live AWS) vs target · scores the infra/security delta</span>
+      {/* Header + toolbar */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-brand/10 ring-1 ring-brand/25 flex items-center justify-center">
+            <Gauge size={17} className="text-brand" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-white leading-tight">Infra &amp; Security Gap</h1>
+            <p className="text-[11px] text-gray-500">current (repo + live AWS) vs target · infra/security delta</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-mono text-[11px] text-gray-300 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5">{repo || '—'}</span>
+          <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
+            className="w-32 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
+          <button onClick={analyze} disabled={loading || !repo}
+            className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3.5 py-1.5 text-xs hover:opacity-90 disabled:opacity-40 shadow-sm">
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <Gauge size={13} />} Analyze
+          </button>
+        </div>
       </div>
 
-      <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">Repo</span>
-          <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
-          <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
-            className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
-          {pf && !pf.ok && (
-            <span className="text-[10px] font-medium text-accent-red">✗ not dispatchable</span>
+      {/* Provisioning status banner */}
+      {pf && (
+        <div className={clsx('flex items-center gap-3 rounded-xl px-4 py-2.5 border',
+          pf.ok ? 'bg-accent-green/[0.06] border-accent-green/20' : 'bg-accent-red/[0.06] border-accent-red/20')}>
+          {pf.ok
+            ? <ShieldCheck size={15} className="text-accent-green flex-shrink-0" />
+            : <AlertTriangle size={15} className="text-accent-red flex-shrink-0" />}
+          <span className="text-[11px] text-gray-300 flex-1 min-w-0">{pf.message || (pf.ok ? 'Provisioning ready' : 'Not dispatchable')}</span>
+          {pf.ok ? (
+            <div className="flex gap-2 flex-shrink-0">
+              <button onClick={() => provision('plan')} disabled={!!busy} className="border border-border text-gray-300 rounded-lg px-3 py-1 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
+              <button onClick={() => provision('apply')} disabled={!!busy} className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
+            </div>
+          ) : (pf.reason === 'workflow_missing' || pf.reason === 'no_write') && (
+            <button onClick={enableViaFork} disabled={enabling}
+              className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3 py-1 text-xs hover:opacity-90 disabled:opacity-40 flex-shrink-0">
+              {enabling ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Enable via fork
+            </button>
           )}
         </div>
-        {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
-        {pf && !pf.ok && (pf.reason === 'workflow_missing' || pf.reason === 'no_write') && (
-          <button onClick={enableViaFork} disabled={enabling}
-            className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40 w-fit">
-            {enabling ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Enable provisioning via fork
-          </button>
-        )}
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={analyze} disabled={loading || !repo}
-            className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
-            {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Analyze
-          </button>
-          <button onClick={() => provision('plan')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
-            title={pf !== null && !pf.ok ? 'Not dispatchable — enable provisioning via fork first' : undefined}
-            className="border border-border text-gray-300 rounded-lg px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40">Plan (CI)</button>
-          <button onClick={() => provision('apply')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
-            title={pf !== null && !pf.ok ? 'Not dispatchable — enable provisioning via fork first' : undefined}
-            className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">Apply (CI)</button>
-        </div>
-        {err && <p className="text-[11px] text-accent-red break-words">{err}</p>}
-        {msg && <p className={clsx('text-[11px] break-words', msg.ok ? 'text-accent-green' : 'text-accent-red')}>{msg.text}</p>}
-      </div>
+      )}
+      {err && <p className="text-[11px] text-accent-red break-words">{err}</p>}
+      {msg && <p className={clsx('text-[11px] break-words', msg.ok ? 'text-accent-green' : 'text-accent-red')}>{msg.text}</p>}
 
-      {data && (
+      {data ? (
         <>
-          {/* score strip */}
-          <div className="bg-surface-1 border border-border rounded-xl px-4 py-3 flex items-center gap-4 flex-wrap">
-            <div className="text-[20px] font-bold tabular-nums text-white leading-none">{data.score.ok}<span className="text-gray-500 text-sm font-normal">/{data.score.total}</span></div>
-            <div className="flex-1 min-w-[180px] h-2 bg-surface-2 rounded-full overflow-hidden">
-              <div className={clsx('h-full rounded-full', data.score.pct >= 80 ? 'bg-accent-green' : data.score.pct >= 50 ? 'bg-accent-yellow' : 'bg-accent-red')} style={{ width: `${data.score.pct}%` }} />
-            </div>
-            <div className="font-mono text-[10px] text-gray-500">
-              {data.score.pct}% ready · {data.score.partial} partial · AWS {data.aws.reachable ? <span className="text-accent-green">✓ {data.aws.account}</span> : <span className="text-accent-red">✗ unreachable</span>}
+          {/* Hero: readiness gauge + KPI tiles */}
+          <div className="bg-surface-1 border border-border rounded-xl p-5 flex items-center gap-6 flex-wrap">
+            <ReadinessGauge pct={data.score.pct} />
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-[280px]">
+              <KpiTile label="Ready" value={data.score.ok} sub={`of ${data.score.total} checks`} tone="green" />
+              <KpiTile label="Partial" value={data.score.partial} tone="yellow" />
+              <KpiTile label="Gaps" value={gaps} tone="red" />
+              <KpiTile label="AWS" value={data.aws.reachable ? '✓' : '✗'} sub={data.aws.reachable ? (data.aws.account ?? 'connected') : 'unreachable'} tone={data.aws.reachable ? 'green' : 'red'} />
             </div>
           </div>
 
-          {/* checks grouped by category — tables */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))' }}>
-            {Object.keys(data.by_category).map(cat => (
-              <div key={cat} className="bg-surface-1 border border-border rounded-xl overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{cat}</span>
-                  <span className="text-[10px] font-mono text-gray-500">{data.by_category[cat].ok}/{data.by_category[cat].total}</span>
+          {/* Category panels — health-colored, with progress */}
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(360px,1fr))' }}>
+            {Object.entries(data.by_category).map(([cat, s]) => {
+              const pct = s.total ? Math.round(s.ok / s.total * 100) : 0
+              const bar = pct === 100 ? 'bg-accent-green' : pct > 0 ? 'bg-accent-yellow' : 'bg-accent-red'
+              const edge = pct === 100 ? 'border-l-accent-green/60' : pct > 0 ? 'border-l-accent-yellow/60' : 'border-l-accent-red/60'
+              return (
+                <div key={cat} className={clsx('bg-surface-1 border border-border border-l-2 rounded-xl overflow-hidden', edge)}>
+                  <div className="px-4 py-2.5 border-b border-border">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-300">{cat}</span>
+                      <span className="text-[10px] font-mono text-gray-500">{s.ok}/{s.total}</span>
+                    </div>
+                    <div className="h-1 bg-surface-2 rounded-full overflow-hidden mt-1.5">
+                      <div className={clsx('h-full rounded-full transition-all duration-700', bar)} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {data.checks.filter(c => c.category === cat).map(c => (
+                        <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 align-top">
+                          <td className="pl-4 pr-1 py-2 w-0"><span className={clsx('inline-block w-1.5 h-1.5 rounded-full mt-1', sevDot(c.severity))} title={`${c.severity} severity`} /></td>
+                          <td className="pr-2 py-2 w-0"><span className={clsx('inline-block text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded', chip(c.status))}>{c.status}</span></td>
+                          <td className="px-2 py-2">
+                            <span className="block text-[11px] text-gray-200 leading-snug">{c.title}</span>
+                            <span className="block text-[9px] text-gray-600 font-mono mt-0.5">repo:{c.in_repo === null ? 'n/a' : c.in_repo ? 'yes' : 'no'} · aws:{c.in_aws === null ? 'n/a' : c.in_aws ? 'yes' : 'no'}</span>
+                            {c.status !== 'OK' && <span className="block text-[10px] text-accent-yellow/80 mt-0.5">→ {c.fix}</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <table className="w-full text-xs">
-                  <tbody>
-                    {data.checks.filter(c => c.category === cat).map(c => (
-                      <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 align-top">
-                        <td className="pl-4 pr-2 py-2 w-0"><span className={clsx('inline-block text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded', chip(c.status))}>{c.status}</span></td>
-                        <td className="px-2 py-2">
-                          <span className="block text-[11px] text-gray-200 leading-snug">{c.title}</span>
-                          <span className="block text-[9px] text-gray-600 font-mono mt-0.5">repo:{c.in_repo === null ? 'n/a' : c.in_repo ? 'yes' : 'no'} · aws:{c.in_aws === null ? 'n/a' : c.in_aws ? 'yes' : 'no'}</span>
-                          {c.status !== 'OK' && <span className="block text-[10px] text-accent-yellow/80 mt-0.5">→ {c.fix}</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </>
+      ) : (
+        <div className="bg-surface-1 border border-border rounded-xl py-14 flex flex-col items-center justify-center gap-2 text-center">
+          <div className="w-11 h-11 rounded-full bg-brand/10 ring-1 ring-brand/20 flex items-center justify-center"><Cloud size={20} className="text-brand" /></div>
+          <p className="text-[13px] font-semibold text-gray-200">Score your infra &amp; security posture</p>
+          <p className="text-[11px] text-gray-500 max-w-xs">Compares the repo + live AWS against the target and pinpoints exactly which gaps to close.</p>
+          <button onClick={analyze} disabled={loading || !repo} className="mt-1 flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-4 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+            {loading ? <Loader2 size={13} className="animate-spin" /> : <Gauge size={13} />} Run Analysis
+          </button>
+        </div>
       )}
     </div>
   )
