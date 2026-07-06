@@ -1,11 +1,11 @@
 # .github/workflows/pr-license.yaml
 # Validates that every Python source file carries the correct SPDX license
-# header.  IsaacLab uses SPDX-License-Identifier: BSD-3-Clause.
+# header.  This project uses SPDX-License-Identifier: BSD-3-Clause.
 #
 # Check run name: "PR license / run"
 #
 # Expected header in each .py file (first 3 lines):
-#   # Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+#   # Copyright (c) YYYY, The Project Developers.
 #   # All rights reserved.
 #   #
 #   # SPDX-License-Identifier: BSD-3-Clause

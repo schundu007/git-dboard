@@ -85,7 +85,7 @@ export function StatCard({
     purple: 'text-neutral-400',
     orange: 'text-accent-yellow',
     indigo: 'text-brand',
-    nvidia: 'text-brand',
+    brand:  'text-brand',
   }
 
   return (

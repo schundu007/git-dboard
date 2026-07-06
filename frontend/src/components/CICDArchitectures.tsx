@@ -110,10 +110,10 @@ export function CurrentArchSVG() {
           <line x1="7" y1="10" x2="25" y2="10" stroke="#38bdf8" strokeWidth="1.2" opacity="0.5" />
           <line x1="7" y1="22" x2="25" y2="22" stroke="#38bdf8" strokeWidth="1.2" opacity="0.5" />
         </symbol>
-        <symbol id="ic-ngc" viewBox="0 0 32 32">
+        <symbol id="ic-registry" viewBox="0 0 32 32">
           <rect width="32" height="32" rx="7" fill="#060d1e" />
-          <text x="16" y="13" textAnchor="middle" fontSize="5" fontFamily="sans-serif" fontWeight="700" fill="#6b7280">NVIDIA</text>
-          <text x="16" y="21" textAnchor="middle" fontSize="8" fontFamily="sans-serif" fontWeight="700" fill="#76b900">NGC</text>
+          <text x="16" y="13" textAnchor="middle" fontSize="5" fontFamily="sans-serif" fontWeight="700" fill="#6b7280">IMAGE</text>
+          <text x="16" y="21" textAnchor="middle" fontSize="8" fontFamily="sans-serif" fontWeight="700" fill="#76b900">REG</text>
           <path d="M8 26 Q16 31 24 26" fill="none" stroke="#76b900" strokeWidth="1.8" strokeLinecap="round" />
         </symbol>
         <symbol id="ic-comment" viewBox="0 0 32 32">
@@ -175,18 +175,18 @@ export function CurrentArchSVG() {
         { icon: '#ic-gh',     badge: 'CI · TEST',    bc: '#60a5fa',
           title: 'PR Build & Test',
           l1: 'on: pull_request → main / devel / release',
-          l2: 'Jobs: test-isaaclab-tasks · test-general · comb…',
+          l2: 'Jobs: test-tasks · test-general · comb…',
           l3: 'Runs on: [self-hosted, gpu]' },
         { icon: '#ic-clock',  badge: 'SCHEDULED',    bc: '#f59e0b',
           title: 'Daily Compatibility Matrix',
           l1: 'on: schedule (4 AM UTC) · workflow_dispatch',
-          l2: 'Matrix: IsaacSim 4.5.0, 5.0.0 → compat tests',
+          l2: 'Matrix: versions 4.5.0, 5.0.0 → compat tests',
           l3: 'Jobs: setup-versions · tests · combine · notify' },
         { icon: '#ic-docker', badge: 'BUILD · PUSH', bc: '#2496ED',
           title: 'Post-merge Build & Push',
           l1: 'on: push → main / devel / release',
           l2: 'Builds multi-arch Docker images (ARM64 + x86_64)',
-          l3: 'Pushes to NGC Container Registry' },
+          l3: 'Pushes to Container Registry' },
       ] as const).map((w, i) => {
         const wx = Z2_X + i * (R1_CW + 8)
         return (
@@ -266,7 +266,7 @@ export function CurrentArchSVG() {
 
       {([
         { icon: '#ic-docker', name: '.github/actions/docker-build',
-          d1: 'NGC login + buildx lcache (ghs)', d2: 'Builds isaac-lab-dev image' },
+          d1: 'Registry login + buildx lcache (ghs)', d2: 'Builds app-dev image' },
         { icon: '#ic-flask',  name: '.github/actions/run-tests',
           d1: 'docker run --gpus all → pytest', d2: 'Copies JUnit XML from container' },
         { icon: '#ic-merge',  name: '.github/actions/combine-results',
@@ -295,7 +295,7 @@ export function CurrentArchSVG() {
       {([
         { icon: '#ic-xml',       label: 'JUnit XML',    sub: 'Test artifacts',   clr: '#a78bfa' },
         { icon: '#ic-globe',     label: 'GitHub Pages', sub: 'docs deploy',      clr: '#38bdf8' },
-        { icon: '#ic-ngc',       label: 'NGC Registry', sub: 'Container images', clr: '#76b900' },
+        { icon: '#ic-registry',  label: 'Registry',     sub: 'Container images', clr: '#76b900' },
         { icon: '#ic-comment',   label: 'PR Checks',    sub: 'Comments + CI',    clr: '#c084fc' },
         { icon: '#ic-gitcommit', label: 'Auto-commit',  sub: 'to develop',       clr: '#4ade80' },
         { icon: '#ic-tag',       label: 'PR Labels',    sub: 'PR auto-labels',   clr: '#f472b6' },
@@ -678,7 +678,7 @@ export function TargetArchSVG() {
           <line x1="20" y1="18" x2="20" y2="20" stroke={TEA} strokeWidth="2" />
         </symbol>
 
-        {/* ── Isaac ROS / ROS 2 node graph ── */}
+        {/* ── ROS 2 node graph ── */}
         <symbol id="ta-ros2" viewBox="0 0 40 40">
           <rect width="40" height="40" rx="8" fill="#1a0019" />
           <circle cx="20" cy="20" r="6" fill="none" stroke={FUS} strokeWidth="2.2" />

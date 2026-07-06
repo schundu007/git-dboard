@@ -15,7 +15,7 @@ const schema = z.object({
   // runtime via the installations API (works for single-org repos).
   GITHUB_INSTALLATION_ID: z.string().optional(),
 
-  // Target repository — defaults to the IsaacLab repo
+  // Target repository — provided via env (REPO_OWNER / REPO_NAME); empty by default
   REPO_OWNER: z.string().default(''),
   REPO_NAME:  z.string().default(''),
 

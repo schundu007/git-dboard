@@ -27,7 +27,7 @@ const NAV_ENTRIES: NavEntry[] = [
   { group: 'CI / CD',         label: 'Build Pipeline',  description: 'Workflow runs',                   path: '/builds',      icon: Container,       keywords: 'build ci workflow actions' },
   { group: 'CI / CD',         label: 'Nightly Monitor', description: 'Nightly build matrix',            path: '/nightly',     icon: Moon,            keywords: 'nightly cron schedule' },
   { group: 'CI / CD',         label: 'Registry',        description: 'Container image management',      path: '/registry',    icon: Layers,          keywords: 'docker image container ecr' },
-  { group: 'CI / CD',         label: 'Image Tags',      description: 'Tag naming & lifecycle',          path: '/tags',        icon: Tag,             keywords: 'tag docker ghcr ngc' },
+  { group: 'CI / CD',         label: 'Image Tags',      description: 'Tag naming & lifecycle',          path: '/tags',        icon: Tag,             keywords: 'tag docker ghcr registry' },
   { group: 'Infrastructure',  label: 'Infra & Runners', description: 'Self-hosted runners & cluster',   path: '/infra',       icon: Server,          keywords: 'runner gpu server slurm' },
   { group: 'Infrastructure',  label: 'Health Analysis', description: 'DORA metrics & pipeline health',  path: '/health',      icon: ShieldCheck,     keywords: 'dora metrics health performance' },
   { group: 'Infrastructure',  label: 'Improvements',    description: 'Actionable CI/CD improvements',   path: '/improvement', icon: Lightbulb,       keywords: 'plan improve optimize' },

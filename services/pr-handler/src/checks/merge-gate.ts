@@ -159,7 +159,7 @@ function buildGateOutput(
   });
 
   const text = [
-    `## ${icon} IsaacLab PR gate`,
+    `## ${icon} PR gate`,
     '',
     '| Check | Result | Log | Duration |',
     '|:------|:------:|:----|:--------:|',

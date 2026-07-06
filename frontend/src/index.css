@@ -514,7 +514,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 [data-theme="light"] .text-rose-400    { color: #b24020; }
 [data-theme="light"] .text-lime-400    { color: #057642; }
 
-/* nvidia / accent-green text — parrot green #76b900 is unreadable on white -- */
+/* brand / accent-green text — parrot green #76b900 is unreadable on white -- */
 [data-theme="light"] .text-brand       { color: #3d6b00; }   /* 7:1 contrast on white */
 [data-theme="light"] .text-emerald-300  { color: #065f46; }
 [data-theme="light"] .text-emerald-500  { color: #065f46; }
@@ -757,7 +757,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 /* ── Section-title accent bar — lime ────────────────────────────────────────  */
 [data-theme="light"] .section-title::before { background: #84cc16; }
 
-/* ── nvidia / lime brand overrides in light ─────────────────────────────────  */
+/* ── brand / lime brand overrides in light ─────────────────────────────────  */
 [data-theme="light"] .text-brand { color: #4d7c0f !important; }
 [data-theme="light"] .bg-brand { background-color: #84cc16 !important; }
 [data-theme="light"] .bg-brand\/10, [data-theme="light"] .bg-brand\/15 { background-color: rgba(101,163,13,0.10) !important; }

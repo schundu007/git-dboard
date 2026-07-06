@@ -12,10 +12,11 @@ import { CheckSnapshot, formatDuration } from './orchestrator.js';
 import { CheckRequirements } from './classifier.js';
 import { CheckName } from '../types.js';
 import { logger } from '../utils/logger.js';
+import { config } from '../config.js';
 
 // Hidden marker at the start of the managed comment body.
 // Must be unique and unlikely to appear in normal PR discussion.
-const COMMENT_MARKER = '<!-- isaaclab-pr-gate-comment -->\n';
+const COMMENT_MARKER = '<!-- gitpulse-pr-gate-comment -->\n';
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -128,9 +129,13 @@ function buildCommentBody(
     );
   }
 
+  // Derive the docs link from the configured repo; fall back to a neutral placeholder.
+  const repoSlug = config.REPO_OWNER && config.REPO_NAME
+    ? `${config.REPO_OWNER}/${config.REPO_NAME}`
+    : 'OWNER/REPO';
   lines.push(
     '',
-    `<sub>Updated ${now} · [workflow docs](https://github.com/isaac-sim/IsaacLab/blob/main/.github/CONTRIBUTING.md)</sub>`,
+    `<sub>Updated ${now} · [workflow docs](https://github.com/${repoSlug}/blob/main/.github/CONTRIBUTING.md)</sub>`,
   );
 
   return lines.join('\n');

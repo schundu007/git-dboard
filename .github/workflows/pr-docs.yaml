@@ -1,5 +1,5 @@
 # .github/workflows/pr-docs.yaml
-# Builds the IsaacLab Sphinx documentation and validates all internal links.
+# Builds the Sphinx documentation and validates all internal links.
 #
 # Check run name: "PR docs / run"
 # Skip conditions:

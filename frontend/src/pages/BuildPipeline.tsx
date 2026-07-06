@@ -1844,7 +1844,7 @@ export default function BuildPipeline() {
   })
 
   // Filter tabs derived from the ACTIVE repo's real workflows (pinned first, else all),
-  // capped so the sub-nav stays compact — replaces the old hardcoded IsaacLab PINNED list.
+  // capped so the sub-nav stays compact — replaces the old hardcoded PINNED list.
   const { data: subnavWorkflows } = useQuery({
     queryKey: [slug, 'build-subnav-workflows'],
     queryFn: getWorkflowsWithStatus,

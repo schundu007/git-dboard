@@ -169,7 +169,7 @@ export default function BusinessReport() {
       severity: nightlyStreak > 14 ? 'critical' : 'high',
       category: 'Quality Assurance',
       headline: `Nightly QA gate has been down for ${nightlyStreak} consecutive days — 0% pass rate`,
-      business_impact: `Zero automated nightly regression coverage for ${nightlyStreak} days. Silent breakages — Blackwell GPU crashes (sm_90a/sm_120 CUDA flags missing), Isaac Sim 6.0 extension API renames, multi-GPU NCCL hangs — are accumulating undetected. No alerting means failures are discovered days late, multiplying remediation cost.`,
+      business_impact: `Zero automated nightly regression coverage for ${nightlyStreak} days. Silent breakages — runtime regressions, dependency API breakages, and integration failures — are accumulating undetected. No alerting means failures are discovered days late, multiplying remediation cost.`,
       metric: `${nightlyStreak}-day streak`,
     })
   }
@@ -213,8 +213,8 @@ export default function BusinessReport() {
     risks.push({
       severity: depItem.priority as Severity,
       category: 'Dependency Management',
-      headline: 'isaacsim-core hard-pins packaging==23.0, conflicting with pip internals — no single source of truth for versions',
-      business_impact: 'Each package pins dependencies independently with no coordination. `packaging==23.0` conflicts with the vendored pip module, causing non-deterministic install failures. `isaaclab.sh --install` fails silently on certain configurations (#5517). Engineers spend hours debugging environment setup instead of writing code. Every new contributor hits this barrier.',
+      headline: 'A core package hard-pins packaging==23.0, conflicting with pip internals — no single source of truth for versions',
+      business_impact: 'Each package pins dependencies independently with no coordination. `packaging==23.0` conflicts with the vendored pip module, causing non-deterministic install failures. The install script fails silently on certain configurations. Engineers spend hours debugging environment setup instead of writing code. Every new contributor hits this barrier.',
       metric: 'Non-deterministic installs',
     })
   }
@@ -225,8 +225,8 @@ export default function BusinessReport() {
     risks.push({
       severity: blackwellItem.priority as Severity,
       category: 'Hardware Compatibility',
-      headline: 'RTX 5090 / Blackwell GPU crashes — CUDA not compiled for sm_120 (GB202) or sm_90a (Hopper) architectures',
-      business_impact: 'CUDA kernels compiled without sm_90a/sm_120 targets cause NVRTC errors and TiledCamera crashes on the latest NVIDIA silicon (#4951, #5001, #5520). Users on RTX 5090 or H100 systems cannot run the simulator. This directly impacts adoption by NVIDIA hardware partners and enterprise customers on the latest GPU generation.',
+      headline: 'Latest GPU architectures crash — native builds not compiled for the newest hardware targets',
+      business_impact: 'Native kernels compiled without the newest architecture targets cause runtime errors and crashes on current-generation silicon. Users on the latest GPU systems cannot run the application. This directly impacts adoption by hardware partners and enterprise customers on the latest GPU generation.',
       metric: 'RTX 5090 / H100 blocked',
     })
   }
@@ -476,7 +476,7 @@ export default function BusinessReport() {
                 color="red"
                 icon={<Shield size={12} />}
                 title={`${nightlyStreak > 0 ? nightlyStreak + '-day' : 'Active'} quality blind spot`}
-                body={`Nightly regression suite has been at 0% for ${nightlyStreak > 0 ? nightlyStreak + ' days' : 'multiple days'}. Blackwell GPU crashes, Isaac Sim 6.0 API breakages, and NCCL multi-GPU hangs are accumulating with no automated detection.`}
+                body={`Nightly regression suite has been at 0% for ${nightlyStreak > 0 ? nightlyStreak + ' days' : 'multiple days'}. Runtime regressions, dependency API breakages, and integration failures are accumulating with no automated detection.`}
                 tag="Quality Risk"
               />
               {/* Insight 4: GPU cost leakage */}
@@ -491,8 +491,8 @@ export default function BusinessReport() {
               <InsightCard
                 color="orange"
                 icon={<Zap size={12} />}
-                title="Latest NVIDIA hardware unsupported"
-                body="RTX 5090 (Blackwell sm_120) and H100 (Hopper sm_90a) users see CUDA NVRTC errors and TiledCamera crashes. This is a reputational risk for NVIDIA's own ecosystem and blocks enterprise adoption."
+                title="Latest hardware unsupported"
+                body="Users on the newest GPU architectures see native build errors and runtime crashes. This is a reputational risk for the ecosystem and blocks enterprise adoption."
                 tag="Hardware Compatibility"
               />
               {/* Insight 6: Positive signal */}

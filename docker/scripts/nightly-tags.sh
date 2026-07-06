@@ -116,8 +116,8 @@ Tag plan for ${IMAGE_EXT} · sim${SIM_MAJOR_MINOR}
   Nightly tag  : ${NIGHTLY_TAG}
   SHA tag      : ${SHA_TAG}
   Cache tag    : ${CACHE_TAG}
-  NGC nightly  : ${NGC_NIGHTLY}
-  NGC SHA      : ${NGC_SHA}
+  Registry nightly : ${NGC_NIGHTLY}
+  Registry SHA     : ${NGC_SHA}
   GHCR nightly : ${GHCR_NIGHTLY}
   GHCR SHA     : ${GHCR_SHA}
   GHCR cache   : ${GHCR_CACHE}

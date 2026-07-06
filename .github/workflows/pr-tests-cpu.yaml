@@ -1,7 +1,7 @@
 # .github/workflows/pr-tests-cpu.yaml
-# Runs the IsaacLab pytest suite on a CPU-only runner (no Isaac Sim GPU needed).
+# Runs the pytest suite on a CPU-only runner (no GPU needed).
 #
-# Scope: unit tests and integration tests that mock the Isaac Sim layer.
+# Scope: unit tests and integration tests that mock the GPU/runtime layer.
 # GPU simulation tests are handled by the optional 'PR gpu / run' workflow.
 #
 # Check run name: "PR tests cpu / run"
@@ -48,10 +48,10 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
-      - name: Install Isaac Lab (no sim — CPU mode)
+      - name: Install package (no sim — CPU mode)
         run: |
           pip install --upgrade pip
-          # Install Isaac Lab source without the Isaac Sim backend
+          # Install the package source without the GPU/sim backend
           # CPU-only tests use the --headless flag and a sim stub
           pip install -e ".[test]" --no-deps \
             || pip install -r requirements-test.txt
@@ -59,9 +59,9 @@ jobs:
       - name: Run pytest (CPU tests only)
         run: |
           python -m pytest \
-            source/isaaclab/tests/ \
-            --ignore=source/isaaclab/tests/sim/ \
-            --ignore=source/isaaclab/tests/envs/ \
+            tests/ \
+            --ignore=tests/sim/ \
+            --ignore=tests/envs/ \
             -m "not gpu and not slow" \
             -x \
             --tb=short \

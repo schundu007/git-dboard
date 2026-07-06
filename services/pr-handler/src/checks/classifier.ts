@@ -131,7 +131,7 @@ export function deriveRequirements(
       break;
 
     case 'docker-only':
-      // Docker changes: lint and license only; tests need Isaac Sim base image
+      // Docker changes: lint and license only; tests need the GPU/sim base image
       required = [CHECK_NAMES.LINT, CHECK_NAMES.LICENSE];
       skipped.push(CHECK_NAMES.TESTS, CHECK_NAMES.DOCS);
       skipReason[CHECK_NAMES.TESTS] = 'docker-only PR';

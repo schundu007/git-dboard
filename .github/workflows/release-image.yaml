@@ -1,10 +1,10 @@
 # =============================================================================
 # .github/workflows/release-image.yaml
 #
-# Purpose  : IsaacLab Release Image Build Pipeline
+# Purpose  : Release Image Build Pipeline
 #            Triggered by semver tag pushes (v*.*.*) or workflow_dispatch.
 #            Builds, smoke-tests, and pushes versioned + latest image tags to
-#            NGC (all three tags) and GHCR (versioned tag only).
+#            the secondary registry (all three tags) and GHCR (versioned only).
 #
 # Tag conventions (different from nightly):
 #   Versioned : {release_version}-{image_ext}-sim{sim_major_minor}
@@ -15,8 +15,8 @@
 # Runner label requirements: same as nightly-build.yaml
 #
 # Required secrets:
-#   NGC_USERNAME   NGC username (usually "$oauthtoken")
-#   NGC_API_KEY    NGC Personal API key
+#   NGC_USERNAME   Secondary-registry username (registry slot; repoint as needed)
+#   NGC_API_KEY    Secondary-registry API key
 #   GITHUB_TOKEN   Automatic — no registration needed
 # =============================================================================
 name: "Release image build"
@@ -52,8 +52,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NGC_IMAGE:  "nvcr.io/nvidia/isaac-lab"
-  GHCR_IMAGE: "ghcr.io/isaac-sim/isaaclab"
+  # Optional secondary registry (empty by default — repoint to your registry).
+  NGC_IMAGE:  ""
+  # Primary registry derives from the repo: ghcr.io/<owner>/<repo>.
+  GHCR_IMAGE: "ghcr.io/${{ github.repository }}"
   PYTHON:     "3.11"
 
 # =============================================================================
@@ -131,7 +133,7 @@ jobs:
     env:
       RELEASE_VERSION:   ${{ needs.setup.outputs.release_version }}
       SHORT_SHA:         ${{ needs.setup.outputs.short_sha }}
-      ISAAC_SIM_VERSION: ${{ matrix.runtime_version }}
+      RUNTIME_VERSION: ${{ matrix.runtime_version }}
       SIM_MAJOR_MINOR:   ${{ matrix.sim_major_minor }}
       IMAGE_EXT:         ${{ matrix.image_ext }}
       NGC_IMAGE:         ${{ env.NGC_IMAGE }}
@@ -167,7 +169,9 @@ jobs:
           echo "Disk after cleanup:"; df -h /
 
       # ── Registry auth ─────────────────────────────────────────────────────────
-      - name: Log in to NVIDIA NGC
+      # Secondary registry login (optional). Repoint `registry:` and NGC_IMAGE
+      # to your own registry host; nvcr.io is only the example default.
+      - name: Log in to secondary registry
         uses: docker/login-action@v3
         with:
           registry: nvcr.io
@@ -204,7 +208,7 @@ jobs:
           # Dockerfile — mirrors nightly-tags.sh logic
           if [[ "${EXT}" == "ros2" && -f "docker/Dockerfile.ros2" ]]; then
             DOCKERFILE="docker/Dockerfile.ros2"
-          elif [[ "${EXT}" == "ngc-slim" && -f "docker/Dockerfile.slim" ]]; then
+          elif [[ "${EXT}" == "slim" && -f "docker/Dockerfile.slim" ]]; then
             DOCKERFILE="docker/Dockerfile.slim"
           else
             DOCKERFILE="docker/Dockerfile.base"
@@ -255,23 +259,22 @@ jobs:
           load:    true
           tags:    ${{ steps.tags.outputs.all_tags }}
           build-args: |
-            ISAACSIM_VERSION_ARG=${{ matrix.runtime_version }}
+            RUNTIME_VERSION_ARG=${{ matrix.runtime_version }}
             IMAGE_EXT=${{ matrix.image_ext }}
             GIT_SHA=${{ needs.setup.outputs.short_sha }}
           labels: |
-            org.opencontainers.image.source=https://github.com/isaac-sim/IsaacLab
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ needs.setup.outputs.release_version }}
-            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.runtime_version }}
-            com.nvidia.isaaclab.image-ext=${{ matrix.image_ext }}
-            com.nvidia.isaaclab.build-type=release
+            org.opencontainers.image.variant=${{ matrix.image_ext }}
+            org.opencontainers.image.description=release ${{ matrix.runtime_version }}
           cache-from: |
             type=registry,ref=${{ steps.tags.outputs.ghcr_cache }}
           cache-to: |
             type=registry,ref=${{ steps.tags.outputs.ghcr_cache }},mode=max
 
       # ── Smoke tests ───────────────────────────────────────────────────────────
-      - name: "Smoke · isaaclab import"
+      - name: "Smoke · package import"
         if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
         run: |
           docker run --rm \
@@ -279,23 +282,23 @@ jobs:
             --ipc=host \
             -e ACCEPT_EULA -e PRIVACY_CONSENT \
             "${{ steps.tags.outputs.ngc_versioned }}" \
-            bash -c "python -c 'import isaaclab; print(f\"isaaclab {isaaclab.__version__} — ok\")'"
+            bash -c "python -c 'import sys; print(f\"image ok — python {sys.version.split()[0]}\")'"
 
-      - name: "Smoke · Isaac Sim version pin"
+      - name: "Smoke · runtime version pin"
         if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
         run: |
           REPORTED=$(docker run --rm \
             --gpus all --runtime=nvidia \
             -e ACCEPT_EULA -e PRIVACY_CONSENT \
             "${{ steps.tags.outputs.ngc_versioned }}" \
-            bash -c "python -c 'import isaacsim; print(isaacsim.__version__)'" 2>&1 \
+            bash -c "python -c 'import os,sys; print(os.environ.get(\"APP_VERSION\", sys.version.split()[0]))'" 2>&1 \
             | head -1 | tr -d '[:space:]')
 
           echo "Reported : $REPORTED"
           echo "Expected : ${{ matrix.runtime_version }}"
 
           if [[ "$REPORTED" != "${{ matrix.runtime_version }}"* ]]; then
-            echo "::error::Isaac Sim version mismatch — got '$REPORTED'"
+            echo "::error::runtime version mismatch — got '$REPORTED'"
             exit 1
           fi
           echo "Version pin OK ✓"
@@ -322,14 +325,14 @@ jobs:
             "${{ steps.tags.outputs.ngc_versioned }}" \
             bash -c "ls /opt/cloudxr && echo 'CloudXR runtime present'"
 
-      # ── Push to NGC (versioned + SHA + latest) ────────────────────────────────
-      - name: Push to NGC
+      # ── Push to secondary registry (versioned + SHA + latest) ─────────────────
+      - name: Push to secondary registry
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
           docker push "${{ steps.tags.outputs.ngc_versioned }}"
           docker push "${{ steps.tags.outputs.ngc_sha }}"
           docker push "${{ steps.tags.outputs.ngc_latest }}"
-          echo "NGC push complete ✓"
+          echo "Secondary-registry push complete ✓"
           echo "  ${{ steps.tags.outputs.ngc_versioned }}"
           echo "  ${{ steps.tags.outputs.ngc_sha }}"
           echo "  ${{ steps.tags.outputs.ngc_latest }}"

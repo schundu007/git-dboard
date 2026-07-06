@@ -6,7 +6,7 @@ import { getWorkflowsWithStatus } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
 
 // ── Live, repo-aware CI/CD pipeline ───────────────────────────────────────────
-// Replaces the hardcoded IsaacLab architecture SVG for the "Current State" view.
+// Replaces the hardcoded architecture SVG for the "Current State" view.
 // Renders the ACTIVE repo's real GitHub Actions workflows, grouped into pipeline
 // stages inferred from workflow name/filename, with each workflow's latest run
 // status. Because the query is keyed by the active repo slug, it refetches and

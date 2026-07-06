@@ -21,8 +21,8 @@
 #   singularity    — Apptainer / Singularity CLI installed
 #
 # Required secrets:
-#   REGISTRY_USERNAME      Secondary registry username
-#   REGISTRY_API_KEY       Secondary registry API key
+#   NGC_USERNAME           Secondary-registry username (registry slot; repoint as needed)
+#   NGC_API_KEY            Secondary-registry API key
 #   HPC_STORAGE_ACCOUNT    Azure Blob storage account name
 #   HPC_STORAGE_KEY        Azure Blob storage access key
 #   SLACK_NIGHTLY_WEBHOOK  Slack incoming webhook URL
@@ -37,7 +37,7 @@ on:
   workflow_dispatch:
     inputs:
       sim_versions:
-        description: "Isaac Sim versions — comma-separated or 'all'"
+        description: "Runtime versions — comma-separated or 'all'"
         required: false
         default: "all"
       image_exts:
@@ -61,8 +61,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NGC_IMAGE:  "nvcr.io/nvidia/isaac-lab"
-  GHCR_IMAGE: "ghcr.io/isaac-sim/isaaclab"
+  # Optional secondary registry (empty by default — repoint to your registry).
+  NGC_IMAGE:  ""
+  # Primary registry derives from the repo: ghcr.io/<owner>/<repo>.
+  GHCR_IMAGE: "ghcr.io/${{ github.repository }}"
   PYTHON:     "3.11"
 
 # =============================================================================
@@ -173,7 +175,9 @@ jobs:
           df -h /
 
       # ── Registry auth ─────────────────────────────────────────────────────────
-      - name: Log in to NVIDIA NGC
+      # Secondary registry login (optional). Repoint `registry:` and NGC_IMAGE
+      # to your own registry host; nvcr.io is only the example default.
+      - name: Log in to secondary registry
         uses: docker/login-action@v3
         with:
           registry: nvcr.io
@@ -211,24 +215,24 @@ jobs:
           load:    true
           tags:    ${{ steps.tags.outputs.all_tags }}
           build-args: |
-            ISAACSIM_VERSION_ARG=${{ matrix.runtime_version }}
+            RUNTIME_VERSION_ARG=${{ matrix.runtime_version }}
             IMAGE_EXT=${{ matrix.image_ext }}
             BUILD_DATE=${{ needs.setup.outputs.build_date }}
             GIT_SHA=${{ needs.setup.outputs.short_sha }}
           labels: |
-            org.opencontainers.image.source=https://github.com/isaac-sim/IsaacLab
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ needs.setup.outputs.build_date }}
-            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.runtime_version }}
-            com.nvidia.isaaclab.image-ext=${{ matrix.image_ext }}
-            com.nvidia.isaaclab.build-type=nightly
+            org.opencontainers.image.version=${{ matrix.runtime_version }}
+            org.opencontainers.image.variant=${{ matrix.image_ext }}
+            org.opencontainers.image.description=nightly
           cache-from: |
             type=registry,ref=${{ steps.tags.outputs.ghcr_cache }}
           cache-to: |
             type=registry,ref=${{ steps.tags.outputs.ghcr_cache }},mode=max
 
       # ── Smoke tests ───────────────────────────────────────────────────────────
-      - name: "Smoke · isaaclab import"
+      - name: "Smoke · package import"
         if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
         run: |
           docker run --rm \
@@ -236,23 +240,23 @@ jobs:
             --ipc=host \
             -e ACCEPT_EULA -e PRIVACY_CONSENT \
             "${{ steps.tags.outputs.ngc_nightly }}" \
-            bash -c "python -c 'import isaaclab; print(f\"isaaclab {isaaclab.__version__} — ok\")'"
+            bash -c "python -c 'import sys; print(f\"image ok — python {sys.version.split()[0]}\")'"
 
-      - name: "Smoke · Isaac Sim version pin"
+      - name: "Smoke · runtime version pin"
         if: ${{ github.event.inputs.skip_smoke_tests != 'true' }}
         run: |
           REPORTED=$(docker run --rm \
             --gpus all --runtime=nvidia \
             -e ACCEPT_EULA -e PRIVACY_CONSENT \
             "${{ steps.tags.outputs.ngc_nightly }}" \
-            bash -c "python -c 'import isaacsim; print(isaacsim.__version__)'" 2>&1 \
+            bash -c "python -c 'import os,sys; print(os.environ.get(\"APP_VERSION\", sys.version.split()[0]))'" 2>&1 \
             | head -1 | tr -d '[:space:]')
 
           echo "Reported : $REPORTED"
           echo "Expected : ${{ matrix.runtime_version }}"
 
           if [[ "$REPORTED" != "${{ matrix.runtime_version }}"* ]]; then
-            echo "::error::Isaac Sim version mismatch — got '$REPORTED', expected '${{ matrix.runtime_version }}'"
+            echo "::error::runtime version mismatch — got '$REPORTED', expected '${{ matrix.runtime_version }}'"
             exit 1
           fi
           echo "Version pin OK ✓"
@@ -280,12 +284,12 @@ jobs:
             bash -c "ls /opt/cloudxr && echo 'CloudXR runtime present'"
 
       # ── Push ──────────────────────────────────────────────────────────────────
-      - name: Push to NGC
+      - name: Push to secondary registry
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
           docker push "${{ steps.tags.outputs.ngc_nightly }}"
           docker push "${{ steps.tags.outputs.ngc_sha }}"
-          echo "NGC push complete ✓"
+          echo "Secondary-registry push complete ✓"
 
       - name: Push to GHCR
         if: ${{ github.event.inputs.dry_run != 'true' }}
@@ -416,7 +420,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # JOB 4 · singularity-export
-  # Pulls each freshly pushed NGC base image and converts it to .sif for HPC.
+  # Pulls each freshly pushed base image from GHCR and converts it to .sif for HPC.
   # Runs only after a successful build; skipped on dry_run.
   # ---------------------------------------------------------------------------
   singularity-export:
@@ -447,18 +451,18 @@ jobs:
         id: sif
         run: |
           TAG="nightly-${{ needs.setup.outputs.build_date }}-base-sim${{ matrix.sim_major_minor }}"
-          SIF="isaaclab-${TAG}.sif"
+          SIF="${TAG}.sif"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "sif=${SIF}" >> "$GITHUB_OUTPUT"
 
-      - name: Pull NGC image → SIF
+      - name: Pull image → SIF
         env:
-          APPTAINER_DOCKER_USERNAME: ${{ secrets.NGC_USERNAME }}
-          APPTAINER_DOCKER_PASSWORD: ${{ secrets.NGC_API_KEY }}
+          APPTAINER_DOCKER_USERNAME: ${{ github.actor }}
+          APPTAINER_DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           apptainer pull --force \
             "${{ steps.sif.outputs.sif }}" \
-            "docker://nvcr.io/nvidia/isaac-lab:${{ steps.sif.outputs.tag }}"
+            "docker://${{ env.GHCR_IMAGE }}:${{ steps.sif.outputs.tag }}"
           echo "SIF size: $(du -sh '${{ steps.sif.outputs.sif }}')"
 
       - name: Upload SIF to Azure Blob (HPC staging)
@@ -469,7 +473,7 @@ jobs:
             az storage blob upload \
               --account-name "${{ secrets.HPC_STORAGE_ACCOUNT }}" \
               --account-key   "${{ secrets.HPC_STORAGE_KEY }}" \
-              --container-name "isaaclab-hpc" \
+              --container-name "nightly-hpc" \
               --name  "nightly/${{ needs.setup.outputs.build_date }}/${{ steps.sif.outputs.sif }}" \
               --file  "${{ steps.sif.outputs.sif }}" \
               --overwrite
@@ -520,7 +524,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ steps.status.outputs.icon }} IsaacLab nightly — ${{ needs.setup.outputs.build_date }}",
+              "text": "${{ steps.status.outputs.icon }} ${{ github.repository }} nightly — ${{ needs.setup.outputs.build_date }}",
               "attachments": [
                 {
                   "color": "${{ steps.status.outputs.color }}",
@@ -542,11 +546,11 @@ jobs:
                     },
                     {
                       "title": "Run",
-                      "value": "<https://github.com/isaac-sim/IsaacLab/actions/runs/${{ github.run_id }}|#${{ github.run_id }}>",
+                      "value": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_id }}>",
                       "short": true
                     }
                   ],
-                  "footer": "isaac-sim/IsaacLab · nightly pipeline",
+                  "footer": "${{ github.repository }} · nightly pipeline",
                   "ts": "${{ github.run_id }}"
                 }
               ]
