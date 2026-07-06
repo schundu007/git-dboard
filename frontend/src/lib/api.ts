@@ -74,6 +74,9 @@ export const getNightlyTrend = (days = 30) =>
 export const getNightlyDigest = (days = 7) =>
   request<any>(`/nightly/digest?days=${days}`)
 
+export const getNightlyFailures = (days = 14) =>
+  request<any>(`/nightly/failures?days=${days}`)
+
 export const getNightlyJobs = (runId: number) =>
   request<any>(`/nightly/runs/${runId}/jobs`)
 

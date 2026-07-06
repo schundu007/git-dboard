@@ -1,5 +1,7 @@
 import asyncio
 import re
+import statistics
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 
@@ -172,6 +174,49 @@ async def get_nightly_digest(days: int = 7):
         "needs_attention": attention_out,
         "flaky_jobs": flaky[:10],
     }
+
+
+@router.get("/failures")
+async def get_nightly_failures(days: int = 14):
+    """Failures-over-time timeline + slowest jobs (median wall-time)."""
+    m = await _build_matrix(days)
+    matrix, dates, job_names = m["matrix"], m["dates"], m["job_names"]
+
+    timeline = []
+    for d in sorted(dates):
+        total = fails = 0
+        for name in job_names:
+            c = matrix.get(d, {}).get(name)
+            if not c:
+                continue
+            total += 1
+            if c.get("status") == "failure":
+                fails += 1
+        timeline.append({"date": d, "failures": fails, "passed": total - fails, "total": total})
+
+    durs: dict[str, list] = {}
+    for d in dates:
+        for name in job_names:
+            c = matrix.get(d, {}).get(name)
+            if not c:
+                continue
+            st, en = c.get("started_at"), c.get("completed_at")
+            if not st or not en:
+                continue
+            try:
+                secs = (datetime.fromisoformat(en.replace("Z", "+00:00"))
+                        - datetime.fromisoformat(st.replace("Z", "+00:00"))).total_seconds()
+                if secs > 0:
+                    durs.setdefault(name, []).append(secs)
+            except Exception:
+                continue
+
+    slowest = sorted(
+        ({"job": n, "median_sec": round(statistics.median(v)), "runs": len(v)} for n, v in durs.items()),
+        key=lambda x: -x["median_sec"],
+    )[:15]
+
+    return {"days": days, "timeline": timeline, "slowest": slowest}
 
 
 @router.get("/trend")

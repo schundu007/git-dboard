@@ -11,6 +11,7 @@ const ControlPlane    = lazy(() => import('./pages/ControlPlane'))
 const PRHub           = lazy(() => import('./pages/PRHub'))
 const BuildPipeline   = lazy(() => import('./pages/BuildPipeline'))
 const ReleaseNotes    = lazy(() => import('./pages/ReleaseNotes'))
+const Failures        = lazy(() => import('./pages/Failures'))
 const InfraAssignment = lazy(() => import('./pages/InfraAssignment'))
 const RegistryManager = lazy(() => import('./pages/RegistryManager'))
 const ImprovementPlan = lazy(() => import('./pages/ImprovementPlan'))
@@ -123,6 +124,7 @@ export default function App() {
           <Route path="/prs"         element={<PRHub />} />
           <Route path="/builds"      element={<BuildPipeline />} />
           <Route path="/release-notes" element={<ReleaseNotes />} />
+          <Route path="/failures"    element={<Failures />} />
           <Route path="/action-plan" element={<ImprovementPlan />} />
           <Route path="/infra"       element={<InfraAssignment />} />
           <Route path="/registry"    element={<RegistryManager />} />

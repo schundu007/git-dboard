@@ -8,7 +8,7 @@ import {
   Shield, BarChart2, Cpu, Lightbulb, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
   Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
-  Boxes, FileText,
+  Boxes, FileText, Flame,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -53,6 +53,7 @@ const NAV: NavSection[] = [
   {
     label: 'Observability',
     items: [
+      { to: '/failures',   icon: Flame,         label: 'Failures'    },
       { to: '/monitoring', icon: AlertTriangle, label: 'Error Monitor' },
       { to: '/analytics',  icon: BarChart2,     label: 'Analytics'   },
     ],
