@@ -17,6 +17,7 @@ from __future__ import annotations
 import os, json, subprocess, httpx
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
+from services import github_client as gh
 
 router = APIRouter(prefix="/provision", tags=["provision"])
 GITHUB_API = "https://api.github.com"
@@ -24,12 +25,8 @@ GITHUB_API = "https://api.github.com"
 # Break-glass shared secret. Fail CLOSED: if unset, break-glass is unusable.
 ADMIN_TOKEN = os.environ.get("PROVISION_ADMIN_TOKEN")
 
-
-def _gh_headers():
-    tok = os.environ.get("GITHUB_TOKEN")
-    if not tok:
-        raise HTTPException(400, "GITHUB_TOKEN not set")
-    return {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {tok}"}
+# GitHub auth reuses git-dboard's existing client (active-repo PAT or GH_PAT).
+# NOTE: workflow_dispatch requires that PAT to carry the 'workflow' scope.
 
 
 def _require_admin(x_admin_token: str | None = Header(default=None)):
@@ -58,7 +55,7 @@ async def dispatch(req: DispatchRequest):
         "enable_k8s": str(req.enable_k8s).lower(),
     }}
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.post(url, headers=_gh_headers(), json=payload)
+        r = await c.post(url, headers=gh._headers(), json=payload)
     if r.status_code not in (201, 204):
         raise HTTPException(r.status_code, f"dispatch failed: {r.text}")
     # return the runs URL so the UI can poll status
@@ -71,7 +68,7 @@ async def runs(repo: str):
     """Latest provision.yml runs (for the UI status panel)."""
     url = f"{GITHUB_API}/repos/{repo}/actions/workflows/provision.yml/runs?per_page=10"
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.get(url, headers=_gh_headers())
+        r = await c.get(url, headers=gh._headers())
     data = r.json().get("workflow_runs", [])
     return [{"id": w["id"], "status": w["status"], "conclusion": w["conclusion"],
              "event": w["event"], "created": w["created_at"], "url": w["html_url"]}

@@ -28,20 +28,13 @@ class GapRequest(BaseModel):
     prefix: str = "myrock"          # AWS resource prefix to detect live state
 
 
-def _gh_headers():
-    tok = os.environ.get("GITHUB_TOKEN")
-    h = {"Accept": "application/vnd.github+json"}
-    if tok:
-        h["Authorization"] = f"Bearer {tok}"
-    return h
-
-
 async def _repo_files_and_text(repo: str, ref: str | None) -> tuple[list[str], str]:
+    # Reuse git-dboard's existing GitHub auth (active-repo PAT or GH_PAT) — no separate token.
     async with httpx.AsyncClient(timeout=30) as c:
-        meta = (await c.get(f"{GITHUB_API}/repos/{repo}", headers=_gh_headers())).json()
+        meta = (await c.get(f"{GITHUB_API}/repos/{repo}", headers=gh._headers())).json()
         branch = ref or meta.get("default_branch", "main")
         tree = (await c.get(f"{GITHUB_API}/repos/{repo}/git/trees/{branch}?recursive=1",
-                            headers=_gh_headers())).json()
+                            headers=gh._headers())).json()
         files = [n["path"] for n in tree.get("tree", []) if n["type"] == "blob"]
         # fetch text only for CI-relevant files (cap for latency)
         want = [f for f in files if f.endswith(CI_EXT) and
@@ -49,7 +42,7 @@ async def _repo_files_and_text(repo: str, ref: str | None) -> tuple[list[str], s
         texts = []
         for f in want[:120]:
             r = await c.get(f"{GITHUB_API}/repos/{repo}/contents/{f}?ref={branch}",
-                            headers=_gh_headers())
+                            headers=gh._headers())
             if r.status_code == 200 and r.json().get("encoding") == "base64":
                 try:
                     texts.append(base64.b64decode(r.json()["content"]).decode("utf-8", "ignore"))

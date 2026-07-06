@@ -317,26 +317,46 @@ def _arch_of(name: str) -> str:
     return m.group(0) if m else ""
 
 
+# (kind, full name, filename keywords, what it catches) — display order
+_SANITIZERS = [
+    ("ASan", "AddressSanitizer", ["asan"], "Buffer overflows, use-after-free, double-free & memory leaks"),
+    ("TSan", "ThreadSanitizer", ["tsan"], "Data races — concurrent unsynchronized memory access across threads"),
+    ("MSan", "MemorySanitizer", ["msan"], "Reads of uninitialized memory"),
+    ("UBSan", "UndefinedBehaviorSanitizer", ["ubsan"], "Signed integer overflow, null deref, out-of-bounds shifts"),
+    ("HWASan", "Hardware-assisted AddressSanitizer", ["hwasan"], "Low-memory ASan for ARM64"),
+]
+# Most-specific first so 'asan' doesn't steal a 'hwasan' workflow (asan ⊂ hwasan).
+_CLAIM_ORDER = ["HWASan", "UBSan", "MSan", "TSan", "ASan"]
+
+
 @router.get("/sanitizers")
 async def get_sanitizers():
-    """ASAN / TSAN build+test status from sanitizer workflows (latest run each)."""
+    """ASan / TSan / MSan / UBSan / HWASan build+test status (latest run of each)."""
     names = await gh.get_repo_workflow_names()
+    meta = {k: (full, kws, desc) for k, full, kws, desc in _SANITIZERS}
 
-    async def suite(kind: str, *keywords: str):
-        wf = next((n for n in names if any(k in n.lower() for k in keywords)), None)
-        if not wf:
-            return {"kind": kind, "workflow": None, "run": None, "jobs": []}
+    claimed: set[str] = set()
+    assigned: dict[str, str] = {}
+    for kind in _CLAIM_ORDER:
+        _full, kws, _desc = meta[kind]
+        wf = next((n for n in names if n not in claimed and any(k in n.lower() for k in kws)), None)
+        if wf:
+            claimed.add(wf)
+            assigned[kind] = wf
+
+    async def build(kind: str, wf: str):
+        full, _kws, desc = meta[kind]
         try:
             runs = (await gh.get_workflow_runs(wf, per_page=1)).get("workflow_runs", [])
         except Exception:
             runs = []
-        if not runs:
-            return {"kind": kind, "workflow": wf, "run": None, "jobs": []}
-        run = runs[0]
-        try:
-            jobs = (await gh.get_run_jobs(run["id"])).get("jobs", [])
-        except Exception:
-            jobs = []
+        run = runs[0] if runs else None
+        jobs = []
+        if run:
+            try:
+                jobs = (await gh.get_run_jobs(run["id"])).get("jobs", [])
+            except Exception:
+                jobs = []
         jobs_out = [{
             "name": j.get("name"),
             "arch": _arch_of(j.get("name", "")),
@@ -345,19 +365,20 @@ async def get_sanitizers():
         } for j in jobs if j.get("name") not in _SKIP_JOBS]
         return {
             "kind": kind,
+            "full": full,
+            "desc": desc,
             "workflow": wf,
-            "run": {
+            "run": ({
                 "number": run.get("run_number"),
                 "url": run.get("html_url"),
                 "created_at": run.get("created_at"),
                 "status": (run.get("conclusion") or run.get("status")),
-            },
+            } if run else None),
             "jobs": jobs_out,
         }
 
-    asan = await suite("ASAN", "asan")
-    tsan = await suite("TSAN", "tsan")
-    return {"suites": [s for s in (asan, tsan) if s["workflow"]]}
+    suites = [await build(kind, assigned[kind]) for kind, *_ in _SANITIZERS if kind in assigned]
+    return {"suites": suites}
 
 
 @router.get("/trend")

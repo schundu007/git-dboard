@@ -5,7 +5,7 @@ import { getSanitizers } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
 
 type Job = { name: string; arch: string; status: string; url?: string }
-type Suite = { kind: string; workflow: string; run: { number: number; url: string; created_at: string; status: string } | null; jobs: Job[] }
+type Suite = { kind: string; full?: string; desc?: string; workflow: string; run: { number: number; url: string; created_at: string; status: string } | null; jobs: Job[] }
 
 function statusStyle(s: string) {
   const v = (s || '').toLowerCase()
@@ -21,13 +21,19 @@ function SuiteCard({ s }: { s: Suite }) {
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">{s.kind} Build &amp; Test</span>
-        {s.run && (
-          <a href={s.run.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-nvidia font-mono inline-flex items-center gap-0.5">
-            #{s.run.number}<ExternalLink size={8} />
-          </a>
-        )}
-        <span className="ml-auto text-[10px] text-gray-500">{s.run?.created_at?.slice(0, 10) ?? '—'}</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">{s.kind}</span>
+            {s.full && <span className="text-[10px] text-gray-500">{s.full}</span>}
+            {s.run && (
+              <a href={s.run.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-nvidia font-mono inline-flex items-center gap-0.5">
+                #{s.run.number}<ExternalLink size={8} />
+              </a>
+            )}
+          </div>
+          {s.desc && <p className="text-[10px] text-gray-600 mt-0.5 truncate">{s.desc}</p>}
+        </div>
+        <span className="ml-auto text-[10px] text-gray-500 flex-shrink-0">{s.run?.created_at?.slice(0, 10) ?? '—'}</span>
       </div>
       {fails > 0 && (
         <div className="flex items-center gap-1.5 px-4 py-2 bg-accent-red/[0.06] border-b border-accent-red/20">
