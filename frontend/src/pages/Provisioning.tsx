@@ -2,11 +2,45 @@
 // break-glass direct apply (opt-in). Repo target toggles between the live
 // active repo and a custom/fork. Shows provision.yml run status.
 import { useEffect, useState } from 'react'
-import { Rocket, ExternalLink, AlertTriangle, Loader2 } from 'lucide-react'
+import { Rocket, ExternalLink, AlertTriangle, Loader2, Copy, Check } from 'lucide-react'
 import clsx from 'clsx'
 import { useRepoSlug } from '../lib/hooks'
 
 const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
+
+// Copy-paste starter to drop into a repo at .github/workflows/provision.yml.
+// Inputs match /provision/dispatch. \${ is escaped so the YAML keeps ${{ }}.
+const STARTER_YAML = `name: provision
+on:
+  workflow_dispatch:
+    inputs:
+      action: { description: "terraform action", type: choice, options: [plan, apply], default: plan }
+      build_amis: { description: "build AMIs first", type: boolean, default: false }
+      enable_k8s: { description: "enable EKS + cache", type: boolean, default: false }
+permissions: { id-token: write, contents: read }
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: \${{ inputs.action == 'apply' && 'production' || '' }}
+    env:
+      TF_WORKDIR: infra/env/prod        # TODO: your terraform root
+      AWS_REGION: us-east-1             # TODO
+      TF_VAR_enable_k8s: \${{ inputs.enable_k8s }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: \${{ secrets.AWS_PROVISION_ROLE_ARN }}   # TODO
+          aws-region: \${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -backend-config=backend.hcl
+        working-directory: \${{ env.TF_WORKDIR }}
+      - run: terraform plan -out=tfplan
+        working-directory: \${{ env.TF_WORKDIR }}
+      - if: \${{ inputs.action == 'apply' }}
+        run: terraform apply -auto-approve tfplan
+        working-directory: \${{ env.TF_WORKDIR }}
+`
 
 type Run = { id: number; status: string; conclusion: string; event: string; created: string; url: string }
 
@@ -23,7 +57,9 @@ export default function Provisioning() {
   const [adminToken, setAdminToken] = useState('')
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [pf, setPf] = useState<{ ok: boolean; message: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string } | null>(null)
+  const [showStarter, setShowStarter] = useState(false)
+  const [copiedYaml, setCopiedYaml] = useState(false)
 
   async function loadRuns() {
     if (!repo) return
@@ -92,6 +128,26 @@ export default function Provisioning() {
           )}
         </div>
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
+        {pf?.reason === 'workflow_missing' && (
+          <div>
+            <button onClick={() => setShowStarter(v => !v)} className="text-[10px] text-nvidia hover:underline">
+              {showStarter ? 'hide' : 'show'} starter provision.yml
+            </button>
+            {showStarter && (
+              <div className="mt-1.5 border border-border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-surface-2 border-b border-border">
+                  <span className="text-[10px] font-mono text-gray-500">.github/workflows/provision.yml</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(STARTER_YAML).then(() => { setCopiedYaml(true); setTimeout(() => setCopiedYaml(false), 1500) }) }}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white">
+                    {copiedYaml ? <Check size={11} className="text-accent-green" /> : <Copy size={11} />}{copiedYaml ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <pre className="text-[10px] leading-4 text-gray-300 font-mono p-3 overflow-x-auto max-h-64 overflow-y-auto">{STARTER_YAML}</pre>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-4 text-[11px] text-gray-400">
           <label className="flex gap-1.5 items-center cursor-pointer"><input type="checkbox" checked={buildAmis} onChange={e => setBuildAmis(e.target.checked)} /> build AMIs first</label>

@@ -1,0 +1,73 @@
+# Starter provision.yml — drop this into a target repo at
+#   .github/workflows/provision.yml
+# so gitpulse's Provisioning / Infra Gap pages can dispatch it.
+#
+# The inputs (action / build_amis / enable_k8s) match gitpulse's
+# /provision/dispatch payload. Fill in the TODO placeholders for your cloud.
+name: provision
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "terraform action"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      build_amis:
+        description: "build AMIs before provisioning"
+        type: boolean
+        default: false
+      enable_k8s:
+        description: "enable EKS + build cache"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write     # OIDC — keyless cloud auth (no long-lived secrets)
+  contents: read
+
+concurrency:
+  group: provision-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    # 'apply' waits on this environment's required reviewers before running.
+    environment: ${{ inputs.action == 'apply' && 'production' || '' }}
+    env:
+      TF_WORKDIR: infra/env/prod        # TODO: path to your terraform root
+      AWS_REGION: us-east-1             # TODO
+      TF_VAR_enable_k8s: ${{ inputs.enable_k8s }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROVISION_ROLE_ARN }}  # TODO: IAM role trusting this repo's OIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build AMIs
+        if: ${{ inputs.build_amis == true }}
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: |
+          echo "TODO: packer build (skipped by default)"
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform plan
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform plan -out=tfplan
+
+      # Optional: OPA / Trivy / AI plan-risk gates would run here on tfplan.
+
+      - name: Terraform apply
+        if: ${{ inputs.action == 'apply' }}
+        working-directory: ${{ env.TF_WORKDIR }}
+        run: terraform apply -auto-approve tfplan
