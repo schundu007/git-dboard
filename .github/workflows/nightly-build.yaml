@@ -1,28 +1,28 @@
 # =============================================================================
 # .github/workflows/nightly-build.yaml
 #
-# Purpose  : IsaacLab Nightly Build Pipeline
-#            Builds Docker image variants across the full Isaac Sim version ×
+# Purpose  : Nightly Build Pipeline
+#            Builds Docker image variants across the full runtime version ×
 #            image extension matrix on GPU self-hosted runners, runs smoke
-#            tests, pushes to NGC and GHCR, exports Singularity .sif files
+#            tests, pushes to the image registry, exports Singularity .sif files
 #            for HPC clusters, and posts a build summary to Slack.
 #
 # Image tag conventions:
-#   Nightly : nvcr.io/nvidia/isaac-lab:nightly-YYYYMMDD-<ext>-sim<M.m>
-#   SHA pin : nvcr.io/nvidia/isaac-lab:sha-<7char>-<ext>-sim<M.m>
-#   Cache   : ghcr.io/isaac-sim/isaaclab:cache-<ext>-sim<M.m>
+#   Nightly : <registry>/<owner>/<repo>:nightly-YYYYMMDD-<ext>-sim<M.m>
+#   SHA pin : <registry>/<owner>/<repo>:sha-<7char>-<ext>-sim<M.m>
+#   Cache   : ghcr.io/<owner>/<repo>:cache-<ext>-sim<M.m>
 #
 # Runner label requirements (register on self-hosted runners):
 #   self-hosted    — all GPU and Singularity runners
 #   gpu            — GPU-capable runners
-#   nvidia-driver  — NVIDIA driver ≥ 550 + CUDA 12.x
+#   gpu-driver     — GPU driver ≥ 550 + CUDA 12.x  (real GPU runtime requirement)
 #   gpu-a100-80gb  — A100 80 GB class  (base / ros2 / cloudxr)
-#   gpu-a100-40gb  — A100 40 GB class  (ngc-slim)
+#   gpu-a100-40gb  — A100 40 GB class  (slim)
 #   singularity    — Apptainer / Singularity CLI installed
 #
 # Required secrets:
-#   NGC_USERNAME           NGC username (usually "$oauthtoken")
-#   NGC_API_KEY            NGC Personal API key
+#   REGISTRY_USERNAME      Secondary registry username
+#   REGISTRY_API_KEY       Secondary registry API key
 #   HPC_STORAGE_ACCOUNT    Azure Blob storage account name
 #   HPC_STORAGE_KEY        Azure Blob storage access key
 #   SLACK_NIGHTLY_WEBHOOK  Slack incoming webhook URL
@@ -133,7 +133,7 @@ jobs:
     env:
       BUILD_DATE:        ${{ needs.setup.outputs.build_date }}
       SHORT_SHA:         ${{ needs.setup.outputs.short_sha }}
-      ISAAC_SIM_VERSION: ${{ matrix.isaac_sim_version }}
+      RUNTIME_VERSION: ${{ matrix.runtime_version }}
       SIM_MAJOR_MINOR:   ${{ matrix.sim_major_minor }}
       IMAGE_EXT:         ${{ matrix.image_ext }}
       ACCEPT_EULA:       "Y"
@@ -211,7 +211,7 @@ jobs:
           load:    true
           tags:    ${{ steps.tags.outputs.all_tags }}
           build-args: |
-            ISAACSIM_VERSION_ARG=${{ matrix.isaac_sim_version }}
+            ISAACSIM_VERSION_ARG=${{ matrix.runtime_version }}
             IMAGE_EXT=${{ matrix.image_ext }}
             BUILD_DATE=${{ needs.setup.outputs.build_date }}
             GIT_SHA=${{ needs.setup.outputs.short_sha }}
@@ -219,7 +219,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/isaac-sim/IsaacLab
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ needs.setup.outputs.build_date }}
-            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.isaac_sim_version }}
+            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.runtime_version }}
             com.nvidia.isaaclab.image-ext=${{ matrix.image_ext }}
             com.nvidia.isaaclab.build-type=nightly
           cache-from: |
@@ -249,10 +249,10 @@ jobs:
             | head -1 | tr -d '[:space:]')
 
           echo "Reported : $REPORTED"
-          echo "Expected : ${{ matrix.isaac_sim_version }}"
+          echo "Expected : ${{ matrix.runtime_version }}"
 
-          if [[ "$REPORTED" != "${{ matrix.isaac_sim_version }}"* ]]; then
-            echo "::error::Isaac Sim version mismatch — got '$REPORTED', expected '${{ matrix.isaac_sim_version }}'"
+          if [[ "$REPORTED" != "${{ matrix.runtime_version }}"* ]]; then
+            echo "::error::Isaac Sim version mismatch — got '$REPORTED', expected '${{ matrix.runtime_version }}'"
             exit 1
           fi
           echo "Version pin OK ✓"
@@ -314,16 +314,16 @@ jobs:
 
           SIZE_MB=$(python3 -c "print(round(${SIZE_BYTES} / 1048576, 1))")
 
-          SLUG="${{ matrix.image_ext }}-sim${{ matrix.isaac_sim_version }}"
+          SLUG="${{ matrix.image_ext }}-sim${{ matrix.runtime_version }}"
 
           python3 - <<'PYEOF'
           import json, os
           cell = {
-              "isaac_sim_version": os.environ["ISAAC_SIM_VERSION"],
+              "runtime_version": os.environ["RUNTIME_VERSION"],
               "image_ext":         os.environ["IMAGE_EXT"],
               "nightly_tag":       "${{ steps.tags.outputs.nightly_tag }}",
               "sha_tag":           "${{ steps.tags.outputs.sha_tag }}",
-              "ngc_image":         "${{ steps.tags.outputs.ngc_nightly }}",
+              "registry_image":         "${{ steps.tags.outputs.ngc_nightly }}",
               "ghcr_image":        "${{ steps.tags.outputs.ghcr_nightly }}",
               "digest":            os.environ.get("DIGEST", "unavailable"),
               "size_mb":           float(os.environ.get("SIZE_MB", "0")),
@@ -331,7 +331,7 @@ jobs:
               "dry_run":           "${{ github.event.inputs.dry_run }}" == "true",
               "status":            os.environ.get("STATUS", "unknown"),
           }
-          slug = f"{cell['image_ext']}-sim{cell['isaac_sim_version']}"
+          slug = f"{cell['image_ext']}-sim{cell['runtime_version']}"
           fname = f"cell-{slug}.json"
           with open(fname, "w") as f:
               json.dump(cell, f, indent=2)
@@ -346,8 +346,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name:           "cell-${{ matrix.image_ext }}-sim${{ matrix.isaac_sim_version }}"
-          path:           "cell-${{ matrix.image_ext }}-sim${{ matrix.isaac_sim_version }}.json"
+          name:           "cell-${{ matrix.image_ext }}-sim${{ matrix.runtime_version }}"
+          path:           "cell-${{ matrix.image_ext }}-sim${{ matrix.runtime_version }}.json"
           retention-days: 30
 
       # ── Cleanup ───────────────────────────────────────────────────────────────
@@ -431,11 +431,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - isaac_sim_version: "4.5.0"
+          - runtime_version: "4.5.0"
             sim_major_minor:   "4.5"
-          - isaac_sim_version: "5.0.0"
+          - runtime_version: "5.0.0"
             sim_major_minor:   "5.0"
-          - isaac_sim_version: "5.1.0"
+          - runtime_version: "5.1.0"
             sim_major_minor:   "5.1"
     timeout-minutes: 60
 

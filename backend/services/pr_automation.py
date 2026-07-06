@@ -34,7 +34,7 @@ RUNNER_RECOMMENDATIONS: dict[str, dict] = {
     "mixed":  {"runner": "gpu",           "gpu": True,  "reason": "Mixed changes — use GPU runner to be safe"},
 }
 
-GATE_COMMENT_MARKER = "<!-- isaaclab-dashboard-gate-v1 -->"
+GATE_COMMENT_MARKER = "<!-- gitpulse-gate-v1 -->"
 
 # ── In-memory state ───────────────────────────────────────────────────────────
 STATE: dict = {

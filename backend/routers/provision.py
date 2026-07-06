@@ -45,22 +45,45 @@ class DispatchRequest(BaseModel):
     enable_k8s: bool = False
 
 
-@router.post("/dispatch")
-async def dispatch(req: DispatchRequest):
-    """Trigger provision.yml. Apply still gated by the workflow's environment approval."""
-    url = f"{GITHUB_API}/repos/{req.repo}/actions/workflows/provision.yml/dispatches"
-    payload = {"ref": req.ref, "inputs": {
+async def _dispatch_to(c: httpx.AsyncClient, target: str, req: "DispatchRequest", ref: str):
+    url = f"{GITHUB_API}/repos/{target}/actions/workflows/provision.yml/dispatches"
+    payload = {"ref": ref, "inputs": {
         "action": req.action,
         "build_amis": str(req.build_amis).lower(),
         "enable_k8s": str(req.enable_k8s).lower(),
     }}
+    return await c.post(url, headers=gh._headers(), json=payload)
+
+
+@router.post("/dispatch")
+async def dispatch(req: DispatchRequest):
+    """Trigger provision.yml on the live repo; if that repo can't be dispatched
+    (no write / no workflow), fall back to running it on the caller's fork."""
     async with httpx.AsyncClient(timeout=30) as c:
-        r = await c.post(url, headers=gh._headers(), json=payload)
-    if r.status_code not in (201, 204):
+        r = await _dispatch_to(c, req.repo, req, req.ref)
+        if r.status_code in (201, 204):
+            return {"dispatched": True, "repo": req.repo, "action": req.action,
+                    "runs_url": f"https://github.com/{req.repo}/actions/workflows/provision.yml"}
+
+        # Fall back to the caller's fork on permission / missing-workflow errors.
+        if r.status_code in (403, 404):
+            me = await c.get(f"{GITHUB_API}/user", headers=gh._headers())
+            login = me.json().get("login") if me.status_code == 200 else None
+            name = req.repo.split("/")[-1]
+            if login and f"{login}/{name}".lower() != req.repo.lower():
+                fork = f"{login}/{name}"
+                fr = await c.get(f"{GITHUB_API}/repos/{fork}", headers=gh._headers())
+                if fr.status_code == 200:
+                    fork_default = fr.json().get("default_branch", req.ref)
+                    fr2 = await _dispatch_to(c, fork, req, fork_default)
+                    if fr2.status_code in (201, 204):
+                        return {"dispatched": True, "repo": fork, "via_fork": True, "action": req.action,
+                                "runs_url": f"https://github.com/{fork}/actions/workflows/provision.yml"}
+                    raise HTTPException(fr2.status_code,
+                        f"Can't dispatch '{req.repo}' (no access), and fork '{fork}' isn't dispatchable yet — "
+                        f"provision.yml must be on its default branch (merge the scaffold PR first). {fr2.text}")
+
         raise HTTPException(r.status_code, f"dispatch failed: {r.text}")
-    # return the runs URL so the UI can poll status
-    return {"dispatched": True, "action": req.action,
-            "runs_url": f"https://github.com/{req.repo}/actions/workflows/provision.yml"}
 
 
 @router.get("/runs")

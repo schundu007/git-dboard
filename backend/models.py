@@ -31,7 +31,7 @@ class NightlyRun(Base):
     __tablename__ = "nightly_runs"
     id = Column(Integer, primary_key=True)
     run_id = Column(String(100), unique=True)
-    isaac_sim_version = Column(String(50))
+    runtime_version = Column(String(50))
     date = Column(String(20))           # YYYY-MM-DD
     status = Column(String(50))
     test_suite = Column(String(50))     # tasks | general

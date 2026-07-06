@@ -6,7 +6,7 @@ Purpose  : Resolve the nightly build matrix from workflow_dispatch inputs or def
            Writes a GitHub Actions strategy matrix JSON to $GITHUB_OUTPUT.
 
 Inputs (environment variables):
-  INPUT_SIM_VERSIONS   Comma-separated Isaac Sim versions, or "all" (default: all)
+  INPUT_SIM_VERSIONS   Comma-separated runtime versions, or "all" (default: all)
   INPUT_IMAGE_EXTS     Comma-separated image extensions, or "all" (default: all)
   RUNNER_LABELS_JSON   Optional JSON dict to override runner labels per extension
 
@@ -25,21 +25,21 @@ import sys
 # ── Supported combinations ────────────────────────────────────────────────────
 
 ALL_SIM_VERSIONS: list[str] = ["4.5.0", "5.0.0", "5.1.0"]
-ALL_IMAGE_EXTS:   list[str] = ["base", "ros2", "cloudxr", "ngc-slim"]
+ALL_IMAGE_EXTS:   list[str] = ["base", "ros2", "cloudxr", "slim"]
 
 # Cells excluded from the matrix with a ::notice:: annotation in Actions.
 UNSUPPORTED: dict[tuple[str, str], str] = {
-    ("5.0.0", "ngc-slim"): "ngc-slim container not published for Isaac Sim 5.0 yet",
-    ("5.1.0", "ngc-slim"): "ngc-slim container not published for Isaac Sim 5.1 yet",
+    ("5.0.0", "slim"): "slim container not published for runtime 5.0 yet",
+    ("5.1.0", "slim"): "slim container not published for runtime 5.1 yet",
 }
 
 # GPU runner labels per extension — must match labels registered on self-hosted runners.
 # Override with RUNNER_LABELS_JSON env var: '{"base": ["self-hosted", "gpu", "my-label"]}'
 DEFAULT_RUNNER_LABELS: dict[str, list[str]] = {
-    "base":     ["self-hosted", "gpu", "nvidia-driver", "gpu-a100-80gb"],
-    "ros2":     ["self-hosted", "gpu", "nvidia-driver", "gpu-a100-80gb"],
-    "cloudxr":  ["self-hosted", "gpu", "nvidia-driver", "gpu-a100-80gb"],
-    "ngc-slim": ["self-hosted", "gpu", "nvidia-driver", "gpu-a100-40gb"],
+    "base":     ["self-hosted", "gpu", "gpu-driver", "gpu-a100-80gb"],
+    "ros2":     ["self-hosted", "gpu", "gpu-driver", "gpu-a100-80gb"],
+    "cloudxr":  ["self-hosted", "gpu", "gpu-driver", "gpu-a100-80gb"],
+    "slim":     ["self-hosted", "gpu", "gpu-driver", "gpu-a100-40gb"],
 }
 
 
@@ -83,7 +83,7 @@ for sim in sim_versions:
         labels      = runner_labels.get(ext, runner_labels["base"])
 
         includes.append({
-            "isaac_sim_version": sim,
+            "runtime_version": sim,
             "sim_major_minor":   major_minor,
             "image_ext":         ext,
             "runner_labels":     labels,
@@ -113,13 +113,13 @@ if output_file:
 # ── Human-readable summary ────────────────────────────────────────────────────
 
 print(f"\nBuild matrix  ({len(includes)} cells, {len(skipped)} skipped)")
-print(f"  Isaac Sim versions : {sim_versions}")
+print(f"  Runtime versions   : {sim_versions}")
 print(f"  Image extensions   : {image_exts}")
-print(f"\n  {'Extension':<12} {'Isaac Sim':<10} Runner labels")
+print(f"\n  {'Extension':<12} {'Runtime':<10} Runner labels")
 print(f"  {'-'*12} {'-'*10} {'-'*42}")
 for cell in includes:
     labels_str = ", ".join(cell["runner_labels"])
-    print(f"  {cell['image_ext']:<12} {cell['isaac_sim_version']:<10} {labels_str}")
+    print(f"  {cell['image_ext']:<12} {cell['runtime_version']:<10} {labels_str}")
 if skipped:
     print(f"\n  Skipped cells:")
     for s in skipped:

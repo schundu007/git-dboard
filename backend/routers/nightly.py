@@ -38,7 +38,7 @@ async def get_nightly_jobs(run_id: int):
 async def _build_matrix(days: int = 14) -> dict:
     """
     Per-job matrix:
-      rows  = job names  (e.g. "test-isaaclab-tasks-compat (5.0.0)")
+      rows  = job names  (e.g. "test-tasks-compat (5.0.0)")
       cols  = dates      (YYYY-MM-DD, newest first)
       cells = {status, run_id, job_id, url}
     """
@@ -495,33 +495,33 @@ on:
 
 jobs:
   build:
-    name: build (${{ matrix.isaac_sim_version }}, ${{ matrix.image_ext }})
-    runs-on: [self-hosted, gpu, nvidia-driver]
+    name: build (${{ matrix.runtime_version }}, ${{ matrix.image_ext }})
+    runs-on: [self-hosted, gpu, gpu-driver]
     fail-fast: false
     strategy:
       matrix:
-        isaac_sim_version: ["4.5.0", "5.0.0", "5.1.0"]
-        image_ext: [base, ros2, cloudxr, ngc-slim]
+        runtime_version: ["4.5.0", "5.0.0", "5.1.0"]
+        image_ext: [base, ros2, cloudxr, slim]
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build image
         env:
-          ISAAC_SIM_VERSION: ${{ matrix.isaac_sim_version }}
+          RUNTIME_VERSION: ${{ matrix.runtime_version }}
           IMAGE_EXT: ${{ matrix.image_ext }}
         run: |
           python docker/container.py \\
-            --version $ISAAC_SIM_VERSION \\
+            --version $RUNTIME_VERSION \\
             --ext $IMAGE_EXT \\
-            --tag nightly-$(date +%Y%m%d)-${IMAGE_EXT}-sim${ISAAC_SIM_VERSION%.*}
+            --tag nightly-$(date +%Y%m%d)-${IMAGE_EXT}-rt${RUNTIME_VERSION%.*}
 
       - name: Export build manifest
         run: python docker/container.py manifest > manifest.json
 
       - uses: actions/upload-artifact@v4
         with:
-          name: manifest-${{ matrix.isaac_sim_version }}-${{ matrix.image_ext }}
+          name: manifest-${{ matrix.runtime_version }}-${{ matrix.image_ext }}
           path: manifest.json
 
       - name: Dispatch registry push
@@ -530,7 +530,7 @@ jobs:
           event-type: nightly-push
           client-payload: >-
             {
-              "isaac_sim_version": "${{ matrix.isaac_sim_version }}",
+              "runtime_version": "${{ matrix.runtime_version }}",
               "image_ext": "${{ matrix.image_ext }}"
             }
 """

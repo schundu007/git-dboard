@@ -1538,11 +1538,6 @@ export default function ControlPlane() {
   const openPRs = summary?.prs?.open ?? 0
   const prsTodayCount = summary?.prs?.prs_today ?? 0
 
-  // NGC (nvcr.io/nvidia/…) is NVIDIA's private registry — only meaningful for IsaacLab.
-  // The backend fabricates an nvcr.io path + "unknown" status for every repo, so gate on
-  // the repo identity, not on push-status.
-  const isIsaacLab = slug.toLowerCase().includes('isaaclab')
-
   const runners: any[] = runnersData?.runners ?? []
   const rOnline = runners.filter((r) => r.status === 'online')
   const rBusy = rOnline.filter((r) => r.busy)
@@ -1819,7 +1814,7 @@ export default function ControlPlane() {
           </div>
         </div>
 
-        {/* Build Status — Extension × Isaac Sim Version */}
+        {/* Build Status — Extension × Version */}
         <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head">
             <h2 className="text-base font-bold text-white">
@@ -1925,24 +1920,6 @@ export default function ControlPlane() {
 
       {/* ── Infrastructure strip ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* NGC Registry — NVIDIA-specific (nvcr.io/nvidia/…); only for IsaacLab repos */}
-        {isIsaacLab && (
-        <div className="bg-surface-1 border border-border rounded-xl p-3 flex items-center gap-3 card-appear transition-colors hover:border-border-strong">
-          <div className="w-8 h-8 rounded-lg bg-accent-green/10 border border-accent-green/20 flex items-center justify-center flex-shrink-0">
-            <Boxes size={14} className="text-accent-green" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold text-white">NVIDIA NGC</p>
-            <p className="text-[10px] text-gray-400 font-mono truncate">
-              {`nvcr.io/nvidia/${(activeRepo?.active?.repo ?? '').toLowerCase().replace(/_/g, '-')}`}
-            </p>
-          </div>
-          {pushStatus?.ngc?.status === 'success' && <span className="flex items-center gap-1 text-[9px] text-accent-green bg-accent-green/10 border border-accent-green/30 px-2 py-0.5 rounded font-semibold flex-shrink-0"><CheckCircle size={9} /> passed</span>}
-          {pushStatus?.ngc?.status === 'failure' && <span className="flex items-center gap-1 text-[9px] text-accent-red bg-accent-red/10 border border-accent-red/30 px-2 py-0.5 rounded font-semibold flex-shrink-0"><XCircle size={9} /> failed</span>}
-          {(!pushStatus?.ngc?.status || pushStatus?.ngc?.status === 'unavailable') && <span className="text-[9px] text-gray-500 bg-surface-3 border border-border px-2 py-0.5 rounded flex-shrink-0">—</span>}
-        </div>
-        )}
-
         {/* GHCR */}
         <div className="bg-surface-1 border border-border rounded-xl p-3 flex items-center gap-3 card-appear card-appear-1 transition-colors hover:border-border-strong">
           <div className="w-8 h-8 rounded-lg bg-accent-blue/10 border border-accent-blue/20 flex items-center justify-center flex-shrink-0">

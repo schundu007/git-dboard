@@ -57,18 +57,16 @@ export default function InfraGap() {
 
   async function provision(action: string) {
     setBusy(action); setMsg(null)
-    // preflight: verify repo + provision.yml before dispatching (avoids raw 404)
-    try {
-      const pr = await (await fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)).json()
-      setPf(pr)
-      if (!pr.ok) { setBusy(''); setMsg({ ok: false, text: pr.message }); return }
-    } catch { /* fall through */ }
+    // Backend tries the live repo then falls back to your fork; returns a clear
+    // message if neither is dispatchable — so no hard block here.
     const r = await fetch(`${API}/provision/dispatch`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo, action }),
     })
+    const j = await r.json().catch(() => ({}))
     setBusy('')
-    setMsg({ ok: r.ok, text: r.ok ? `Dispatched provision.yml (${action}) → ${repo}. Check Actions.` : `Failed: ${await r.text()}` })
+    if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
+    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}${j.via_fork ? ' · via your fork' : ''}. Check Actions.` })
   }
 
   return (

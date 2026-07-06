@@ -22,18 +22,6 @@ router = APIRouter(prefix="/repos", tags=["repos"])
 def _auto_detect_business_unit(owner: str, repo: str) -> Optional[str]:
     """Infer a business unit slug from the repo name using common prefix patterns."""
     repo_lower = repo.lower()
-    known = [
-        ("isaac_ros_", "isaac_ros"),
-        ("isaacros",   "isaac_ros"),
-        ("isaaclab",   "isaaclab"),
-        ("isaac_lab",  "isaaclab"),
-        ("isaac_sim",  "isaac_sim"),
-        ("isaacsim",   "isaac_sim"),
-        ("orbit_",     "orbit"),
-    ]
-    for prefix, unit in known:
-        if repo_lower.startswith(prefix):
-            return unit
     # Generic: first word before _ or - if ≥4 chars
     m = re.match(r'^([a-z][a-z0-9]{3,})[-_]', repo_lower)
     if m:

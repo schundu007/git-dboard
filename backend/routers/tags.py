@@ -4,40 +4,46 @@ Tag naming, build matrix, and lifecycle policy.
 from datetime import date as date_cls
 from fastapi import APIRouter, Query
 from typing import Optional
+from config import settings
 from services.github_client import get_active_repo_parts
 
 router = APIRouter(prefix="/tags", tags=["tags"])
 
 ALL_SIM_VERSIONS = ["4.5.0", "5.0.0", "5.1.0"]
-ALL_IMAGE_EXTS   = ["base", "ros2", "cloudxr", "ngc-slim"]
+ALL_IMAGE_EXTS   = ["base", "ros2", "cloudxr", "slim"]
 
 UNSUPPORTED: set[tuple[str, str]] = {
-    ("5.0.0", "ngc-slim"),
-    ("5.1.0", "ngc-slim"),
+    ("5.0.0", "slim"),
+    ("5.1.0", "slim"),
 }
 
 
 def _registry_images() -> tuple[str, str]:
-    """Return (ngc_image, ghcr_image) for the currently active repo."""
+    """Return (ngc_image, ghcr_image) for the currently active repo.
+
+    The NGC image is only produced when an NGC org is configured; otherwise it
+    is an empty string so no registry is hardcoded to a specific vendor.
+    """
     owner, repo = get_active_repo_parts()
-    ngc_name = repo.lower().replace("_", "-")
-    return f"nvcr.io/nvidia/{ngc_name}", f"ghcr.io/{owner.lower()}/{repo.lower()}"
+    image_name = repo.lower().replace("_", "-")
+    ngc_image = f"nvcr.io/{settings.NGC_ORG}/{image_name}" if settings.NGC_ORG else ""
+    return ngc_image, f"ghcr.io/{owner.lower()}/{repo.lower()}"
 
 DOCKERFILE_MAP = {
     "base":     "docker/Dockerfile",
     "ros2":     "docker/Dockerfile.ros2",
     "cloudxr":  "docker/Dockerfile",
-    "ngc-slim": "docker/Dockerfile.slim",
+    "slim":     "docker/Dockerfile.slim",
 }
 
 COMPOSE_MAP = {
     "ros2":     "docker/docker-compose.ros2.yaml",
     "cloudxr":  "docker/docker-compose.cloudxr.yaml",
     "base":     "",
-    "ngc-slim": "",
+    "slim":     "",
 }
 
-UNSUPPORTED_REASON = "ngc-slim pre-built container not yet published by NVIDIA for this Isaac Sim version"
+UNSUPPORTED_REASON = "slim pre-built container not yet published for this runtime version"
 
 
 def _mm(version: str) -> str:
@@ -50,7 +56,7 @@ def compute_tags(
     build_date: Optional[str] = Query(None,    description="YYYYMMDD — nightly mode"),
     release_version: Optional[str] = Query(None, description="e.g. 2.3.2 — release mode"),
     short_sha: str          = Query("abc1234", description="7-char git SHA"),
-    image_ext: str          = Query("base",    description="base | ros2 | cloudxr | ngc-slim"),
+    image_ext: str          = Query("base",    description="base | ros2 | cloudxr | slim"),
     sim_version: str        = Query("4.5.0",   description="e.g. 4.5.0"),
 ):
     NGC_IMAGE, GHCR_IMAGE = _registry_images()

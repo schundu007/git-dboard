@@ -12,18 +12,9 @@ from models import RepoConfig
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
-_KNOWN_NAMES: dict[str, str] = {
-    "isaac_ros": "Isaac ROS",
-    "isaaclab":  "IsaacLab",
-    "isaac_lab": "IsaacLab",
-    "isaac_sim": "Isaac Sim",
-    "isaacsim":  "Isaac Sim",
-    "orbit":     "Orbit",
-}
-
-
 def _display_name(slug: str) -> str:
-    return _KNOWN_NAMES.get(slug, " ".join(p.capitalize() for p in slug.split("_")))
+    """Derive a human-readable group name from a slug (title-cased words)."""
+    return " ".join(p.capitalize() for p in slug.replace("-", "_").split("_") if p)
 
 
 def _repo_brief(r: RepoConfig) -> dict:

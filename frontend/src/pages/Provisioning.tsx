@@ -95,18 +95,16 @@ export default function Provisioning() {
 
   async function dispatch(action: string) {
     setBusy(action); setMsg(null)
-    // preflight: verify repo + provision.yml before dispatching (avoids raw 404)
-    try {
-      const pr = await (await fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)).json()
-      setPf(pr)
-      if (!pr.ok) { setBusy(''); setMsg({ ok: false, text: pr.message }); return }
-    } catch { /* fall through to dispatch */ }
+    // Backend tries the live repo, then falls back to your fork; it returns a
+    // clear message if neither is dispatchable — so we don't hard-block here.
     const r = await fetch(`${API}/provision/dispatch`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo, action, build_amis: buildAmis, enable_k8s: enableK8s }),
     })
+    const j = await r.json().catch(() => ({}))
     setBusy('')
-    setMsg({ ok: r.ok, text: r.ok ? `Dispatched provision.yml (${action}) → ${repo}` : `Failed: ${await r.text()}` })
+    if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
+    setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}${j.via_fork ? ' · via your fork (no write on live repo)' : ''}` })
     loadRuns()
   }
 

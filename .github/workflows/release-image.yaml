@@ -131,7 +131,7 @@ jobs:
     env:
       RELEASE_VERSION:   ${{ needs.setup.outputs.release_version }}
       SHORT_SHA:         ${{ needs.setup.outputs.short_sha }}
-      ISAAC_SIM_VERSION: ${{ matrix.isaac_sim_version }}
+      ISAAC_SIM_VERSION: ${{ matrix.runtime_version }}
       SIM_MAJOR_MINOR:   ${{ matrix.sim_major_minor }}
       IMAGE_EXT:         ${{ matrix.image_ext }}
       NGC_IMAGE:         ${{ env.NGC_IMAGE }}
@@ -255,14 +255,14 @@ jobs:
           load:    true
           tags:    ${{ steps.tags.outputs.all_tags }}
           build-args: |
-            ISAACSIM_VERSION_ARG=${{ matrix.isaac_sim_version }}
+            ISAACSIM_VERSION_ARG=${{ matrix.runtime_version }}
             IMAGE_EXT=${{ matrix.image_ext }}
             GIT_SHA=${{ needs.setup.outputs.short_sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/isaac-sim/IsaacLab
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ needs.setup.outputs.release_version }}
-            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.isaac_sim_version }}
+            com.nvidia.isaaclab.isaac-sim-version=${{ matrix.runtime_version }}
             com.nvidia.isaaclab.image-ext=${{ matrix.image_ext }}
             com.nvidia.isaaclab.build-type=release
           cache-from: |
@@ -292,9 +292,9 @@ jobs:
             | head -1 | tr -d '[:space:]')
 
           echo "Reported : $REPORTED"
-          echo "Expected : ${{ matrix.isaac_sim_version }}"
+          echo "Expected : ${{ matrix.runtime_version }}"
 
-          if [[ "$REPORTED" != "${{ matrix.isaac_sim_version }}"* ]]; then
+          if [[ "$REPORTED" != "${{ matrix.runtime_version }}"* ]]; then
             echo "::error::Isaac Sim version mismatch — got '$REPORTED'"
             exit 1
           fi

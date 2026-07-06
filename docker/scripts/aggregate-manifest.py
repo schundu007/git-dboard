@@ -16,11 +16,11 @@ Inputs (environment variables):
   GITHUB_STEP_SUMMARY  Set automatically by GitHub Actions
 
 Cell JSON schema (each *.json file in CELLS_DIR/):
-  isaac_sim_version    str
+  runtime_version      str
   image_ext            str
   nightly_tag          str
   sha_tag              str
-  ngc_image            str   full image:tag
+  registry_image       str   full image:tag
   ghcr_image           str   full image:tag
   digest               str   sha256:... or "unavailable"
   size_mb              float
@@ -46,11 +46,11 @@ SHORT_SHA     = os.environ.get("SHORT_SHA",     "unknown")
 RUN_ID        = os.environ.get("GITHUB_RUN_ID", "0")
 CELLS_DIR     = os.environ.get("CELLS_DIR",     "cells")
 MANIFEST_PATH = os.environ.get("MANIFEST_PATH", f"nightly-manifest-{BUILD_DATE}.json")
-REPO          = "isaac-sim/IsaacLab"
+REPO          = os.environ.get("REPO", "")
 
 # Display order for the summary table
 VERSIONS:    list[str] = ["4.5.0", "5.0.0", "5.1.0"]
-EXTS:        list[str] = ["base", "ros2", "cloudxr", "ngc-slim"]
+EXTS:        list[str] = ["base", "ros2", "cloudxr", "slim"]
 SIM_LABELS:  dict[str, str] = {
     "4.5.0": "Sim 4.5",
     "5.0.0": "Sim 5.0",
@@ -99,7 +99,7 @@ manifest = {
     "cancelled": cancelled,
     "cells": sorted(
         cells,
-        key=lambda c: (c.get("isaac_sim_version", ""), c.get("image_ext", "")),
+        key=lambda c: (c.get("runtime_version", ""), c.get("image_ext", "")),
     ),
 }
 
@@ -124,7 +124,7 @@ if gho:
 # ── Build cell lookup for the summary table ───────────────────────────────────
 
 lookup: dict[tuple[str, str], dict] = {
-    (c["isaac_sim_version"], c["image_ext"]): c
+    (c["runtime_version"], c["image_ext"]): c
     for c in cells
 }
 
@@ -147,7 +147,7 @@ def cell_badge(cell: dict | None) -> str:
 # ── Write GITHUB_STEP_SUMMARY ─────────────────────────────────────────────────
 
 summary_lines: list[str] = [
-    f"## IsaacLab Nightly · {BUILD_DATE}",
+    f"## Nightly · {BUILD_DATE}",
     "",
     f"| Extension | {' | '.join(SIM_LABELS[v] for v in VERSIONS)} |",
     f"|:----------|{'|'.join(':-------:' for _ in VERSIONS)}|",
@@ -176,7 +176,7 @@ if passed_cells:
     ]
     for c in sorted(
         passed_cells,
-        key=lambda x: (x.get("isaac_sim_version", ""), x.get("image_ext", "")),
+        key=lambda x: (x.get("runtime_version", ""), x.get("image_ext", "")),
     ):
         tag     = c.get("nightly_tag", "—")
         size    = c.get("size_mb",     "—")

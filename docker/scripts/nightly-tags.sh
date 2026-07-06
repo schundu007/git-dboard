@@ -7,11 +7,12 @@
 # Inputs   : Environment variables (all mandatory):
 #              BUILD_DATE          YYYYMMDD
 #              SHORT_SHA           7-char git SHA
-#              ISAAC_SIM_VERSION   e.g. 4.5.0
+#              RUNTIME_VERSION     e.g. 4.5.0
 #              SIM_MAJOR_MINOR     e.g. 4.5
-#              IMAGE_EXT           base | ros2 | cloudxr | ngc-slim
-#              NGC_IMAGE           e.g. nvcr.io/nvidia/isaac-lab
-#              GHCR_IMAGE          e.g. ghcr.io/isaac-sim/isaaclab
+#              IMAGE_EXT           base | ros2 | cloudxr | slim
+#              GHCR_IMAGE          e.g. ghcr.io/${OWNER}/${REPO}
+#              NGC_IMAGE           optional secondary registry (empty by default)
+#              OWNER, REPO         used to derive the default GHCR_IMAGE
 # Outputs  : Appended to $GITHUB_OUTPUT (or /dev/null locally)
 #              nightly_tag, sha_tag, cache_tag,
 #              ngc_nightly, ngc_sha,
@@ -24,11 +25,15 @@ set -euo pipefail
 # ── Validate required inputs ──────────────────────────────────────────────────
 : "${BUILD_DATE:?BUILD_DATE is required (YYYYMMDD)}"
 : "${SHORT_SHA:?SHORT_SHA is required (7-char git SHA)}"
-: "${ISAAC_SIM_VERSION:?ISAAC_SIM_VERSION is required (e.g. 4.5.0)}"
+: "${RUNTIME_VERSION:?RUNTIME_VERSION is required (e.g. 4.5.0)}"
 : "${SIM_MAJOR_MINOR:?SIM_MAJOR_MINOR is required (e.g. 4.5)}"
-: "${IMAGE_EXT:?IMAGE_EXT is required (base|ros2|cloudxr|ngc-slim)}"
-: "${NGC_IMAGE:=nvcr.io/nvidia/isaac-lab}"
-: "${GHCR_IMAGE:=ghcr.io/isaac-sim/isaaclab}"
+: "${IMAGE_EXT:?IMAGE_EXT is required (base|ros2|cloudxr|slim)}"
+# Image registries are env-driven with neutral defaults derived from OWNER/REPO.
+: "${OWNER:=}"
+: "${REPO:=}"
+: "${GHCR_IMAGE:=ghcr.io/${OWNER}/${REPO}}"
+# NGC_IMAGE is an optional secondary registry; empty unless the caller sets it.
+: "${NGC_IMAGE:=}"
 
 # ── Tag names (no registry prefix) ───────────────────────────────────────────
 NIGHTLY_TAG="nightly-${BUILD_DATE}-${IMAGE_EXT}-sim${SIM_MAJOR_MINOR}"
@@ -43,7 +48,7 @@ GHCR_SHA="${GHCR_IMAGE}:${SHA_TAG}"
 GHCR_CACHE="${GHCR_IMAGE}:${CACHE_TAG}"
 
 # ── Dockerfile and compose overlay selection ──────────────────────────────────
-# The isaac-sim/IsaacLab repo uses docker/Dockerfile.base (not docker/Dockerfile).
+# The repo uses docker/Dockerfile.base (not docker/Dockerfile).
 # ros2 ships docker/Dockerfile.ros2; other extensions use the base Dockerfile.
 case "${IMAGE_EXT}" in
   base)
@@ -65,8 +70,8 @@ case "${IMAGE_EXT}" in
     DOCKERFILE="docker/Dockerfile.base"
     COMPOSE_OVERLAY="docker/docker-compose.cloudxr-runtime.patch.yaml"
     ;;
-  ngc-slim)
-    # Minimal NGC pre-built container — uses a slim Dockerfile if present.
+  slim)
+    # Minimal pre-built container — uses a slim Dockerfile if present.
     if [[ -f "docker/Dockerfile.slim" ]]; then
       DOCKERFILE="docker/Dockerfile.slim"
     else

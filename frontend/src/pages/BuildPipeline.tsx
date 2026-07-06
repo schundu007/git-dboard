@@ -882,7 +882,7 @@ function DeploymentsPanel() {
   const knownEnvNames: string[] = (envsData?.environments ?? []).map((e: any) => e.name)
   const deploymentEnvs: string[] = data?.environments ?? []
   // Only environments the active repo actually has (from the API / real deployments).
-  // The old hardcoded PINNED_ENVS were IsaacLab-specific and showed as phantom envs
+  // The old hardcoded PINNED_ENVS were repo-specific and showed as phantom envs
   // on every other repo, so they are no longer prepended.
   const envNames: string[] = Array.from(new Set([
     ...knownEnvNames,

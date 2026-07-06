@@ -13,9 +13,15 @@ _PUSH_WORKFLOW = "publish-images.yaml"
 
 
 def _registry_images() -> tuple[str, str]:
+    """Return (ngc_image, ghcr_image) for the currently active repo.
+
+    The NGC image is only produced when an NGC org is configured; otherwise it
+    is an empty string so no registry is hardcoded to a specific vendor.
+    """
     owner, repo = get_active_repo_parts()
-    ngc_name = repo.lower().replace("_", "-")
-    return f"nvcr.io/nvidia/{ngc_name}", f"ghcr.io/{owner.lower()}/{repo.lower()}"
+    image_name = repo.lower().replace("_", "-")
+    ngc_image = f"nvcr.io/{settings.NGC_ORG}/{image_name}" if settings.NGC_ORG else ""
+    return ngc_image, f"ghcr.io/{owner.lower()}/{repo.lower()}"
 
 
 @router.get("/push-status")
