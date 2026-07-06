@@ -154,7 +154,7 @@ function ComputingNotice() {
   return (
     <div className="text-center py-12 space-y-2">
       <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-        <span className="inline-block w-2 h-2 rounded-full bg-nvidia animate-pulse" />
+        <span className="inline-block w-2 h-2 rounded-full bg-brand animate-pulse" />
         GitHub is computing stats — auto-retrying…
       </div>
       <p className="text-[11px] text-gray-400">This can take up to 60 seconds for large repos</p>
@@ -191,7 +191,7 @@ function ContributorsTab() {
           <p className="text-xs text-gray-400">{data?.total ?? 0} contributors</p>
           {!data?.has_weekly && (
             <span className="flex items-center gap-1 text-[10px] text-neutral-400">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
               weekly data computing…
             </span>
           )}
@@ -231,7 +231,7 @@ function ContributorsTab() {
                     </div>
                   </div>
                   <div className="h-1 bg-surface-3 rounded-full overflow-hidden mt-1">
-                    <div className="h-full bg-nvidia rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
 
@@ -483,7 +483,7 @@ function BuildTrendsTab() {
         </div>
         {summary && (
           <div className="flex items-center gap-4 mb-3 text-xs">
-            <span className="text-nvidia font-semibold">{summary.success_rate ?? '—'}% success</span>
+            <span className="text-brand font-semibold">{summary.success_rate ?? '—'}% success</span>
             <span className="text-gray-500">{summary.total_runs} runs</span>
             <span className="text-accent-red">{summary.failed} failed</span>
           </div>
@@ -581,7 +581,7 @@ function PRVelocityTab() {
                 <div key={a.login} className="flex items-center gap-2 text-[11px]">
                   <img src={a.avatar_url} className="w-4 h-4 rounded-full flex-shrink-0" alt="" />
                   <span className="text-gray-300 truncate flex-1">{a.login}</span>
-                  <span className="text-nvidia font-semibold tabular-nums">{a.merged}</span>
+                  <span className="text-brand font-semibold tabular-nums">{a.merged}</span>
                   <span className="text-gray-400">merged</span>
                 </div>
               ))}
@@ -663,7 +663,7 @@ function FailureAnalysisTab() {
                 <div key={j.name} className="flex items-center justify-between text-[10px]">
                   <span className="text-gray-400 truncate max-w-[220px]">{j.name}</span>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={clsx('font-semibold', j.failure_rate >= 50 ? 'text-accent-red' : j.failure_rate >= 20 ? 'text-neutral-300' : j.failure_rate > 0 ? 'text-neutral-400' : 'text-nvidia')}>
+                    <span className={clsx('font-semibold', j.failure_rate >= 50 ? 'text-accent-red' : j.failure_rate >= 20 ? 'text-neutral-300' : j.failure_rate > 0 ? 'text-neutral-400' : 'text-brand')}>
                       {j.failure_rate}%
                     </span>
                     <span className="text-gray-400">{j.failed}/{j.total}</span>

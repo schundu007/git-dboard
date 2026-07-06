@@ -93,7 +93,7 @@ export default function RepoWelcome() {
   if (switching) {
     return (
       <div className="fixed inset-0 z-[200] bg-black/80 flex flex-col items-center justify-center gap-4">
-        <Loader2 size={28} className="text-nvidia animate-spin" />
+        <Loader2 size={28} className="text-brand animate-spin" />
         <p className="text-[14px] font-semibold text-white">Setting up {switching}…</p>
         <p className="text-[11px] text-gray-400">Loading dashboard…</p>
       </div>
@@ -105,8 +105,8 @@ export default function RepoWelcome() {
       <div className="w-full max-w-[480px] space-y-6">
         {/* Logo + title */}
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-nvidia/15 flex items-center justify-center">
-            <Cpu size={22} className="text-nvidia" />
+          <div className="w-12 h-12 rounded-2xl bg-brand/15 flex items-center justify-center">
+            <Cpu size={22} className="text-brand" />
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-white tracking-tight">DevOps Dashboard</h1>
@@ -125,16 +125,16 @@ export default function RepoWelcome() {
                   <button
                     key={r.id}
                     onClick={() => switchTo(r.id, slug)}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-1 border border-border hover:border-nvidia/40 hover:bg-nvidia/[.04] transition-all group"
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-1 border border-border hover:border-brand/40 hover:bg-brand/[.04] transition-all group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-[13px] font-bold text-gray-400 flex-shrink-0 group-hover:bg-nvidia/15 group-hover:text-nvidia transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-[13px] font-bold text-gray-400 flex-shrink-0 group-hover:bg-brand/15 group-hover:text-brand transition-colors">
                       {slug.split('/')[1]?.[0]?.toUpperCase() ?? '?'}
                     </div>
                     <div className="min-w-0 text-left flex-1">
                       <p className="text-[13px] font-semibold text-white truncate">{slug.split('/')[1]}</p>
                       <p className="text-[11px] text-gray-400 font-mono truncate">{slug.split('/')[0]}</p>
                     </div>
-                    <ArrowRight size={14} className="text-gray-400 group-hover:text-nvidia transition-colors flex-shrink-0" />
+                    <ArrowRight size={14} className="text-gray-400 group-hover:text-brand transition-colors flex-shrink-0" />
                   </button>
                 )
               })}
@@ -145,7 +145,7 @@ export default function RepoWelcome() {
         {/* Add new repo form */}
         <div className="bg-surface-1 border border-border rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border card-head flex items-center gap-2">
-            <Plus size={13} className="text-nvidia" />
+            <Plus size={13} className="text-brand" />
             <span className="text-[13px] font-semibold text-white">Add a repository</span>
           </div>
           <div className="p-4 space-y-3">
@@ -163,12 +163,12 @@ export default function RepoWelcome() {
                 autoFocus
                 className={cn(
                   'w-full bg-surface-2 border rounded-xl px-3 py-2.5 text-[12px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
-                  urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-nvidia/60',
+                  urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-brand/60',
                 )}
               />
               {urlError && <p className="text-[10px] text-accent-red mt-1">{urlError}</p>}
               {!urlError && form.owner && form.repo && (
-                <p className="text-[10px] text-nvidia mt-1 flex items-center gap-1">
+                <p className="text-[10px] text-brand mt-1 flex items-center gap-1">
                   <CheckCircle2 size={9} />
                   <span className="font-mono">{form.owner}/{form.repo}</span>
                 </p>
@@ -186,7 +186,7 @@ export default function RepoWelcome() {
                   placeholder="owner"
                   pattern="[A-Za-z0-9_.-]+"
                   aria-describedby="rw-owner-hint"
-                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/60 transition-colors font-mono"
                 />
                 <span id="rw-owner-hint" className="sr-only">GitHub owner or organization name</span>
               </div>
@@ -199,7 +199,7 @@ export default function RepoWelcome() {
                   placeholder="repo"
                   pattern="[A-Za-z0-9_.-]+"
                   aria-describedby="rw-repo-hint"
-                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/60 transition-colors font-mono"
                 />
                 <span id="rw-repo-hint" className="sr-only">GitHub repository name</span>
               </div>
@@ -220,7 +220,7 @@ export default function RepoWelcome() {
                   onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                   placeholder="ghp_xxxxxxxxxxxx"
                   type="password"
-                  className="mt-2 w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/60 transition-colors font-mono"
+                  className="mt-2 w-full bg-surface-2 border border-border rounded-xl px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/60 transition-colors font-mono"
                 />
               )}
             </div>
@@ -230,7 +230,7 @@ export default function RepoWelcome() {
               <div className={cn(
                 'flex items-start gap-2 p-3 rounded-xl text-[11px]',
                 testResult.ok
-                  ? 'bg-nvidia/[.06] border border-nvidia/20 text-nvidia'
+                  ? 'bg-brand/[.06] border border-brand/20 text-brand'
                   : 'bg-accent-red/[.08] border border-accent-red/20 text-accent-red',
               )}>
                 {testResult.ok
@@ -254,7 +254,7 @@ export default function RepoWelcome() {
               <button
                 onClick={() => addMut.mutate()}
                 disabled={!canAdd || addMut.isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold bg-nvidia text-[#0f1a00] hover:bg-nvidia/90 disabled:opacity-40 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold bg-brand text-[#0f1a00] hover:bg-brand/90 disabled:opacity-40 transition-colors"
               >
                 {addMut.isPending ? <Loader2 size={11} className="animate-spin" /> : <ArrowRight size={13} />}
                 Add &amp; open dashboard

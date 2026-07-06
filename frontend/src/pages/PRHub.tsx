@@ -27,7 +27,7 @@ import { TabBar } from '../components/ui/TabBar'
 const CLASS_STYLE: Record<string, string> = {
   docs:   'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
   tests:  'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
-  source: 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+  source: 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25',
   ci:     'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
   mixed:  'bg-surface-3 text-gray-400',
 }
@@ -71,7 +71,7 @@ function GateOverviewBar({ days }: { days?: number }) {
       <ShieldCheck size={12} className="text-gray-500 flex-shrink-0" />
       <span className="text-gray-500">Gate overview</span>
       <div className="flex items-center gap-3 ml-1">
-        {success > 0 && <span className="flex items-center gap-1 text-nvidia"><CheckCircle2 size={9} />{success} passing</span>}
+        {success > 0 && <span className="flex items-center gap-1 text-brand"><CheckCircle2 size={9} />{success} passing</span>}
         {failure > 0 && <span className="flex items-center gap-1 text-accent-red"><XCircle size={9} />{failure} failing</span>}
         {pending > 0 && <span className="flex items-center gap-1 text-neutral-400"><Clock size={9} />{pending} pending</span>}
         {skipped > 0 && <span className="flex items-center gap-1 text-gray-400">{skipped} skipped</span>}
@@ -193,7 +193,7 @@ function StatsBar({ stats }: { stats: any }) {
   if (!stats) return null
   const items = [
     { label: 'Open', value: stats.open, color: 'text-white' },
-    { label: 'Ready', value: stats.ready, color: 'text-nvidia' },
+    { label: 'Ready', value: stats.ready, color: 'text-brand' },
     { label: 'Draft', value: stats.draft, color: 'text-gray-400' },
     { label: 'Review Req.', value: stats.review_requested, color: 'text-neutral-300' },
     { label: 'Conflicts', value: stats.has_conflicts, color: 'text-accent-red' },
@@ -690,7 +690,7 @@ function AutomationTab() {
         <button
           onClick={() => runNow()}
           disabled={running || status?.running}
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-nvidia/10 border border-nvidia/20 text-[12px] text-nvidia font-semibold hover:bg-nvidia/20 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-brand/10 border border-brand/20 text-[12px] text-brand font-semibold hover:bg-brand/20 transition-colors disabled:opacity-50"
         >
           <Play size={12} />
           {status?.running ? 'Running…' : running ? 'Starting…' : 'Run Now'}
@@ -711,7 +711,7 @@ function AutomationTab() {
                   <span className={clsx(
                     'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase',
                     r.classification === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
-                    r.classification === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                    r.classification === 'source' && 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25',
                     r.classification === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                     r.classification === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                     r.classification === 'mixed' && 'bg-surface-3 text-gray-400',
@@ -719,7 +719,7 @@ function AutomationTab() {
                   <p className="flex-1 text-[11px] text-gray-300 truncate">{r.title}</p>
                   <span className={clsx(
                     'text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0',
-                    r.gate_verdict === 'success' && 'text-nvidia bg-[#76b900]/10',
+                    r.gate_verdict === 'success' && 'text-brand bg-[#76b900]/10',
                     r.gate_verdict === 'failure' && 'text-accent-red bg-accent-red/10',
                     r.gate_verdict === 'pending' && 'text-neutral-400 bg-neutral-500/10',
                     r.gate_verdict === 'skipped' && 'text-gray-400 bg-surface-3',
@@ -784,7 +784,7 @@ function RunnersTab() {
                   'text-[9px] px-2 py-1 rounded font-bold uppercase flex-shrink-0 mt-0.5',
                   cls === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   cls === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
-                  cls === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                  cls === 'source' && 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25',
                   cls === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   cls === 'mixed' && 'bg-surface-3 text-gray-400',
                 )}>{cls}</span>
@@ -792,7 +792,7 @@ function RunnersTab() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[11px] font-mono text-white">{rec.runner}</span>
                     {rec.gpu
-                      ? <span className="text-[9px] px-1.5 py-0.5 rounded bg-nvidia/10 text-nvidia border border-nvidia/20 font-semibold">GPU</span>
+                      ? <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/10 text-brand border border-brand/20 font-semibold">GPU</span>
                       : <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-3 text-gray-400 border border-border">Hosted</span>
                     }
                   </div>
@@ -822,7 +822,7 @@ function RunnersTab() {
                   'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase',
                   p.classification === 'docs' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   p.classification === 'tests' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
-                  p.classification === 'source' && 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25',
+                  p.classification === 'source' && 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25',
                   p.classification === 'ci' && 'bg-neutral-500/[.07] text-neutral-400 ring-1 ring-neutral-500/25',
                   p.classification === 'mixed' && 'bg-surface-3 text-gray-400',
                 )}>{p.classification}</span>

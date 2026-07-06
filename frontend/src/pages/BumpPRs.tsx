@@ -27,7 +27,7 @@ export default function BumpPRs() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <GitPullRequest size={18} className="text-nvidia" />
+        <GitPullRequest size={18} className="text-brand" />
         <h1 className="text-lg font-semibold text-white">Bump PRs</h1>
         <span className="text-[11px] text-gray-500 ml-1">submodule &amp; dependency bumps awaiting merge</span>
       </div>
@@ -53,7 +53,7 @@ export default function BumpPRs() {
             {subs.map(([name, count]) => (
               <span key={name} className="inline-flex items-center gap-1.5 bg-surface-2 border border-border rounded-full px-2.5 py-1 text-[11px]">
                 <span className="font-mono text-gray-300">{name}</span>
-                <span className="text-nvidia font-semibold tabular-nums">{count}</span>
+                <span className="text-brand font-semibold tabular-nums">{count}</span>
               </span>
             ))}
           </div>
@@ -87,7 +87,7 @@ export default function BumpPRs() {
                 {d.prs.map(p => (
                   <tr key={p.number} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 transition-colors">
                     <td className="px-4 py-1.5">
-                      <a href={p.url} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-gray-400 hover:text-nvidia inline-flex items-center gap-0.5">#{p.number}<ExternalLink size={8} /></a>
+                      <a href={p.url} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-gray-400 hover:text-brand inline-flex items-center gap-0.5">#{p.number}<ExternalLink size={8} /></a>
                     </td>
                     <td className="px-2 py-1.5 font-mono text-[11px] text-accent-blue whitespace-nowrap">{p.submodule}</td>
                     <td className="px-2 py-1.5 text-[11px] text-gray-200 truncate max-w-[360px]">{p.title}</td>

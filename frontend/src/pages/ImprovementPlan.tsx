@@ -766,7 +766,7 @@ function CICDArchitectureSection() {
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-nvidia" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand" />
           <span className="text-[11px] font-semibold text-white tracking-[0.15em] uppercase">CI/CD Pipeline</span>
         </div>
         <div className="flex gap-1">

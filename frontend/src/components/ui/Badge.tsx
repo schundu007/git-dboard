@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
-type Variant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'muted' | 'outline' | 'indigo' | 'nvidia'
+type Variant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'muted' | 'outline' | 'indigo' | 'brand'
 type Size    = 'xs' | 'sm' | 'md'
 
 interface BadgeProps {
@@ -20,8 +20,8 @@ const variants: Record<Variant, string> = {
   danger:   'bg-red-500/[.07]     text-red-400     ring-1 ring-red-500/25',
   info:     'bg-neutral-500/[.07] text-neutral-400  ring-1 ring-neutral-500/25',
   purple:   'bg-neutral-500/[.07] text-neutral-400  ring-1 ring-neutral-500/25',
-  indigo:   'bg-[#76b900]/[.07]   text-nvidia      ring-1 ring-[#76b900]/25',
-  nvidia:   'bg-[#76b900]/[.07]   text-nvidia      ring-1 ring-[#76b900]/25',
+  indigo:   'bg-[#76b900]/[.07]   text-brand      ring-1 ring-[#76b900]/25',
+  brand:    'bg-[#76b900]/[.07]   text-brand      ring-1 ring-[#76b900]/25',
   muted:    'bg-surface-2 text-neutral-500 ring-1 ring-border-subtle',
   outline:  'text-neutral-400 ring-1 ring-border bg-transparent',
 }
@@ -33,8 +33,8 @@ const dotColors: Record<Variant, string> = {
   danger:   'bg-red-400',
   info:     'bg-neutral-400',
   purple:   'bg-neutral-400',
-  indigo:   'bg-nvidia',
-  nvidia:   'bg-nvidia',
+  indigo:   'bg-brand',
+  brand:    'bg-brand',
   muted:    'bg-neutral-600',
   outline:  'bg-neutral-500',
 }
@@ -88,8 +88,8 @@ export function StatusDot({ status, size = 6 }: { status: string; size?: number 
     failed:      'bg-red-400',
     error:       'bg-red-400',
     offline:     'bg-red-400',
-    in_progress: 'bg-nvidia animate-pulse',
-    running:     'bg-nvidia animate-pulse',
+    in_progress: 'bg-brand animate-pulse',
+    running:     'bg-brand animate-pulse',
     queued:      'bg-neutral-400 animate-pulse',
     pending:     'bg-neutral-400 animate-pulse',
     cancelled:   'bg-neutral-500',

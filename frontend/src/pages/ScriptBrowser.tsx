@@ -669,7 +669,7 @@ export default function ScriptBrowser() {
             <p className="text-[12px] font-bold text-white">Scripts</p>
             {slug && (
               <a href={`https://github.com/${slug}`} target="_blank" rel="noreferrer"
-                className="text-[10px] text-nvidia hover:underline font-mono flex items-center gap-0.5">
+                className="text-[10px] text-brand hover:underline font-mono flex items-center gap-0.5">
                 GitHub <ExternalLink size={9} />
               </a>
             )}
@@ -681,7 +681,7 @@ export default function ScriptBrowser() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Filter scripts…"
-              className="w-full bg-surface-2 border border-border rounded-lg pl-7 pr-3 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/40 transition-colors"
+              className="w-full bg-surface-2 border border-border rounded-lg pl-7 pr-3 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/40 transition-colors"
             />
           </div>
         </div>
@@ -698,12 +698,12 @@ export default function ScriptBrowser() {
                 className={cn(
                   'flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded transition-colors',
                   t.id === typeTab
-                    ? 'bg-nvidia/15 text-nvidia border border-nvidia/30'
+                    ? 'bg-brand/15 text-brand border border-brand/30'
                     : 'text-gray-400 hover:text-gray-300 border border-transparent hover:border-border',
                 )}
               >
                 {t.label}
-                <span className={cn('text-[8px] font-mono', t.id === typeTab ? 'text-nvidia/70' : 'text-gray-400')}>{count}</span>
+                <span className={cn('text-[8px] font-mono', t.id === typeTab ? 'text-brand/70' : 'text-gray-400')}>{count}</span>
               </button>
             )
           })}
@@ -739,7 +739,7 @@ export default function ScriptBrowser() {
                 onClick={() => selectFile(path)}
                 className={cn(
                   'w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-surface-2',
-                  isSelected && 'bg-nvidia/[.07] border-r-2 border-nvidia',
+                  isSelected && 'bg-brand/[.07] border-r-2 border-brand',
                 )}
               >
                 <div className="flex-1 min-w-0">
@@ -805,7 +805,7 @@ export default function ScriptBrowser() {
                 <p className="text-[10.5px] text-gray-500 mt-0.5 leading-snug font-mono truncate">{selected}</p>
               </div>
               <a href={githubFileUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-1 text-[10px] text-nvidia hover:underline font-mono flex-shrink-0">
+                className="flex items-center gap-1 text-[10px] text-brand hover:underline font-mono flex-shrink-0">
                 View on GitHub <ExternalLink size={9} />
               </a>
             </div>
@@ -829,10 +829,10 @@ export default function ScriptBrowser() {
                       : 'text-neutral-500 border-transparent hover:text-neutral-200 hover:bg-surface-3/30',
                   )}
                 >
-                  <span className={cn('flex-shrink-0', t.id === tab && 'text-nvidia')}>{t.icon}</span>
+                  <span className={cn('flex-shrink-0', t.id === tab && 'text-brand')}>{t.icon}</span>
                   {t.label}
                   {t.id === tab && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-nvidia/60" />
+                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-brand/60" />
                   )}
                 </button>
               ))}

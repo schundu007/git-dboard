@@ -353,7 +353,7 @@ function ComputingNotice() {
   return (
     <div className="text-center py-8 space-y-1">
       <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-        <span className="inline-block w-2 h-2 rounded-full bg-nvidia animate-pulse" />
+        <span className="inline-block w-2 h-2 rounded-full bg-brand animate-pulse" />
         GitHub is computing stats — auto-retrying…
       </div>
       <p className="text-[11px] text-gray-500">Can take up to 60 seconds for large repos</p>
@@ -405,7 +405,7 @@ function ContributorsCard() {
         <div className="flex-1 overflow-y-auto space-y-2">
           {!data?.has_weekly && (
             <span className="flex items-center gap-1 text-[10px] text-neutral-400 mb-2">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
               weekly data computing…
             </span>
           )}
@@ -428,7 +428,7 @@ function ContributorsCard() {
                     </div>
                   </div>
                   <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                    <div className="h-full bg-nvidia rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
                 {hasWeekly && (
@@ -939,7 +939,7 @@ function RepoPulseCard() {
 
   return (
     <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-4">
-      <SectionTitle icon={Zap} title="Repository Pulse" color="text-nvidia" />
+      <SectionTitle icon={Zap} title="Repository Pulse" color="text-brand" />
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[

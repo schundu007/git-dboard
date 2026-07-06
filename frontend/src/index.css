@@ -18,11 +18,11 @@
   --color-muted:     #a1a1aa;   /* zinc-400 */
 
   /* Accent */
-  --color-green:  #76b900;   /* NVIDIA green */
+  --color-green:  #76b900;   /* brand green */
   --color-blue:   #0a66c2;   /* info blue */
   --color-red:    #b24020;   /* error red */
   --color-yellow: #d97706;   /* amber warning */
-  --color-lime:   #76b900;   /* aliased to NVIDIA green — lime retired */
+  --color-lime:   #76b900;   /* aliased to brand green — lime retired */
 
   /* Surface/border channel values (r g b) for Tailwind CSS var colors */
   --sfc:    9   9  11;   /* zinc-950 #09090b */
@@ -203,7 +203,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .log-line.DEBUG   { color: #505050; }    /* very muted */
 
 /* ── DORA rating badges — 3-color aligned ──────────────────────────────────── */
-.rating-elite  { @apply text-nvidia   bg-nvidia/[.08]          ring-1 ring-nvidia/20    rounded-full px-2 py-0.5 text-[11px] font-medium; }
+.rating-elite  { @apply text-brand   bg-brand/[.08]          ring-1 ring-brand/20    rounded-full px-2 py-0.5 text-[11px] font-medium; }
 .rating-high   { @apply text-[#0a66c2] bg-[#0a66c2]/[.08]     ring-1 ring-[#0a66c2]/20 rounded-full px-2 py-0.5 text-[11px] font-medium; }
 .rating-medium { @apply text-[#d4d4d4] bg-white/[.05]          ring-1 ring-white/10      rounded-full px-2 py-0.5 text-[11px] font-medium; }
 .rating-low    { @apply text-[#b24020] bg-[#b24020]/[.08]      ring-1 ring-[#b24020]/20  rounded-full px-2 py-0.5 text-[11px] font-medium; }
@@ -400,7 +400,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 .card-appear-5 { animation-delay: 0.20s; }
 .card-appear-6 { animation-delay: 0.24s; }
 
-/* ── Emerald → NVIDIA green (live/success indicators use emerald-* classes) ── */
+/* ── Emerald → brand green (live/success indicators use emerald-* classes) ── */
 .bg-emerald-400, .bg-emerald-500 { background-color: #76b900 !important; }
 .text-emerald-400, .text-emerald-500 { color: #76b900 !important; }
 .ring-emerald-500\/20, .ring-emerald-500\/25 { --tw-ring-color: rgba(118,185,0,0.2) !important; }
@@ -515,7 +515,7 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 [data-theme="light"] .text-lime-400    { color: #057642; }
 
 /* nvidia / accent-green text — parrot green #76b900 is unreadable on white -- */
-[data-theme="light"] .text-nvidia       { color: #3d6b00; }   /* 7:1 contrast on white */
+[data-theme="light"] .text-brand       { color: #3d6b00; }   /* 7:1 contrast on white */
 [data-theme="light"] .text-emerald-300  { color: #065f46; }
 [data-theme="light"] .text-emerald-500  { color: #065f46; }
 [data-theme="light"] .text-emerald-600  { color: #065f46; }
@@ -758,15 +758,15 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 [data-theme="light"] .section-title::before { background: #84cc16; }
 
 /* ── nvidia / lime brand overrides in light ─────────────────────────────────  */
-[data-theme="light"] .text-nvidia { color: #4d7c0f !important; }
-[data-theme="light"] .bg-nvidia { background-color: #84cc16 !important; }
-[data-theme="light"] .bg-nvidia\/10, [data-theme="light"] .bg-nvidia\/15 { background-color: rgba(101,163,13,0.10) !important; }
-[data-theme="light"] .bg-nvidia\/\[\.06\] { background-color: rgba(101,163,13,0.06) !important; }
-[data-theme="light"] .bg-nvidia\/\[\.08\] { background-color: rgba(101,163,13,0.08) !important; }
-[data-theme="light"] .border-nvidia\/20 { border-color: rgba(101,163,13,0.20) !important; }
-[data-theme="light"] .border-nvidia\/25 { border-color: rgba(101,163,13,0.25) !important; }
-[data-theme="light"] .hover\:bg-nvidia\/10:hover { background-color: rgba(101,163,13,0.10) !important; }
-[data-theme="light"] .hover\:bg-nvidia\/25:hover { background-color: rgba(101,163,13,0.25) !important; }
+[data-theme="light"] .text-brand { color: #4d7c0f !important; }
+[data-theme="light"] .bg-brand { background-color: #84cc16 !important; }
+[data-theme="light"] .bg-brand\/10, [data-theme="light"] .bg-brand\/15 { background-color: rgba(101,163,13,0.10) !important; }
+[data-theme="light"] .bg-brand\/\[\.06\] { background-color: rgba(101,163,13,0.06) !important; }
+[data-theme="light"] .bg-brand\/\[\.08\] { background-color: rgba(101,163,13,0.08) !important; }
+[data-theme="light"] .border-brand\/20 { border-color: rgba(101,163,13,0.20) !important; }
+[data-theme="light"] .border-brand\/25 { border-color: rgba(101,163,13,0.25) !important; }
+[data-theme="light"] .hover\:bg-brand\/10:hover { background-color: rgba(101,163,13,0.10) !important; }
+[data-theme="light"] .hover\:bg-brand\/25:hover { background-color: rgba(101,163,13,0.25) !important; }
 
 /* ── Remove mechanical all-caps tracking from section labels globally ────────
    tracking-wider / tracking-widest on small section labels → natural case.

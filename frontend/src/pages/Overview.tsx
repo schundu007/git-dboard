@@ -190,7 +190,7 @@ function BuildPanel({ builds }: { builds: any }) {
         <div className="flex items-center gap-3 text-[10px]">
           <span className={clsx(rateColor, 'font-semibold')}>{successRate ?? '—'}% success</span>
           {builds.in_progress > 0 && (
-            <span className="text-nvidia animate-pulse flex items-center gap-0.5">
+            <span className="text-brand animate-pulse flex items-center gap-0.5">
               <Zap size={9} /> {builds.in_progress} running
             </span>
           )}
@@ -385,7 +385,7 @@ function RunnersPanel({ runners }: { runners: any }) {
           </span>
         </div>
         {runners.busy > 0 && (
-          <span className="text-[10px] text-nvidia animate-pulse flex items-center gap-0.5">
+          <span className="text-[10px] text-brand animate-pulse flex items-center gap-0.5">
             <Zap size={9} /> {runners.busy} busy
           </span>
         )}
@@ -397,8 +397,8 @@ function RunnersPanel({ runners }: { runners: any }) {
             <div key={r.name} className="px-3.5 py-1.5 flex items-center gap-3">
               <div className={clsx(
                 'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                r.status === 'online' && r.busy ? 'bg-nvidia' :
-                r.status === 'online' ? 'bg-nvidia' : 'bg-gray-600',
+                r.status === 'online' && r.busy ? 'bg-brand' :
+                r.status === 'online' ? 'bg-brand' : 'bg-gray-600',
               )} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-300 truncate">{r.name}</p>
@@ -411,8 +411,8 @@ function RunnersPanel({ runners }: { runners: any }) {
               </div>
               <span className={clsx(
                 'text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0',
-                r.busy ? 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25' :
-                r.status === 'online' ? 'bg-[#76b900]/[.07] text-nvidia ring-1 ring-[#76b900]/25' : 'bg-surface-3 text-gray-500',
+                r.busy ? 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25' :
+                r.status === 'online' ? 'bg-[#76b900]/[.07] text-brand ring-1 ring-[#76b900]/25' : 'bg-surface-3 text-gray-500',
               )}>
                 {r.busy ? 'busy' : r.status}
               </span>

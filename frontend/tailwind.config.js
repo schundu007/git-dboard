@@ -21,12 +21,12 @@ export default {
         },
 
         // ── Brand ──────────────────────────────────────────────────────────
-        nvidia:        '#76b900',   // NVIDIA green — primary brand
-        'nvidia-dark': '#4a7400',   // NVIDIA green dark variant
+        brand:        '#76b900',   // primary brand accent
+        'brand-dark': '#4a7400',   // brand accent dark variant
 
         // ── Accent system ────────────────────────────────────────────────
         accent: {
-          green:  '#76b900',   // NVIDIA — success, active, live, confirmed
+          green:  '#76b900',   // brand — success, active, live, confirmed
           blue:   '#0a66c2',   // info, links, secondary actions
           red:    '#b24020',   // error, danger, critical
           yellow: '#d97706',   // amber-600 — warning / queued states
@@ -35,13 +35,13 @@ export default {
           cyan:   '#76b900',
           teal:   '#76b900',
           indigo: '#0a66c2',
-          lime:   '#76b900',   // aliased to NVIDIA green — neon lime retired
+          lime:   '#76b900',   // aliased to brand green — neon lime retired
         },
 
         // ── DORA metrics ──────────────────────────────────────────────────────
         dora: {
           deploy: '#0a66c2',   // LinkedIn blue
-          lead:   '#76b900',   // NVIDIA green
+          lead:   '#76b900',   // brand green
           mttr:   '#d0d0d0',   // near-white (neutral series)
           cfr:    '#b24020',   // LinkedIn negative red
         },

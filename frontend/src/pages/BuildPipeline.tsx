@@ -109,14 +109,14 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
           label="Success Rate"
           value={data.success_rate != null ? `${data.success_rate}%` : null}
           sub={`${data.success ?? 0} / ${data.total ?? 0} runs`}
-          color={data.success_rate >= 80 ? 'text-nvidia' : data.success_rate >= 60 ? 'text-neutral-300' : 'text-accent-red'}
+          color={data.success_rate >= 80 ? 'text-brand' : data.success_rate >= 60 ? 'text-neutral-300' : 'text-accent-red'}
           icon={CheckCircle2}
         />
         <StatCard
           label="Failure Rate"
           value={data.failure_rate != null ? `${data.failure_rate}%` : null}
           sub={`${data.failure ?? 0} failures`}
-          color={data.failure_rate < 10 ? 'text-nvidia' : data.failure_rate < 30 ? 'text-neutral-300' : 'text-accent-red'}
+          color={data.failure_rate < 10 ? 'text-brand' : data.failure_rate < 30 ? 'text-neutral-300' : 'text-accent-red'}
           icon={XCircle}
         />
         <StatCard label="Avg Duration" value={d.avg_label ?? '—'} sub={`p50: ${d.p50_label ?? '—'}`} color="text-neutral-300" icon={Clock} />
@@ -154,7 +154,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
                       <span className="text-gray-500">{a.count} ({pct}%)</span>
                     </div>
                     <div className="h-1 rounded-full bg-surface-3 overflow-hidden">
-                      <div className="h-full rounded-full bg-nvidia transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )
@@ -165,7 +165,7 @@ function StatsPanel({ workflow, days }: { workflow: string; days: StatsWindow })
       </div>
 
       {(data.in_progress ?? 0) > 0 && (
-        <div className="flex items-center gap-2 text-xs text-nvidia bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25 border border-[#76b900]/20 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-xs text-brand bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25 border border-[#76b900]/20 rounded-lg px-3 py-2">
           <Zap size={12} className="animate-pulse" />
           {data.in_progress} run{data.in_progress > 1 ? 's' : ''} currently in progress
         </div>
@@ -322,7 +322,7 @@ function LogPanel({ runId, onClose }: { runId: number; onClose: () => void }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head">
           <span className="text-sm font-medium">Live Logs — run #{runId}</span>
           <div className="flex items-center gap-3">
-            {done ? <span className="text-xs text-nvidia">Stream complete</span> : <span className="text-xs text-nvidia animate-pulse">Streaming…</span>}
+            {done ? <span className="text-xs text-brand">Stream complete</span> : <span className="text-xs text-brand animate-pulse">Streaming…</span>}
             <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
           </div>
         </div>
@@ -383,8 +383,8 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
                 </span>
               )}
               {isInProgress && (
-                <span className="flex items-center gap-1 text-[10px] text-nvidia">
-                  <span className="w-1.5 h-1.5 rounded-full bg-nvidia animate-pulse" />
+                <span className="flex items-center gap-1 text-[10px] text-brand">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
                   {run.status === 'queued' ? 'Queued' : 'Running'}
                 </span>
               )}
@@ -479,8 +479,8 @@ function LiveRunsBanner({ runs }: { runs: WorkflowRun[] }) {
   return (
     <div className="bg-[#76b900]/[.05] border border-[#76b900]/20 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="w-2 h-2 rounded-full bg-nvidia animate-pulse" />
-        <p className="text-xs font-semibold text-nvidia">{live.length} run{live.length !== 1 ? 's' : ''} in progress</p>
+        <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+        <p className="text-xs font-semibold text-brand">{live.length} run{live.length !== 1 ? 's' : ''} in progress</p>
       </div>
       <div className="space-y-2">
         {live.map((r) => {
@@ -715,7 +715,7 @@ function CachesPanel() {
           <StatCard label="Total Size" value={data.total_size_label} color="text-neutral-300" icon={HardDrive}
             sub={`${usedPct.toFixed(1)}% of ${GH_CACHE_LIMIT_GB}GB limit`} />
           <StatCard label="Stale (>7d)" value={staleCount}
-            color={staleCount > 5 ? 'text-accent-red' : staleCount > 0 ? 'text-neutral-400' : 'text-nvidia'}
+            color={staleCount > 5 ? 'text-accent-red' : staleCount > 0 ? 'text-neutral-400' : 'text-brand'}
             icon={Clock} sub="last accessed >7 days ago" />
           <div className="bg-surface-1 border border-border rounded-lg p-3">
             <p className="text-xs text-gray-500 font-medium mb-1.5">Key Prefixes</p>
@@ -736,13 +736,13 @@ function CachesPanel() {
         <div className="bg-surface-1 border border-border rounded-xl p-3">
           <div className="flex items-center justify-between mb-1.5 text-[10px]">
             <span className="text-gray-400">GitHub Actions Cache Storage</span>
-            <span className={clsx(usedPct > 80 ? 'text-accent-red' : usedPct > 60 ? 'text-neutral-300' : 'text-nvidia')}>
+            <span className={clsx(usedPct > 80 ? 'text-accent-red' : usedPct > 60 ? 'text-neutral-300' : 'text-brand')}>
               {data.total_size_label} / {GH_CACHE_LIMIT_GB}GB
             </span>
           </div>
           <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
             <div
-              className={clsx('h-full rounded-full transition-all', usedPct > 80 ? 'bg-accent-red' : 'bg-nvidia')}
+              className={clsx('h-full rounded-full transition-all', usedPct > 80 ? 'bg-accent-red' : 'bg-brand')}
               style={{ width: `${usedPct}%` }}
             />
           </div>
@@ -764,7 +764,7 @@ function CachesPanel() {
                     <span className="text-gray-500 flex-shrink-0">{r.count} entries · {r.size_label} ({pct}%)</span>
                   </div>
                   <div className="h-1 bg-surface-3 rounded-full overflow-hidden">
-                    <div className="h-full bg-nvidia rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-brand rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               )
@@ -839,14 +839,14 @@ const STATUS_COLOR: Record<string, string> = {
   error: 'text-red-400 bg-red-500/[.07] ring-1 ring-red-500/25',
   inactive: 'text-gray-400 bg-surface-3',
   pending: 'text-neutral-400 bg-neutral-500/[.07] ring-1 ring-neutral-500/25',
-  in_progress: 'text-nvidia bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25',
+  in_progress: 'text-brand bg-[#76b900]/[.07] ring-1 ring-[#76b900]/25',
   queued: 'text-gray-400 bg-surface-3',
 }
 
 function statusDot(status: string) {
   if (status === 'success' || status === 'active') return 'bg-accent-green'
   if (status === 'failure' || status === 'error') return 'bg-accent-red'
-  if (status === 'in_progress') return 'bg-nvidia animate-pulse'
+  if (status === 'in_progress') return 'bg-brand animate-pulse'
   if (status === 'pending') return 'bg-neutral-400'
   return 'bg-gray-600'
 }
@@ -938,7 +938,7 @@ function DeploymentsPanel() {
                   {name}
                 </span>
                 {isPinned && (
-                  <span className="text-[9px] text-nvidia flex-shrink-0">★</span>
+                  <span className="text-[9px] text-brand flex-shrink-0">★</span>
                 )}
               </div>
               {s?.lastAt && (
@@ -1107,7 +1107,7 @@ function UsagePanel() {
           ) : (
             <>
               <StatCard label="Total Billable" value={`${data.total_min}m`} icon={Timer} color="text-neutral-300" />
-              <StatCard label="Ubuntu" value={`${data.total_ubuntu_min}m`} icon={Timer} color="text-nvidia" sub="Linux runners" />
+              <StatCard label="Ubuntu" value={`${data.total_ubuntu_min}m`} icon={Timer} color="text-brand" sub="Linux runners" />
               <StatCard label="macOS" value={`${data.total_macos_min}m`} icon={Timer} color="text-neutral-300" sub="macOS runners" />
               <StatCard label="Wall-Clock Total" value={`${data.total_actual_min}m`} icon={Clock} color="text-neutral-300" sub="from recent runs" />
             </>
@@ -1249,7 +1249,7 @@ function PerformanceMetricsPanel() {
             label="Best Success Rate"
             value={best?.success_rate != null ? `${best.success_rate}%` : '—'}
             sub={best?.workflow}
-            color={best?.success_rate >= 80 ? 'text-nvidia' : 'text-neutral-300'}
+            color={best?.success_rate >= 80 ? 'text-brand' : 'text-neutral-300'}
             icon={CheckCircle2}
           />
           <StatCard
@@ -1327,14 +1327,14 @@ function PerformanceMetricsPanel() {
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-200 truncate">{w.workflow}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-gray-400 text-right">{w.total}</div>
                   <div className={clsx('bg-surface-1 px-3 py-2.5 text-[10px] font-semibold text-right',
-                    failurePct >= 30 ? 'text-accent-red' : failurePct >= 10 ? 'text-neutral-400' : 'text-nvidia')}>
+                    failurePct >= 30 ? 'text-accent-red' : failurePct >= 10 ? 'text-neutral-400' : 'text-brand')}>
                     {failurePct}%
                   </div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-400 text-right">{w.avg_label ?? '—'}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p50_label ?? '—'}</div>
                   <div className="bg-surface-1 px-3 py-2.5 text-[10px] text-neutral-500 text-right">{w.p90_label ?? '—'}</div>
                   <div className={clsx('bg-surface-1 px-3 py-2.5 text-[10px] font-semibold text-right',
-                    w.success_rate == null ? 'text-gray-400' : w.success_rate >= 80 ? 'text-nvidia' : w.success_rate >= 60 ? 'text-neutral-400' : 'text-accent-red')}>
+                    w.success_rate == null ? 'text-gray-400' : w.success_rate >= 80 ? 'text-brand' : w.success_rate >= 60 ? 'text-neutral-400' : 'text-accent-red')}>
                     {w.success_rate != null ? `${w.success_rate}%` : '—'}
                   </div>
                 </div>
@@ -1374,7 +1374,7 @@ function WorkflowListPanel() {
       {data && (
         <div className="grid grid-cols-3 gap-3">
           <StatCard label="Total Workflows" value={data.total} icon={Activity} />
-          <StatCard label="Active" value={activeCount} color="text-nvidia" icon={CheckCircle2} />
+          <StatCard label="Active" value={activeCount} color="text-brand" icon={CheckCircle2} />
           <StatCard label="Pinned" value={pinnedCount} color="text-neutral-300" icon={TrendingUp} sub="tracked in pipeline tabs" />
         </div>
       )}
@@ -1403,7 +1403,7 @@ function WorkflowListPanel() {
             w.state !== 'active' && 'opacity-60',
           )}>
             <div className={clsx('w-2 h-2 rounded-full flex-shrink-0 mt-1.5',
-              w.state === 'active' ? 'bg-nvidia' : 'bg-gray-600')} />
+              w.state === 'active' ? 'bg-brand' : 'bg-gray-600')} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 {w.pinned && (
@@ -1891,7 +1891,7 @@ export default function BuildPipeline() {
                 className="bg-surface-2 border border-border rounded-md px-2 py-1.5 text-xs w-28 text-white focus:outline-none focus:border-neutral-500"
                 placeholder="branch / ref" />
               <button onClick={() => trigger()} disabled={triggering}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-nvidia text-black hover:bg-[#5a8c00] disabled:opacity-50 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-brand text-black hover:bg-[#5a8c00] disabled:opacity-50 transition-colors">
                 <Play size={11} />
                 {triggering ? 'Queuing…' : 'Trigger'}
               </button>

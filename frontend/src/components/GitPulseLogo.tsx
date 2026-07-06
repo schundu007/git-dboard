@@ -47,9 +47,9 @@ export default function GitPulseLogo({
 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="text-nvidia">{icon}</span>
+      <span className="text-brand">{icon}</span>
       <span className={`font-bold tracking-tight text-white ${textSize}`}>
-        Git<span className="text-nvidia">Pulse</span>
+        Git<span className="text-brand">Pulse</span>
       </span>
     </span>
   )

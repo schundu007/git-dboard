@@ -17,7 +17,7 @@ function resolve(status: string | null | undefined): Resolved {
     return { label: 'failed', text: 'text-red-400', bg: 'bg-red-500/[.07]', dot: 'bg-red-400', ring: 'ring-red-500/25' }
 
   if (s === 'in_progress' || s === 'running')
-    return { label: s === 'running' ? 'running' : 'in progress', text: 'text-nvidia', bg: 'bg-[#76b900]/[.07]', dot: 'bg-nvidia animate-pulse', ring: 'ring-[#76b900]/25' }
+    return { label: s === 'running' ? 'running' : 'in progress', text: 'text-brand', bg: 'bg-[#76b900]/[.07]', dot: 'bg-brand animate-pulse', ring: 'ring-[#76b900]/25' }
 
   if (s === 'queued' || s === 'pending')
     return { label: s, text: 'text-neutral-400', bg: 'bg-neutral-500/[.07]', dot: 'bg-neutral-400 animate-pulse', ring: 'ring-neutral-500/25' }

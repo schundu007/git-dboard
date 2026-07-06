@@ -33,7 +33,7 @@ export default function MultiArchMatrix() {
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <Rocket size={14} className="text-nvidia" />
+        <Rocket size={14} className="text-brand" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">Multi-Arch Release — Nightly</span>
         <div className="ml-auto flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
           {([7, 14, 30] as const).map(v => (
@@ -91,7 +91,7 @@ export default function MultiArchMatrix() {
                     })}
                     <td className="px-3 py-1.5 text-center">
                       {anyUrl ? (
-                        <a href={anyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-gray-400 hover:text-nvidia">
+                        <a href={anyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] text-gray-400 hover:text-brand">
                           <Download size={10} />
                         </a>
                       ) : <span className="text-gray-700">·</span>}

@@ -383,7 +383,7 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
             <div className="flex-1 h-1 bg-surface-3 rounded-full overflow-hidden">
               <div
                 className={clsx('h-full rounded-full transition-all duration-700',
-                  gpuPct >= 80 ? 'bg-accent-red' : gpuPct >= 50 ? 'bg-nvidia' : 'bg-nvidia/60')}
+                  gpuPct >= 80 ? 'bg-accent-red' : gpuPct >= 50 ? 'bg-brand' : 'bg-brand/60')}
                 style={{ width: `${gpuPct}%` }}
               />
             </div>
@@ -1302,9 +1302,9 @@ function DevOpsIntelligence({
   const activeRuns = allRunsList.filter(r => r.status === 'in_progress').length
   const queuedRuns = allRunsList.filter(r => r.status === 'queued').length
 
-  const rateClass = successRate >= 80 ? 'text-nvidia' : successRate >= 60 ? 'text-accent-yellow' : 'text-accent-red'
+  const rateClass = successRate >= 80 ? 'text-brand' : successRate >= 60 ? 'text-accent-yellow' : 'text-accent-red'
   const rateAccent = successRate >= 80
-    ? 'from-nvidia/70 via-nvidia/30'
+    ? 'from-brand/70 via-brand/30'
     : successRate >= 60 ? 'from-accent-yellow/70 via-accent-yellow/30'
     : 'from-accent-red/70 via-accent-red/30'
 
@@ -1313,7 +1313,7 @@ function DevOpsIntelligence({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border card-head">
         <div className="flex items-center gap-2.5">
-          <Activity size={14} className="text-nvidia" />
+          <Activity size={14} className="text-brand" />
           <span className="text-sm font-bold text-white">DevOps Intelligence</span>
           <span className="text-[10px] text-gray-500 border border-border rounded px-1.5 py-0.5 font-mono">14d</span>
         </div>
@@ -1380,7 +1380,7 @@ function DevOpsIntelligence({
         {/* CI/CD Pipelines */}
         <div className="p-4 space-y-3">
           <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-nvidia inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand inline-block" />
             CI / CD Pipelines
           </p>
 
@@ -1439,7 +1439,7 @@ function DevOpsIntelligence({
                   key={i} title={r.name}
                   className={clsx('w-3 h-3 rounded-[3px] transition-colors',
                     !isOnline ? 'bg-surface-3 ring-1 ring-border/50'
-                    : isBusy ? (isGpu ? 'bg-nvidia' : 'bg-accent-blue')
+                    : isBusy ? (isGpu ? 'bg-brand' : 'bg-accent-blue')
                     : 'bg-accent-green/30 ring-1 ring-accent-green/25',
                   )}
                 />
@@ -1450,7 +1450,7 @@ function DevOpsIntelligence({
           <div className="flex items-center gap-2 text-[9px] text-gray-500 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-accent-green/30 ring-1 ring-accent-green/25 inline-block" />idle</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-accent-blue inline-block" />busy (CPU)</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-nvidia inline-block" />busy (GPU)</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-brand inline-block" />busy (GPU)</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] bg-surface-3 ring-1 ring-border inline-block" />offline</span>
           </div>
 
@@ -1464,7 +1464,7 @@ function DevOpsIntelligence({
               <p className="text-[9px] text-gray-500">busy</p>
             </div>
             <div className="bg-surface-2 rounded-lg px-2 py-1.5">
-              <p className="text-[12px] font-bold text-nvidia tabular-nums">{runnersGpu.length}</p>
+              <p className="text-[12px] font-bold text-brand tabular-nums">{runnersGpu.length}</p>
               <p className="text-[9px] text-gray-500">GPU</p>
             </div>
           </div>
@@ -1909,7 +1909,7 @@ export default function ControlPlane() {
         {[
           { to: '/monitoring', icon: AlertTriangle, title: 'Failure Triage', sub: 'Infra vs product vs flaky', accent: 'text-accent-red' },
           { to: '/builds',     icon: Timer,         title: 'Pipeline Performance', sub: 'Duration trends & P95 latency', accent: 'text-accent-blue' },
-          { to: '/infra',      icon: Cpu,           title: 'Runner Health', sub: 'GPU utilization & live status', accent: 'text-nvidia' },
+          { to: '/infra',      icon: Cpu,           title: 'Runner Health', sub: 'GPU utilization & live status', accent: 'text-brand' },
         ].map(({ to, icon: Icon, title, sub, accent }) => (
           <NavLink key={to} to={to}
             className="flex items-center gap-3 bg-surface-1 border border-border rounded-xl px-4 py-3 hover:border-gray-500/60 transition-colors group">
@@ -1961,8 +1961,8 @@ export default function ControlPlane() {
 
         {/* GPU Runners */}
         <div className="bg-surface-1 border border-border rounded-xl p-3 flex items-center gap-3 card-appear card-appear-2 transition-colors hover:border-border-strong">
-          <div className="w-8 h-8 rounded-lg bg-nvidia/10 border border-nvidia/20 flex items-center justify-center flex-shrink-0">
-            <Cpu size={14} className="text-nvidia" />
+          <div className="w-8 h-8 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center flex-shrink-0">
+            <Cpu size={14} className="text-brand" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-semibold text-white">GPU Runners</p>

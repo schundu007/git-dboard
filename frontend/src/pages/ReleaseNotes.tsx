@@ -67,7 +67,7 @@ export default function ReleaseNotes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText size={18} className="text-nvidia" />
+          <FileText size={18} className="text-brand" />
           <h1 className="text-lg font-semibold text-white">Release Notes</h1>
         </div>
         {result && (
@@ -80,7 +80,7 @@ export default function ReleaseNotes() {
       {/* Generator card */}
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <GitCompare size={14} className="text-nvidia" />
+          <GitCompare size={14} className="text-brand" />
           <span className="text-sm font-medium text-gray-200">Generate notes between two commits</span>
         </div>
         <p className="text-[11px] text-gray-500">
@@ -95,7 +95,7 @@ export default function ReleaseNotes() {
               value={base}
               onChange={(e) => setBase(e.target.value)}
               placeholder="e.g. abc1234 or full SHA"
-              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-[12px] font-mono text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50"
+              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-[12px] font-mono text-white placeholder-gray-600 focus:outline-none focus:border-brand/50"
             />
           </label>
           <label className="block">
@@ -104,7 +104,7 @@ export default function ReleaseNotes() {
               value={head}
               onChange={(e) => setHead(e.target.value)}
               placeholder="e.g. def5678 or full SHA"
-              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-[12px] font-mono text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50"
+              className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-[12px] font-mono text-white placeholder-gray-600 focus:outline-none focus:border-brand/50"
             />
           </label>
         </div>
@@ -113,7 +113,7 @@ export default function ReleaseNotes() {
           <button
             onClick={() => gen.mutate()}
             disabled={!canGenerate}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-nvidia text-black hover:opacity-90 disabled:opacity-40 transition-opacity"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-brand text-black hover:opacity-90 disabled:opacity-40 transition-opacity"
           >
             {gen.isPending ? <Loader2 size={12} className="animate-spin" /> : <GitCompare size={12} />}
             {gen.isPending ? 'Generating…' : 'Generate'}
@@ -132,7 +132,7 @@ export default function ReleaseNotes() {
                   href={result.compare_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-nvidia transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-brand transition-colors"
                 >
                   <ExternalLink size={12} /> Compare on GitHub
                 </a>
@@ -163,7 +163,7 @@ export default function ReleaseNotes() {
                 <ul className="space-y-1">
                   {c.prs.map((p) => (
                     <li key={p.number} className="flex items-baseline gap-2 text-[12px]">
-                      <a href={p.url} target="_blank" rel="noreferrer" className="font-mono text-gray-500 hover:text-nvidia flex-shrink-0">
+                      <a href={p.url} target="_blank" rel="noreferrer" className="font-mono text-gray-500 hover:text-brand flex-shrink-0">
                         #{p.number}
                       </a>
                       <span className="text-gray-200">{p.title}</span>
@@ -188,7 +188,7 @@ export default function ReleaseNotes() {
           {RULES.map((r) => (
             <div key={r.n} className="bg-surface-2 border border-border rounded-lg p-2.5">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-[10px] font-mono text-nvidia">{r.n}</span>
+                <span className="text-[10px] font-mono text-brand">{r.n}</span>
                 <span className="text-[11px] font-medium text-gray-300">{r.label}</span>
               </div>
               <div className="space-y-1">

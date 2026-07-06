@@ -403,8 +403,8 @@ const REGISTRY_ROWS = [
 ]
 
 function RegistryComparison({ repoSlug }: { repoSlug: string }) {
-  const owner = repoSlug.split('/')[0] ?? 'isaac-sim'
-  const repo = repoSlug.split('/')[1] ?? 'isaaclab'
+  const owner = repoSlug.split('/')[0] ?? ''
+  const repo = repoSlug.split('/')[1] ?? ''
   return (
     <div>
       <div className="section-head">Registry Comparison</div>

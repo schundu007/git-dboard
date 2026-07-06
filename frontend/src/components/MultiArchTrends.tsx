@@ -47,7 +47,7 @@ export default function MultiArchTrends() {
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <TrendingUp size={14} className="text-nvidia" />
+        <TrendingUp size={14} className="text-brand" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">Multi-Arch Trends</span>
         <span className="text-[10px] text-gray-500">build vs test failures / day</span>
         <div className="ml-auto flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">

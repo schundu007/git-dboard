@@ -14,7 +14,7 @@ Mount:
     app.include_router(provision.router)
 """
 from __future__ import annotations
-import os, json, subprocess, httpx
+import os, json, subprocess, httpx, base64
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
 from services import github_client as gh
@@ -112,6 +112,89 @@ async def preflight(repo: str):
         return {"ok": True, "repo": repo, "workflow_id": wf.get("id"),
                 "state": wf.get("state"),
                 "message": f"Ready — provision.yml found and writable on '{repo}'."}
+
+
+_STARTER_YAML = """name: provision
+on:
+  workflow_dispatch:
+    inputs:
+      action: { description: "terraform action", type: choice, options: [plan, apply], default: plan }
+      build_amis: { description: "build AMIs first", type: boolean, default: false }
+      enable_k8s: { description: "enable EKS + cache", type: boolean, default: false }
+permissions: { id-token: write, contents: read }
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.action == 'apply' && 'production' || '' }}
+    env:
+      TF_WORKDIR: infra/env/prod        # TODO: your terraform root
+      AWS_REGION: us-east-1             # TODO
+      TF_VAR_enable_k8s: ${{ inputs.enable_k8s }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROVISION_ROLE_ARN }}   # TODO
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -backend-config=backend.hcl
+        working-directory: ${{ env.TF_WORKDIR }}
+      - run: terraform plan -out=tfplan
+        working-directory: ${{ env.TF_WORKDIR }}
+      - if: ${{ inputs.action == 'apply' }}
+        run: terraform apply -auto-approve tfplan
+        working-directory: ${{ env.TF_WORKDIR }}
+"""
+
+
+@router.post("/scaffold")
+async def scaffold(repo: str, path: str = ".github/workflows/provision.yml"):
+    """One-click: branch + commit provision.yml + open a PR on the target repo."""
+    branch = "gitpulse/add-provision-yml"
+    h = gh._headers()
+    async with httpx.AsyncClient(timeout=30) as c:
+        rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=h)
+        if rr.status_code >= 400:
+            raise HTTPException(rr.status_code, f"Cannot access '{repo}': {rr.text}")
+        default_branch = rr.json().get("default_branch", "main")
+
+        ref = await c.get(f"{GITHUB_API}/repos/{repo}/git/ref/heads/{default_branch}", headers=h)
+        if ref.status_code >= 400:
+            raise HTTPException(ref.status_code, f"base ref: {ref.text}")
+        base_sha = ref.json()["object"]["sha"]
+
+        br = await c.post(f"{GITHUB_API}/repos/{repo}/git/refs", headers=h,
+                          json={"ref": f"refs/heads/{branch}", "sha": base_sha})
+        if br.status_code not in (201, 422):  # 422 = branch already exists
+            raise HTTPException(br.status_code, f"create branch (needs write access): {br.text}")
+
+        existing = await c.get(f"{GITHUB_API}/repos/{repo}/contents/{path}?ref={branch}", headers=h)
+        put_body = {
+            "message": "ci: add provision.yml (via gitpulse)",
+            "content": base64.b64encode(_STARTER_YAML.encode()).decode(),
+            "branch": branch,
+        }
+        if existing.status_code == 200:
+            put_body["sha"] = existing.json()["sha"]
+        put = await c.put(f"{GITHUB_API}/repos/{repo}/contents/{path}", headers=h, json=put_body)
+        if put.status_code not in (200, 201):
+            raise HTTPException(put.status_code, f"commit file (needs write access): {put.text}")
+
+        pr = await c.post(f"{GITHUB_API}/repos/{repo}/pulls", headers=h, json={
+            "title": "Add provision.yml (gitpulse)", "head": branch, "base": default_branch,
+            "body": "Adds a starter `provision.yml` so gitpulse can dispatch provisioning.\n\n"
+                    "Fill the TODO placeholders (terraform root, AWS region, OIDC role ARN) before applying.",
+        })
+        if pr.status_code == 201:
+            return {"ok": True, "pr_url": pr.json()["html_url"], "branch": branch}
+        # PR may already exist for this branch
+        owner = repo.split("/")[0]
+        found = await c.get(f"{GITHUB_API}/repos/{repo}/pulls?head={owner}:{branch}&state=open", headers=h)
+        prs = found.json() if found.status_code == 200 else []
+        if prs:
+            return {"ok": True, "pr_url": prs[0]["html_url"], "branch": branch, "note": "existing PR"}
+        return {"ok": True, "branch": branch, "compare_url": f"https://github.com/{repo}/compare/{branch}?expand=1",
+                "note": "branch pushed — open the PR from the compare link"}
 
 
 # ---------- 2. BREAK-GLASS (direct apply, admin-gated) ----------

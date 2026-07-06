@@ -45,7 +45,7 @@ export default function CIHealthDigest() {
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
-        <FileText size={14} className="text-nvidia" />
+        <FileText size={14} className="text-brand" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">CI Health Digest</span>
         <div className="ml-auto flex items-center gap-2">
           <div className="flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
@@ -94,7 +94,7 @@ export default function CIHealthDigest() {
                       <tr key={i} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40">
                         <td className="pl-4 pr-2 py-1.5">
                           {h.url ? (
-                            <a href={h.url} target="_blank" rel="noreferrer" className="text-[11px] text-gray-300 hover:text-nvidia inline-flex items-center gap-1">
+                            <a href={h.url} target="_blank" rel="noreferrer" className="text-[11px] text-gray-300 hover:text-brand inline-flex items-center gap-1">
                               <span className="truncate max-w-[240px] inline-block align-bottom">{h.job}</span><ExternalLink size={8} className="flex-shrink-0" />
                             </a>
                           ) : <span className="text-[11px] text-gray-300 truncate max-w-[240px] inline-block">{h.job}</span>}

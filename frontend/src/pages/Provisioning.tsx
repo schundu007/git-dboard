@@ -60,6 +60,21 @@ export default function Provisioning() {
   const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string } | null>(null)
   const [showStarter, setShowStarter] = useState(false)
   const [copiedYaml, setCopiedYaml] = useState(false)
+  const [scaffolding, setScaffolding] = useState(false)
+
+  async function createPR() {
+    setScaffolding(true); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/scaffold?repo=${encodeURIComponent(repo)}`, { method: 'POST' })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'Failed to create PR' }); return }
+      const link = j.pr_url || j.compare_url
+      setMsg({ ok: true, text: link ? `PR ready → ${link}` : 'Branch pushed.' })
+      if (j.pr_url) window.open(j.pr_url, '_blank')
+      checkPreflight()
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setScaffolding(false) }
+  }
 
   async function loadRuns() {
     if (!repo) return
@@ -111,7 +126,7 @@ export default function Provisioning() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Rocket size={18} className="text-nvidia" />
+        <Rocket size={18} className="text-brand" />
         <h1 className="text-lg font-semibold text-white">Provisioning</h1>
         <span className="text-[11px] text-gray-500 ml-1">CI dispatch (OIDC + OPA/Trivy/AI gates + approval) · break-glass direct apply</span>
       </div>
@@ -130,18 +145,24 @@ export default function Provisioning() {
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
         {pf?.reason === 'workflow_missing' && (
           <div>
-            <button onClick={() => setShowStarter(v => !v)} className="text-[10px] text-nvidia hover:underline">
+            <button onClick={() => setShowStarter(v => !v)} className="text-[10px] text-brand hover:underline">
               {showStarter ? 'hide' : 'show'} starter provision.yml
             </button>
             {showStarter && (
               <div className="mt-1.5 border border-border rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-1.5 bg-surface-2 border-b border-border">
                   <span className="text-[10px] font-mono text-gray-500">.github/workflows/provision.yml</span>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(STARTER_YAML).then(() => { setCopiedYaml(true); setTimeout(() => setCopiedYaml(false), 1500) }) }}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white">
-                    {copiedYaml ? <Check size={11} className="text-accent-green" /> : <Copy size={11} />}{copiedYaml ? 'Copied' : 'Copy'}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={createPR} disabled={scaffolding}
+                      className="flex items-center gap-1 text-[10px] font-medium text-brand hover:underline disabled:opacity-50">
+                      {scaffolding ? <Loader2 size={11} className="animate-spin" /> : <Rocket size={11} />}{scaffolding ? 'Creating PR…' : 'Create via PR'}
+                    </button>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(STARTER_YAML).then(() => { setCopiedYaml(true); setTimeout(() => setCopiedYaml(false), 1500) }) }}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white">
+                      {copiedYaml ? <Check size={11} className="text-accent-green" /> : <Copy size={11} />}{copiedYaml ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
                 </div>
                 <pre className="text-[10px] leading-4 text-gray-300 font-mono p-3 overflow-x-auto max-h-64 overflow-y-auto">{STARTER_YAML}</pre>
               </div>
@@ -156,7 +177,7 @@ export default function Provisioning() {
 
         <div className="flex gap-2 flex-wrap items-center">
           <button onClick={() => dispatch('plan')} disabled={!!busy || !repo}
-            className="flex items-center gap-1.5 bg-nvidia text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+            className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
             {busy === 'plan' ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />} Dispatch Plan
           </button>
           <button onClick={() => dispatch('apply')} disabled={!!busy || !repo}
@@ -201,7 +222,7 @@ export default function Provisioning() {
                   <td className="px-4 py-2 text-[10px] font-mono text-gray-500">{r.event}</td>
                   <td className="px-2 py-2 text-[10px] text-gray-500">{new Date(r.created).toLocaleString()}</td>
                   <td className="px-2 py-2 text-right"><span className={clsx('text-[11px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || r.status}</span></td>
-                  <td className="px-4 py-2 text-right"><a href={r.url} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-nvidia inline-flex"><ExternalLink size={11} /></a></td>
+                  <td className="px-4 py-2 text-right"><a href={r.url} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-brand inline-flex"><ExternalLink size={11} /></a></td>
                 </tr>
               ))}
             </tbody>

@@ -75,17 +75,17 @@ export function StatCard({
   icon?: ReactNode
   trend?: string
   trendUp?: boolean
-  accentColor?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange' | 'indigo' | 'nvidia'
+  accentColor?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'orange' | 'indigo' | 'brand'
 }) {
   const iconColors: Record<string, string> = {
     blue:   'text-neutral-400',
-    green:  'text-nvidia',
+    green:  'text-brand',
     red:    'text-accent-red',
     yellow: 'text-accent-yellow',
     purple: 'text-neutral-400',
     orange: 'text-accent-yellow',
-    indigo: 'text-nvidia',
-    nvidia: 'text-nvidia',
+    indigo: 'text-brand',
+    nvidia: 'text-brand',
   }
 
   return (

@@ -16,8 +16,8 @@ const schema = z.object({
   GITHUB_INSTALLATION_ID: z.string().optional(),
 
   // Target repository — defaults to the IsaacLab repo
-  REPO_OWNER: z.string().default('isaac-sim'),
-  REPO_NAME:  z.string().default('IsaacLab'),
+  REPO_OWNER: z.string().default(''),
+  REPO_NAME:  z.string().default(''),
 
   // HTTP server
   PORT:      z.string().default('3000'),

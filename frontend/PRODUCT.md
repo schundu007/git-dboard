@@ -1,12 +1,12 @@
-# IsaacLab DevOps Dashboard
+# GitPulse — DevOps Dashboard
 
 register: product
 
 ## Users
-Infrastructure and ML DevOps engineers monitoring IsaacLab CI/CD pipelines. Expert users who glance at this 8+ hours a day. They need fast, scannable status — not explanations, not onboarding UX.
+Infrastructure and ML DevOps engineers monitoring the connected repo CI/CD pipelines. Expert users who glance at this 8+ hours a day. They need fast, scannable status — not explanations, not onboarding UX.
 
 ## Purpose
-Central command surface for GitHub Actions workflows, nightly build tracking, container registry management, branch health, and SLURM/PBS cluster runners for the IsaacLab robotics simulation framework.
+Central command surface for GitHub Actions workflows, nightly build tracking, container registry management, branch health, and SLURM/PBS cluster runners for the the connected repo robotics simulation framework.
 
 ## Brand tone
 Precise. Fast. Trusted. Every element earns its place. No decoration that doesn't carry information.

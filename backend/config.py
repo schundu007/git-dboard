@@ -3,12 +3,14 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     GH_PAT: str
-    GH_OWNER: str = "isaac-sim"
-    GH_REPO: str = "IsaacLab"
+    # Repo-agnostic: the active repo comes from the DB/switcher; these env
+    # fallbacks are intentionally empty so no specific repo is hardcoded.
+    GH_OWNER: str = ""
+    GH_REPO: str = ""
 
     AWS_REGION: str = "us-east-1"
-    ECR_ACCOUNT_ID: str = "365506438424"
-    ECR_REPO: str = "issaclab/isaac"
+    ECR_ACCOUNT_ID: str = ""
+    ECR_REPO: str = ""
 
     NGC_API_KEY: str = ""
     NGC_ORG: str = ""

@@ -13,7 +13,7 @@ function StatusDot({ status }: { status: string | null }) {
   if (!status) return <span className="w-2 h-2 rounded-full bg-surface-3 border border-border" />
   if (status === 'success') return <span className="w-2 h-2 rounded-full bg-accent-green" />
   if (status === 'failure' || status === 'timed_out') return <span className="w-2 h-2 rounded-full bg-accent-red" />
-  if (status === 'in_progress') return <span className="w-2 h-2 rounded-full bg-nvidia animate-pulse" />
+  if (status === 'in_progress') return <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
   return <span className="w-2 h-2 rounded-full bg-yellow-500" />
 }
 
@@ -23,7 +23,7 @@ function StatusChip({ status }: { status: string | null }) {
     success: 'text-accent-green',
     failure: 'text-accent-red',
     timed_out: 'text-accent-red',
-    in_progress: 'text-nvidia',
+    in_progress: 'text-brand',
     cancelled: 'text-gray-400',
     skipped: 'text-gray-400',
   }
@@ -34,7 +34,7 @@ function StatusChip({ status }: { status: string | null }) {
   )
 }
 
-function RateBar({ rate, color = 'nvidia' }: { rate: number | null; color?: string }) {
+function RateBar({ rate, color = 'brand' }: { rate: number | null; color?: string }) {
   if (rate === null) return <span className="text-[11px] text-gray-500">N/A</span>
   const cls = rate >= 80 ? 'bg-accent-green' : rate >= 60 ? 'bg-yellow-500' : 'bg-accent-red'
   return (
@@ -134,7 +134,7 @@ function RepoCard({ r, onOpen }: { r: any; onOpen: () => void }) {
       {r.id && (
         <button
           onClick={onOpen}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium border border-border bg-surface-2 text-gray-300 hover:border-nvidia/40 hover:text-nvidia hover:bg-nvidia/5 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium border border-border bg-surface-2 text-gray-300 hover:border-brand/40 hover:text-brand hover:bg-brand/5 transition-colors"
         >
           <LayoutDashboard size={11} />
           Open in Dashboard
@@ -172,7 +172,7 @@ export default function GroupDashboard() {
         <AlertTriangle size={20} className="text-accent-red" />
         <p className="text-[13px] text-white font-semibold">Failed to load group</p>
         <p className="text-[11px] text-gray-400 font-mono">{(error as Error).message}</p>
-        <Link to="/settings" className="text-[11px] text-nvidia hover:underline mt-1">
+        <Link to="/settings" className="text-[11px] text-brand hover:underline mt-1">
           Check Settings →
         </Link>
       </div>
@@ -249,7 +249,7 @@ export default function GroupDashboard() {
         {repos.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface-1 p-8 text-center">
             <p className="text-[13px] text-gray-400">No repos in this group.</p>
-            <Link to="/settings" className="mt-2 inline-block text-[11px] text-nvidia hover:underline">
+            <Link to="/settings" className="mt-2 inline-block text-[11px] text-brand hover:underline">
               Assign repos in Settings →
             </Link>
           </div>
@@ -263,7 +263,7 @@ export default function GroupDashboard() {
       {/* Settings hint */}
       <p className="text-[11px] text-gray-500 text-center">
         Assign more repos to this group in{' '}
-        <Link to="/settings" className="text-nvidia hover:underline">Settings → Repositories</Link>
+        <Link to="/settings" className="text-brand hover:underline">Settings → Repositories</Link>
       </p>
     </div>
   )

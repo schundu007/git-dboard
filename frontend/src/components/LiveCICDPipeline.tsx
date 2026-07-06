@@ -195,7 +195,7 @@ export default function LiveCICDPipeline() {
     <div className="flex h-full min-h-[280px] flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3 px-1">
         <span className="flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1 font-mono text-[11px] text-gray-300">
-          <GitBranch className="h-3 w-3 text-nvidia" />
+          <GitBranch className="h-3 w-3 text-brand" />
           {slug || '—'}
         </span>
         <span className="font-mono text-[10px] text-gray-500">{workflows.length} workflows</span>

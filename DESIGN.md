@@ -177,12 +177,12 @@ The depth hierarchy is fixed: Void (#09090b) as page background, Console Dark (#
 Compact by design. Buttons are tools, not calls-to-action. They should not dominate a data-dense screen.
 
 - **Shape:** Near-flat (2px radius via global override). No soft rounding anywhere.
-- **Primary** (Pipeline Green background, #0f1a00 text, `ring-1 ring-nvidia/40`): Trigger CI, activate a repo, run automation. Not used for navigation or settings.
+- **Primary** (Pipeline Green background, #0f1a00 text, `ring-1 ring-brand/40`): Trigger CI, activate a repo, run automation. Not used for navigation or settings.
 - **Secondary** (Panel Mid background, neutral-200 text, `ring-1 ring-border`): Default action variant. Filters, configuration, bulk operations.
 - **Ghost** (transparent background, neutral-400 text): Low-hierarchy actions in dense rows; icon-only buttons in toolbars.
 - **Danger** (Incident Red at 8% opacity background, red-400 text, `ring-1 ring-red-500/25`): Destructive actions only. Deletion, force-merge, cancellation.
 - **Press state:** `active:scale-[0.98]` on all variants. Subtle physical feedback; no bounce.
-- **Focus ring:** `ring-2 ring-nvidia/60 ring-offset-1 ring-offset-surface`. Keyboard focus is always Pipeline Green.
+- **Focus ring:** `ring-2 ring-brand/60 ring-offset-1 ring-offset-surface`. Keyboard focus is always Pipeline Green.
 - **Sizes:** xs (24px tall), sm (28px), md (32px), lg (36px). sm is the default in data rows; md in toolbars.
 
 ### Cards
@@ -212,7 +212,7 @@ The primary presentation layer for all pipeline, PR, registry, and log data.
 
 ### Inputs / Fields
 - **Style:** `bg-surface-3 border border-border` at 3px visual radius. Placeholder text in neutral-500.
-- **Focus:** Border shifts to `border-nvidia/50` (Pipeline Green at 50% opacity). No glow; crisp boundary shift.
+- **Focus:** Border shifts to `border-brand/50` (Pipeline Green at 50% opacity). No glow; crisp boundary shift.
 - **Error:** `border-accent-red/50`.
 - **Font rule:** Monospace for IDs, URLs, tokens, paths, and PATs. Proportional for labels, names, and free text.
 

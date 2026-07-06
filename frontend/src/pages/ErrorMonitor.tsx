@@ -125,7 +125,7 @@ function NightlyFailuresPanel() {
           <div className="flex items-center gap-3 mt-1 text-[9px] text-gray-400">
             <span>{j.failed} / {j.total} failed</span>
             {j.trend === 'worsening' && <span className="text-accent-red">↑ worsening</span>}
-            {j.trend === 'improving' && <span className="text-nvidia">↓ improving</span>}
+            {j.trend === 'improving' && <span className="text-brand">↓ improving</span>}
           </div>
         </div>
       ))}

@@ -49,7 +49,7 @@ function AppearanceSection() {
           onClick={toggle}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-2 border border-border text-sm text-gray-300 hover:border-neutral-500 transition-colors"
         >
-          {theme === 'dark' ? <Moon size={13} className="text-neutral-400" /> : <Sun size={13} className="text-nvidia" />}
+          {theme === 'dark' ? <Moon size={13} className="text-neutral-400" /> : <Sun size={13} className="text-brand" />}
           <span className="capitalize">{theme}</span>
         </button>
       </Row>
@@ -83,7 +83,7 @@ function ApiSection() {
     <SectionCard title="Backend API">
       <Row label="API URL" description="FastAPI backend endpoint used for all data fetching">
         <div className="flex items-center gap-1.5">
-          {testState === 'ok'      && <CheckCircle2 size={13} className="text-nvidia" />}
+          {testState === 'ok'      && <CheckCircle2 size={13} className="text-brand" />}
           {testState === 'fail'    && <XCircle      size={13} className="text-accent-red" />}
           {testState === 'loading' && <Loader2      size={13} className="text-neutral-400 animate-spin" />}
         </div>
@@ -96,13 +96,13 @@ function ApiSection() {
             value={apiDraft}
             onChange={e => setApiDraft(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && save()}
-            className="w-full bg-surface-3 border border-border rounded-lg pl-7 pr-3 py-1.5 text-[12px] font-mono text-gray-300 focus:outline-none focus:border-nvidia/50 transition-colors"
+            className="w-full bg-surface-3 border border-border rounded-lg pl-7 pr-3 py-1.5 text-[12px] font-mono text-gray-300 focus:outline-none focus:border-brand/50 transition-colors"
             placeholder="http://localhost:8000"
           />
         </div>
         <button onClick={save}
           className={cn('px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors flex-shrink-0',
-            saved ? 'bg-nvidia/20 text-nvidia border border-nvidia/30' : 'bg-surface-2 border border-border text-gray-300 hover:border-neutral-500')}>
+            saved ? 'bg-brand/20 text-brand border border-brand/30' : 'bg-surface-2 border border-border text-gray-300 hover:border-neutral-500')}>
           {saved ? 'Saved' : 'Save'}
         </button>
         <button onClick={() => testConnection(apiDraft)}
@@ -126,8 +126,8 @@ function GitHubSection() {
         description={token ? 'Configured via VITE_GITHUB_TOKEN' : 'Not set — add to .env and restart Vite'}
       >
         <div className="flex items-center gap-1.5">
-          <Key size={12} className={token ? 'text-nvidia' : 'text-gray-400'} />
-          <span className={cn('text-[11px] font-mono', token ? 'text-nvidia' : 'text-gray-400')}>
+          <Key size={12} className={token ? 'text-brand' : 'text-gray-400'} />
+          <span className={cn('text-[11px] font-mono', token ? 'text-brand' : 'text-gray-400')}>
             {token ? `${token.slice(0, 4)}${'•'.repeat(12)}` : 'not set'}
           </span>
         </div>
@@ -184,7 +184,7 @@ function Cap({ label, active }: { label: string; active: boolean }) {
     <span className={cn(
       'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border',
       active
-        ? 'bg-nvidia/10 text-nvidia border-nvidia/25'
+        ? 'bg-brand/10 text-brand border-brand/25'
         : 'bg-surface-3 text-gray-500 border-border',
     )}>
       {label}
@@ -203,8 +203,8 @@ function TestResult({ result }: { result: any }) {
   const repo = result.repo ?? {}
   const caps = result.capabilities ?? {}
   return (
-    <div className="p-3 rounded-lg bg-nvidia/[.06] border border-nvidia/20 space-y-2">
-      <div className="flex items-center gap-2 text-nvidia text-[12px] font-medium">
+    <div className="p-3 rounded-lg bg-brand/[.06] border border-brand/20 space-y-2">
+      <div className="flex items-center gap-2 text-brand text-[12px] font-medium">
         <CheckCircle2 size={13} />
         Connected — {repo.full_name}
       </div>
@@ -223,7 +223,7 @@ function TestResult({ result }: { result: any }) {
 function SwitchingOverlay({ slug }: { slug: string }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-      <Loader2 size={28} className="text-nvidia animate-spin" />
+      <Loader2 size={28} className="text-brand animate-spin" />
       <div className="text-center">
         <p className="text-[14px] font-semibold text-white">Switching repository</p>
         <p className="text-[12px] text-gray-400 font-mono mt-1">{slug}</p>
@@ -331,7 +331,7 @@ function AlertRulesSection() {
                   onClick={() => toggleRule(rule.id)}
                   className={cn(
                     'w-9 h-5 rounded-full transition-colors flex-shrink-0 relative mt-0.5',
-                    rule.enabled ? 'bg-nvidia' : 'bg-surface-3 border border-border',
+                    rule.enabled ? 'bg-brand' : 'bg-surface-3 border border-border',
                   )}
                   aria-label={rule.enabled ? 'Disable rule' : 'Enable rule'}
                 >
@@ -355,7 +355,7 @@ function AlertRulesSection() {
                           onChange={(e) => setEditThreshold(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(rule.id); if (e.key === 'Escape') cancelEdit() }}
                           autoFocus
-                          className="w-16 bg-surface-3 border border-nvidia/50 rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none"
+                          className="w-16 bg-surface-3 border border-brand/50 rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none"
                         />
                         <button onClick={() => saveEdit(rule.id)} className="text-accent-green hover:text-accent-green/80 transition-colors">
                           <Check size={11} />
@@ -442,18 +442,18 @@ function AIProviderSection() {
             const meta = PROVIDER_META[p.id] ?? { label: p.name, placeholder: 'API key...', docs: '#' }
             const isActive = p.id === activeProvider
             return (
-              <div key={p.id} className={cn('rounded-lg border p-3 space-y-2 transition-colors', isActive ? 'border-nvidia/40 bg-nvidia/[.04]' : 'border-border bg-surface-2')}>
+              <div key={p.id} className={cn('rounded-lg border p-3 space-y-2 transition-colors', isActive ? 'border-brand/40 bg-brand/[.04]' : 'border-border bg-surface-2')}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">#{idx + 1}</span>
                   {idx < FALLBACK_ORDER.length - 1 && <span className="text-[9px] text-gray-600">↓ fallback</span>}
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className={cn('w-2 h-2 rounded-full flex-shrink-0', isActive ? 'bg-nvidia animate-pulse' : 'bg-surface-3 border border-border')} />
+                    <div className={cn('w-2 h-2 rounded-full flex-shrink-0', isActive ? 'bg-brand animate-pulse' : 'bg-surface-3 border border-border')} />
                     <span className="text-[12px] font-semibold text-white">{meta.label}</span>
                     <span className="text-[10px] font-mono text-gray-500">{p.model}</span>
                     {p.has_key && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-nvidia/10 border border-nvidia/20 text-nvidia font-semibold uppercase tracking-wider">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand/10 border border-brand/20 text-brand font-semibold uppercase tracking-wider">
                         {p.key_source === 'env' ? 'env' : 'key set'}
                       </span>
                     )}
@@ -462,12 +462,12 @@ function AIProviderSection() {
                     <button
                       onClick={() => switchProvider(p.id)}
                       disabled={mut.isPending}
-                      className="text-[11px] px-3 py-1 rounded-lg border border-nvidia/30 text-nvidia hover:bg-nvidia/10 transition-colors disabled:opacity-40 flex items-center gap-1"
+                      className="text-[11px] px-3 py-1 rounded-lg border border-brand/30 text-brand hover:bg-brand/10 transition-colors disabled:opacity-40 flex items-center gap-1"
                     >
                       <Zap size={10} /> Use this
                     </button>
                   )}
-                  {isActive && <span className="text-[10px] font-bold text-nvidia uppercase tracking-wider">Active</span>}
+                  {isActive && <span className="text-[10px] font-bold text-brand uppercase tracking-wider">Active</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -475,16 +475,16 @@ function AIProviderSection() {
                     value={keys[p.id] ?? ''}
                     onChange={e => setKeys(prev => ({ ...prev, [p.id]: e.target.value }))}
                     placeholder={p.masked_key ?? meta.placeholder}
-                    className="flex-1 bg-surface-3 border border-border rounded-lg px-3 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50 font-mono"
+                    className="flex-1 bg-surface-3 border border-border rounded-lg px-3 py-1.5 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50 font-mono"
                   />
                   <button
                     onClick={() => saveKey(p.id)}
                     disabled={!keys[p.id]?.trim() || mut.isPending}
-                    className="text-[11px] px-3 py-1.5 rounded-lg bg-surface-3 border border-border text-gray-300 hover:border-nvidia/40 hover:text-white transition-colors disabled:opacity-40"
+                    className="text-[11px] px-3 py-1.5 rounded-lg bg-surface-3 border border-border text-gray-300 hover:border-brand/40 hover:text-white transition-colors disabled:opacity-40"
                   >
                     Save
                   </button>
-                  <a href={meta.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-nvidia transition-colors whitespace-nowrap">
+                  <a href={meta.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gray-500 hover:text-brand transition-colors whitespace-nowrap">
                     Get key ↗
                   </a>
                 </div>
@@ -492,7 +492,7 @@ function AIProviderSection() {
               </div>
             )
           })}
-          {saved && <p className="text-[11px] text-nvidia">Saved ✓</p>}
+          {saved && <p className="text-[11px] text-brand">Saved ✓</p>}
           {mut.isError && <p className="text-[11px] text-accent-red">{(mut.error as Error)?.message}</p>}
         </div>
       )}
@@ -610,11 +610,11 @@ export default function Settings() {
 
         {/* Active repo banner */}
         {active && (
-          <div className="rounded-xl border border-nvidia/20 bg-nvidia/[.04] p-4 flex items-center justify-between gap-4">
+          <div className="rounded-xl border border-brand/20 bg-brand/[.04] p-4 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Active Repository</p>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-nvidia animate-pulse flex-shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-brand animate-pulse flex-shrink-0" />
                 <span className="text-[14px] font-semibold text-white">{active.slug ?? active.name}</span>
                 {activeSource === 'env' && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-3 border border-border text-gray-500 font-mono">env</span>
@@ -647,7 +647,7 @@ export default function Settings() {
               onClick={() => { setShowForm(v => !v); setTestResult(null); setUrlInput(''); setUrlError('') }}
               className={cn(
                 'flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg transition-colors',
-                showForm ? 'bg-surface-3 text-gray-300' : 'bg-nvidia/15 text-nvidia hover:bg-nvidia/25',
+                showForm ? 'bg-surface-3 text-gray-300' : 'bg-brand/15 text-brand hover:bg-brand/25',
               )}
             >
               <Plus size={12} />
@@ -672,12 +672,12 @@ export default function Settings() {
                   autoFocus
                   className={cn(
                     'w-full bg-surface-3 border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
-                    urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-nvidia/50',
+                    urlError ? 'border-accent-red/50 focus:border-accent-red' : 'border-border focus:border-brand/50',
                   )}
                 />
                 {urlError && <p className="text-[10px] text-accent-red mt-1">{urlError}</p>}
                 {!urlError && form.owner && form.repo && urlInput && (
-                  <p className="text-[10px] text-nvidia mt-1 flex items-center gap-1">
+                  <p className="text-[10px] text-brand mt-1 flex items-center gap-1">
                     <CheckCircle2 size={9} />
                     Parsed: <span className="font-mono ml-0.5">{form.owner}/{form.repo}</span>
                   </p>
@@ -697,7 +697,7 @@ export default function Settings() {
                     value={form.owner}
                     onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
                     placeholder="e.g. my-org"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors"
                   />
                 </div>
                 <div>
@@ -706,7 +706,7 @@ export default function Settings() {
                     value={form.repo}
                     onChange={e => setForm(f => ({ ...f, repo: e.target.value }))}
                     placeholder="e.g. my-repo"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors"
                   />
                 </div>
               </div>
@@ -716,7 +716,7 @@ export default function Settings() {
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Auto-filled on test"
-                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors"
+                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors"
                 />
               </div>
               <div>
@@ -728,7 +728,7 @@ export default function Settings() {
                   value={form.gh_pat}
                   onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                   placeholder="ghp_…"
-                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                  className="w-full bg-surface-3 border border-border rounded-lg px-3 py-2 text-[12px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors font-mono"
                 />
               </div>
 
@@ -740,7 +740,7 @@ export default function Settings() {
                   onClick={() => setActivateOnAdd(v => !v)}
                   className={cn(
                     'w-8 h-4 rounded-full transition-colors flex-shrink-0 relative',
-                    activateOnAdd ? 'bg-nvidia' : 'bg-surface-3 border border-border',
+                    activateOnAdd ? 'bg-brand' : 'bg-surface-3 border border-border',
                   )}
                 >
                   <span className={cn(
@@ -765,7 +765,7 @@ export default function Settings() {
                 <button
                   onClick={() => addMut.mutate({ ...form, name: form.name || `${form.owner}/${form.repo}` })}
                   disabled={addMut.isPending || !form.owner || !form.repo}
-                  className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-nvidia text-black hover:bg-[#5a8c00] transition-colors disabled:opacity-40 font-medium"
+                  className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-brand text-black hover:bg-[#5a8c00] transition-colors disabled:opacity-40 font-medium"
                 >
                   {addMut.isPending ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
                   {activateOnAdd ? 'Add & switch' : 'Add repository'}
@@ -813,12 +813,12 @@ export default function Settings() {
                 const caps = r.capabilities ?? {}
                 const showCaps = expandedCaps === r.id
                 return (
-                  <div key={r.id} className={cn('p-4 transition-colors', isActive && 'bg-nvidia/[.03]')}>
+                  <div key={r.id} className={cn('p-4 transition-colors', isActive && 'bg-brand/[.03]')}>
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border',
                         isActive
-                          ? 'bg-nvidia/15 border-nvidia/30 text-nvidia'
+                          ? 'bg-brand/15 border-brand/30 text-brand'
                           : 'bg-surface-3 border-border text-gray-500',
                       )}>
                         <GitBranch size={13} />
@@ -827,8 +827,8 @@ export default function Settings() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[13px] font-semibold text-white truncate">{r.name}</span>
                           {isActive && (
-                            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-nvidia bg-nvidia/10 border border-nvidia/20 rounded-full px-1.5 py-0.5">
-                              <span className="w-1 h-1 rounded-full bg-nvidia animate-pulse" />
+                            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-brand bg-brand/10 border border-brand/20 rounded-full px-1.5 py-0.5">
+                              <span className="w-1 h-1 rounded-full bg-brand animate-pulse" />
                               Active
                             </span>
                           )}
@@ -850,7 +850,7 @@ export default function Settings() {
                                 }}
                                 list={`units-${r.id}`}
                                 placeholder="e.g. platform"
-                                className="bg-surface-3 border border-nvidia/40 rounded px-1.5 py-0.5 text-[10px] text-white font-mono focus:outline-none w-32"
+                                className="bg-surface-3 border border-brand/40 rounded px-1.5 py-0.5 text-[10px] text-white font-mono focus:outline-none w-32"
                               />
                               <datalist id={`units-${r.id}`}>
                                 {existingUnits.map(u => <option key={u} value={u} />)}
@@ -868,7 +868,7 @@ export default function Settings() {
                               className="flex items-center gap-1 text-[10px] hover:text-gray-200 transition-colors group/unit"
                             >
                               {r.business_unit
-                                ? <span className="font-mono text-nvidia/80">{r.business_unit}</span>
+                                ? <span className="font-mono text-brand/80">{r.business_unit}</span>
                                 : <span className="text-gray-600 italic">no group</span>
                               }
                               <Pencil size={8} className="text-gray-700 group-hover/unit:text-gray-400" />
@@ -890,7 +890,7 @@ export default function Settings() {
                         {!isActive && (
                           <button
                             onClick={() => switchTo(r.id, r.slug)}
-                            className="text-[11px] px-3 py-1.5 rounded-lg border border-nvidia/30 text-nvidia hover:bg-nvidia/10 transition-colors font-medium flex items-center gap-1"
+                            className="text-[11px] px-3 py-1.5 rounded-lg border border-brand/30 text-brand hover:bg-brand/10 transition-colors font-medium flex items-center gap-1"
                           >
                             <Zap size={10} />
                             Switch

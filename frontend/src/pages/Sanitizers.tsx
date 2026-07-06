@@ -35,7 +35,7 @@ function SuiteCard({ s }: { s: Suite }) {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">{s.kind}</span>
             {s.full && <span className="text-[10px] text-gray-500">{s.full}</span>}
             {s.run && (
-              <a href={s.run.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-nvidia font-mono inline-flex items-center gap-0.5">
+              <a href={s.run.url} target="_blank" rel="noreferrer" className="text-[10px] text-gray-500 hover:text-brand font-mono inline-flex items-center gap-0.5">
                 #{s.run.number}<ExternalLink size={8} />
               </a>
             )}
@@ -69,7 +69,7 @@ function SuiteCard({ s }: { s: Suite }) {
                   <tr key={i} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40">
                     <td className="px-4 py-1.5">
                       {j.url ? (
-                        <a href={j.url} target="_blank" rel="noreferrer" className="text-[11px] text-gray-300 hover:text-nvidia truncate max-w-[420px] inline-block align-bottom">{j.name}</a>
+                        <a href={j.url} target="_blank" rel="noreferrer" className="text-[11px] text-gray-300 hover:text-brand truncate max-w-[420px] inline-block align-bottom">{j.name}</a>
                       ) : <span className="text-[11px] text-gray-300 truncate max-w-[420px] inline-block">{j.name}</span>}
                     </td>
                     <td className="px-2 py-1.5 font-mono text-[10px] text-accent-blue whitespace-nowrap">{j.arch || '—'}</td>
@@ -100,7 +100,7 @@ export default function Sanitizers() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <ShieldAlert size={18} className="text-nvidia" />
+        <ShieldAlert size={18} className="text-brand" />
         <h1 className="text-lg font-semibold text-white">Sanitizers</h1>
         <span className="text-[11px] text-gray-500 ml-1">ASAN &amp; TSAN build/test pipelines</span>
       </div>

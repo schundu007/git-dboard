@@ -59,7 +59,7 @@ function ExampleBlock({ code }: { code: string }) {
           'absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9.5px] transition-colors',
           'opacity-0 group-hover/ex:opacity-100',
           copied
-            ? 'border-nvidia/30 bg-nvidia/10 text-nvidia opacity-100'
+            ? 'border-brand/30 bg-brand/10 text-brand opacity-100'
             : 'border-border bg-surface-2 text-neutral-500 hover:text-neutral-200',
         )}
       >
@@ -127,7 +127,7 @@ export default function ScriptPlayground() {
       <div className="flex items-start justify-between flex-shrink-0">
         <div>
           <h1 className="flex items-center gap-2 text-[17px] font-semibold text-white">
-            <Terminal size={16} className="text-nvidia" />
+            <Terminal size={16} className="text-brand" />
             Script Playground
           </h1>
           <p className="text-[12px] text-neutral-500 mt-0.5">
@@ -159,7 +159,7 @@ export default function ScriptPlayground() {
                   className={cn(
                     'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
                     language === lang
-                      ? 'bg-nvidia/15 text-nvidia border border-nvidia/25'
+                      ? 'bg-brand/15 text-brand border border-brand/25'
                       : 'text-neutral-500 hover:text-neutral-300',
                   )}
                 >
@@ -186,7 +186,7 @@ export default function ScriptPlayground() {
                 className={cn(
                   'flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] transition-colors disabled:opacity-30',
                   inputCopy.copied
-                    ? 'border-nvidia/30 bg-nvidia/10 text-nvidia'
+                    ? 'border-brand/30 bg-brand/10 text-brand'
                     : 'border-border bg-surface-2 text-neutral-500 hover:text-neutral-200 hover:border-neutral-600',
                 )}
               >
@@ -216,8 +216,8 @@ export default function ScriptPlayground() {
             disabled={!script.trim() || isPending}
             className={cn(
               'flex-shrink-0 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-medium transition-all',
-              'bg-nvidia/15 border border-nvidia/25 text-nvidia',
-              'hover:bg-nvidia/25 hover:border-nvidia/40',
+              'bg-brand/15 border border-brand/25 text-brand',
+              'hover:bg-brand/25 hover:border-brand/40',
               'disabled:opacity-35 disabled:cursor-not-allowed',
             )}
           >
@@ -252,7 +252,7 @@ export default function ScriptPlayground() {
                     : 'text-neutral-500 border-transparent hover:text-neutral-200 hover:bg-surface-3/30',
                 )}
               >
-                <tab.icon size={10} className={cn('flex-shrink-0', activeTab === tab.id && 'text-nvidia')} />
+                <tab.icon size={10} className={cn('flex-shrink-0', activeTab === tab.id && 'text-brand')} />
                 <span className="hidden sm:inline">{tab.label}</span>
                 {tab.count !== undefined && result && (
                   <span className={cn(
@@ -265,7 +265,7 @@ export default function ScriptPlayground() {
                   </span>
                 )}
                 {activeTab === tab.id && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-nvidia/60" />
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-brand/60" />
                 )}
               </button>
             ))}
@@ -300,7 +300,7 @@ export default function ScriptPlayground() {
             {/* Loading */}
             {isPending && (
               <div className="flex flex-col items-center justify-center h-full gap-3">
-                <Loader2 size={22} className="text-nvidia animate-spin" />
+                <Loader2 size={22} className="text-brand animate-spin" />
                 <p className="text-[12px] text-neutral-500">Analyzing your script with Claude…</p>
               </div>
             )}
@@ -324,10 +324,10 @@ export default function ScriptPlayground() {
                 {activeTab === 'errors' && (
                   <>
                     {result.errors.length === 0 ? (
-                      <div className="flex items-center gap-3 p-4 rounded-xl bg-nvidia/[.08] border border-nvidia/20">
-                        <CheckCircle2 size={15} className="text-nvidia flex-shrink-0" />
+                      <div className="flex items-center gap-3 p-4 rounded-xl bg-brand/[.08] border border-brand/20">
+                        <CheckCircle2 size={15} className="text-brand flex-shrink-0" />
                         <div>
-                          <p className="text-[13px] text-nvidia font-medium">No errors found</p>
+                          <p className="text-[13px] text-brand font-medium">No errors found</p>
                           <p className="text-[11px] text-neutral-500 mt-0.5">The script looks clean</p>
                         </div>
                       </div>
@@ -394,7 +394,7 @@ export default function ScriptPlayground() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Code2 size={12} className="text-nvidia" />
+                        <Code2 size={12} className="text-brand" />
                         <span className="text-[10.5px] font-semibold text-neutral-500 uppercase tracking-widest">
                           Corrected Script
                         </span>
@@ -404,7 +404,7 @@ export default function ScriptPlayground() {
                         className={cn(
                           'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] border transition-all',
                           copied
-                            ? 'border-nvidia/30 bg-nvidia/10 text-nvidia'
+                            ? 'border-brand/30 bg-brand/10 text-brand'
                             : 'border-border bg-surface-2 text-neutral-400 hover:text-white hover:border-neutral-600',
                         )}
                       >

@@ -16,7 +16,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 function getInitialTheme(): Theme {
   try {
-    const stored = localStorage.getItem('isaaclab-theme')
+    const stored = localStorage.getItem('gitpulse-theme')
     if (stored === 'light' || stored === 'dark') return stored
     if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light'
   } catch {}
@@ -29,7 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     root.setAttribute('data-theme', theme)
-    try { localStorage.setItem('isaaclab-theme', theme) } catch {}
+    try { localStorage.setItem('gitpulse-theme', theme) } catch {}
   }, [theme])
 
   const setTheme = (t: Theme) => setThemeState(t)

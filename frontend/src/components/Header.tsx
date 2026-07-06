@@ -52,7 +52,7 @@ export default function Header() {
       </button>
 
       {/* Mobile logo */}
-      <div className="flex-shrink-0 text-nvidia md:hidden">
+      <div className="flex-shrink-0 text-brand md:hidden">
         <GitPulseLogo size={18} />
       </div>
 

@@ -74,7 +74,7 @@ export default function InfraGap() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Gauge size={18} className="text-nvidia" />
+        <Gauge size={18} className="text-brand" />
         <h1 className="text-lg font-semibold text-white">Infra &amp; Security Gap</h1>
         <span className="text-[11px] text-gray-500 ml-1">current (repo + live AWS) vs target · scores the infra/security delta</span>
       </div>
@@ -84,7 +84,7 @@ export default function InfraGap() {
           <span className="text-[10px] uppercase tracking-wider text-gray-500">Repo</span>
           <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
           <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
-            className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
+            className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
           {pf && (
             <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
               {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
@@ -94,7 +94,7 @@ export default function InfraGap() {
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
         <div className="flex gap-2 flex-wrap">
           <button onClick={analyze} disabled={loading || !repo}
-            className="flex items-center gap-1.5 bg-nvidia text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+            className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
             {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Analyze
           </button>
           <button onClick={() => provision('plan')} disabled={!!busy || !repo}

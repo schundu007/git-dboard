@@ -59,7 +59,7 @@ export function TabBar<T extends string>({
               size={size === 'md' ? 12 : 11}
               className={cn(
                 'flex-shrink-0 transition-colors',
-                isActive(id) ? 'text-nvidia' : 'text-neutral-600',
+                isActive(id) ? 'text-brand' : 'text-neutral-600',
               )}
             />
           )}
@@ -69,7 +69,7 @@ export function TabBar<T extends string>({
               className={cn(
                 'inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-semibold',
                 isActive(id)
-                  ? 'bg-nvidia/20 text-nvidia'
+                  ? 'bg-brand/20 text-brand'
                   : 'bg-surface-3 text-neutral-500',
               )}
             >
@@ -78,7 +78,7 @@ export function TabBar<T extends string>({
           )}
           {/* Active indicator bar */}
           {isActive(id) && (
-            <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-nvidia/60" />
+            <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] rounded-full bg-brand/60" />
           )}
         </button>
       ))}

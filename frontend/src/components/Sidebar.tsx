@@ -85,7 +85,7 @@ function parseGitHubUrl(raw: string): { owner: string; repo: string } | null {
 function SwitchingOverlay({ slug }: { slug: string }) {
   return createPortal(
     <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-      <Loader2 size={28} className="text-nvidia animate-spin" />
+      <Loader2 size={28} className="text-brand animate-spin" />
       <div className="text-center">
         <p className="text-[14px] font-semibold text-white">Switching repository</p>
         <p className="text-[12px] text-gray-400 font-mono mt-1">{slug}</p>
@@ -232,8 +232,8 @@ function RepoSwitcher() {
           open ? 'bg-surface-2' : 'hover:bg-surface-2/60',
         )}
       >
-        <div className="flex-shrink-0 w-[26px] h-[26px] rounded bg-nvidia dark:bg-[#76b900]/15 flex items-center justify-center">
-          <Cpu size={12} className="text-[#0f1a00] dark:text-nvidia" />
+        <div className="flex-shrink-0 w-[26px] h-[26px] rounded bg-brand dark:bg-[#76b900]/15 flex items-center justify-center">
+          <Cpu size={12} className="text-[#0f1a00] dark:text-brand" />
         </div>
         {showLabels && (
           <>
@@ -271,7 +271,7 @@ function RepoSwitcher() {
                 'flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-colors',
                 showAddForm
                   ? 'bg-surface-3 text-white'
-                  : 'text-nvidia hover:bg-nvidia/10',
+                  : 'text-brand hover:bg-brand/10',
               )}
             >
               <Plus size={10} />
@@ -294,12 +294,12 @@ function RepoSwitcher() {
                   autoFocus
                   className={cn(
                     'w-full bg-surface-3 border rounded-lg px-2.5 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none transition-colors font-mono',
-                    urlError ? 'border-accent-red/50' : 'border-border focus:border-nvidia/50',
+                    urlError ? 'border-accent-red/50' : 'border-border focus:border-brand/50',
                   )}
                 />
                 {urlError && <p className="text-[9px] text-accent-red mt-0.5">{urlError}</p>}
                 {!urlError && form.owner && form.repo && urlInput && (
-                  <p className="text-[9px] text-nvidia mt-0.5 flex items-center gap-1">
+                  <p className="text-[9px] text-brand mt-0.5 flex items-center gap-1">
                     <CheckCircle2 size={8} />
                     <span className="font-mono">{form.owner}/{form.repo}</span>
                   </p>
@@ -313,7 +313,7 @@ function RepoSwitcher() {
                     value={form.owner}
                     onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
                     placeholder="owner"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors font-mono"
                   />
                 </div>
                 <div>
@@ -322,7 +322,7 @@ function RepoSwitcher() {
                     value={form.repo}
                     onChange={e => setForm(f => ({ ...f, repo: e.target.value }))}
                     placeholder="repo"
-                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -341,7 +341,7 @@ function RepoSwitcher() {
                     onChange={e => setForm(f => ({ ...f, gh_pat: e.target.value }))}
                     placeholder="ghp_xxxxxxxxxxxx"
                     type="password"
-                    className="mt-1 w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                    className="mt-1 w-full bg-surface-3 border border-border rounded-lg px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors font-mono"
                   />
                 )}
               </div>
@@ -350,7 +350,7 @@ function RepoSwitcher() {
                 <div className={cn(
                   'flex items-start gap-1.5 p-2 rounded-lg text-[10px]',
                   testResult.ok
-                    ? 'bg-nvidia/[.06] border border-nvidia/20 text-nvidia'
+                    ? 'bg-brand/[.06] border border-brand/20 text-brand'
                     : 'bg-accent-red/[.08] border border-accent-red/20 text-accent-red',
                 )}>
                   {testResult.ok
@@ -373,7 +373,7 @@ function RepoSwitcher() {
                 <button
                   onClick={() => addMut.mutate()}
                   disabled={!canAdd || addMut.isPending}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] bg-nvidia/15 border border-nvidia/25 text-nvidia hover:bg-nvidia/25 disabled:opacity-40 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 disabled:opacity-40 transition-colors"
                 >
                   {addMut.isPending ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
                   Add & activate
@@ -388,7 +388,7 @@ function RepoSwitcher() {
                 value={repoSearch}
                 onChange={e => setRepoSearch(e.target.value)}
                 placeholder={`Search ${allRepos.length} repos…`}
-                className="w-full bg-surface-3 border border-border rounded px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-nvidia/50 transition-colors font-mono"
+                className="w-full bg-surface-3 border border-border rounded px-2 py-1.5 text-[11px] text-white placeholder-gray-500 focus:outline-none focus:border-brand/50 transition-colors font-mono"
               />
             </div>
           )}
@@ -404,7 +404,7 @@ function RepoSwitcher() {
                 <p className="text-[11px] text-gray-400">No saved repos.</p>
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="mt-2 text-[11px] text-nvidia hover:underline"
+                  className="mt-2 text-[11px] text-brand hover:underline"
                 >
                   Add your first repo →
                 </button>
@@ -427,21 +427,21 @@ function RepoSwitcher() {
                 >
                   <div className={cn(
                     'w-[28px] h-[28px] rounded-lg flex-shrink-0 flex items-center justify-center text-[10px] font-bold',
-                    isActive ? 'bg-nvidia/15 text-nvidia' : 'bg-surface-3 text-gray-500',
+                    isActive ? 'bg-brand/15 text-brand' : 'bg-surface-3 text-gray-500',
                   )}>
                     {slug.split('/')[1]?.[0]?.toUpperCase() ?? '?'}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className={cn(
                       'text-[12px] font-medium leading-none truncate',
-                      isActive ? 'text-nvidia' : 'text-white',
+                      isActive ? 'text-brand' : 'text-white',
                     )}>
                       {slug.split('/')[1] ?? slug}
                     </p>
                     <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">{slug.split('/')[0]}</p>
                   </div>
                   {isActive && (
-                    <Check size={12} className="text-nvidia flex-shrink-0" />
+                    <Check size={12} className="text-brand flex-shrink-0" />
                   )}
                 </button>
               )
@@ -624,8 +624,8 @@ export default function Sidebar() {
         )}
       >
         {!showLabels
-          ? <GitPulseLogo size={20} className="text-nvidia" />
-          : <GitPulseLogo size={18} withText textSize="text-[13px]" className="text-nvidia" />
+          ? <GitPulseLogo size={20} className="text-brand" />
+          : <GitPulseLogo size={18} withText textSize="text-[13px]" className="text-brand" />
         }
       </Link>
 
@@ -658,7 +658,7 @@ export default function Sidebar() {
       )}>
         {showLabels && (
           <div className="flex items-center gap-1.5 mb-2.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-nvidia flex-shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />
             <span className="text-[11px] text-neutral-400 font-mono truncate">{repoSlug}</span>
           </div>
         )}

@@ -14,7 +14,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary:   'bg-nvidia text-[#0f1a00] hover:bg-[#82cf00] ring-1 ring-nvidia/40 shadow-sm active:scale-[0.98]',
+  primary:   'bg-brand text-[#0f1a00] hover:bg-[#82cf00] ring-1 ring-brand/40 shadow-sm active:scale-[0.98]',
   secondary: 'bg-surface-3 text-neutral-200 hover:bg-surface-4 ring-1 ring-border hover:ring-border-strong active:scale-[0.98]',
   ghost:     'text-neutral-400 hover:text-neutral-100 hover:bg-surface-2 active:scale-[0.98]',
   danger:    'bg-red-500/[.08] text-red-400 hover:bg-red-500/[.14] ring-1 ring-red-500/25 active:scale-[0.98]',
@@ -45,7 +45,7 @@ export function Button({
       className={cn(
         'inline-flex items-center justify-center font-medium transition-all duration-150 select-none',
         'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nvidia/60 focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
         variantStyles[variant],
         sizeStyles[size],
         className,
