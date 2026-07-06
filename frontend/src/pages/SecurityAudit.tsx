@@ -234,16 +234,16 @@ function StatusIcon({ status }: { status: 'pass' | 'warn' | 'fail' }) {
 
 function CheckRow({ check }: { check: ComplianceCheck }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+    <div className="flex items-start gap-3 py-2.5 border-b border-border/60 last:border-0 hover:bg-surface-2/30 -mx-4 px-4 transition-colors">
       <StatusIcon status={check.status} />
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-0.5">
-          <span className="text-[13px] font-medium text-neutral-200 truncate">{check.name}</span>
+          <span className="text-[13px] font-medium text-neutral-200">{check.name}</span>
           <Badge label={check.severity} cls={SEVERITY_BADGE[check.severity] ?? SEVERITY_BADGE.low} />
+          <span className="text-[10px] font-mono text-neutral-600">{check.id}</span>
         </div>
         <p className="text-[11px] text-neutral-500 leading-relaxed">{check.details}</p>
       </div>
-      <span className="text-[10px] font-mono text-neutral-400 flex-shrink-0 mt-0.5">{check.id}</span>
     </div>
   )
 }
@@ -743,31 +743,26 @@ export default function SecurityAudit() {
   const sec = data as SecurityData
 
   return (
-    <div className="p-6 space-y-0 max-w-[1400px] mx-auto">
+    <div className="space-y-5">
       {/* Section 1 – Score */}
       <ScoreHeader data={sec} />
 
-      <SectionDivider />
 
       {/* Section 2 – Compliance */}
       <ComplianceSection checks={sec.compliance?.checks ?? []} />
 
-      <SectionDivider />
 
       {/* Section 3 – Vulnerabilities */}
       <VulnSection data={sec} />
 
-      <SectionDivider />
 
       {/* Section 4 – Branch Protection */}
       <BranchProtectionSection branches={sec.branch_protection ?? []} />
 
-      <SectionDivider />
 
       {/* Section 5 – Workflow Security */}
       <WorkflowSection wf={sec.workflow_security} />
 
-      <SectionDivider />
 
       {/* Section 6 – Recommendations */}
       <RecommendationsSection recs={sec.recommendations ?? []} />

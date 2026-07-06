@@ -75,6 +75,8 @@ export default function InfraGap() {
   const [enabling, setEnabling] = useState(false)
   const [guide, setGuide] = useState<{ check_id: string; title: string; guide?: string } | null>(null)
   const [guideLoading, setGuideLoading] = useState(false)
+  const [runDetail, setRunDetail] = useState<{ run_id: number; failed_step?: string; error?: string; hint?: { check_id?: string; message: string } } | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [runs, setRuns] = useState<Run[]>([])
 
   function checkPreflight() {
@@ -133,18 +135,29 @@ export default function InfraGap() {
     loadRuns(); [1500, 4000, 8000].forEach(d => setTimeout(loadRuns, d))
   }
 
-  async function askGuide(c: Check) {
-    setGuide({ check_id: c.id, title: c.title }); setGuideLoading(true)
+  async function openGuide(check_id: string, title: string, in_repo?: boolean | null, in_aws?: boolean | null) {
+    setGuide({ check_id, title }); setGuideLoading(true)
     try {
       const r = await fetch(`${API}/gap/guide`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo, check_id: c.id, prefix, in_repo: c.in_repo, in_aws: c.in_aws }),
+        body: JSON.stringify({ repo, check_id, prefix, in_repo, in_aws }),
       })
       const j = await r.json().catch(() => ({}))
-      if (!r.ok) { setGuide({ check_id: c.id, title: c.title, guide: `⚠ ${j.detail || 'Could not generate guidance.'}` }); return }
-      setGuide({ check_id: c.id, title: j.title || c.title, guide: j.guide })
-    } catch (e: any) { setGuide({ check_id: c.id, title: c.title, guide: `⚠ ${String(e.message || e)}` }) }
+      if (!r.ok) { setGuide({ check_id, title, guide: `⚠ ${j.detail || 'Could not generate guidance.'}` }); return }
+      setGuide({ check_id, title: j.title || title, guide: j.guide })
+    } catch (e: any) { setGuide({ check_id, title, guide: `⚠ ${String(e.message || e)}` }) }
     finally { setGuideLoading(false) }
+  }
+  const askGuide = (c: Check) => openGuide(c.id, c.title, c.in_repo, c.in_aws)
+
+  async function showRunDetail(runId: number) {
+    setRunDetail({ run_id: runId }); setDetailLoading(true)
+    try {
+      const t = pf?.repo || repo
+      const r = await fetch(`${API}/provision/run-detail?repo=${encodeURIComponent(t)}&run_id=${runId}`)
+      setRunDetail(await r.json())
+    } catch (e: any) { setRunDetail({ run_id: runId, error: String(e.message || e) }) }
+    finally { setDetailLoading(false) }
   }
 
   const gaps = data ? data.score.total - data.score.ok - data.score.partial : 0
@@ -211,17 +224,43 @@ export default function InfraGap() {
           </div>
           <table className="w-full text-xs"><tbody>
             {runs.slice(0, 5).map(r => (
-              <tr key={r.id} className="border-b border-border/40 last:border-0">
+              <tr key={r.id} onClick={() => r.conclusion === 'failure' && showRunDetail(r.id)}
+                className={clsx('border-b border-border/40 last:border-0', r.conclusion === 'failure' && 'cursor-pointer hover:bg-surface-2/40')}>
                 <td className="px-4 py-1.5 text-[10px] font-mono text-gray-500">{r.event}</td>
                 <td className="px-2 py-1.5 text-[10px] text-gray-500">{new Date(r.created).toLocaleString()}</td>
                 <td className="px-4 py-1.5 text-right">
                   {r.status !== 'completed'
                     ? <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-accent-yellow"><Loader2 size={9} className="animate-spin" />{r.status === 'queued' ? 'queued' : 'running'}</span>
-                    : <span className={clsx('text-[10px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || 'done'}</span>}
+                    : <span className={clsx('text-[10px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || 'done'}{r.conclusion === 'failure' && ' · why?'}</span>}
                 </td>
               </tr>
             ))}
           </tbody></table>
+          {(detailLoading || runDetail) && (
+            <div className="border-t border-border px-4 py-3 bg-surface-2/30 space-y-2">
+              {detailLoading ? (
+                <div className="flex items-center gap-2 text-[11px] text-gray-400"><Loader2 size={12} className="animate-spin" /> Reading run logs…</div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={12} className="text-accent-red" />
+                    <span className="text-[11px] font-semibold text-gray-200">Failed{runDetail?.failed_step ? `: ${runDetail.failed_step}` : ''}</span>
+                    <button onClick={() => setRunDetail(null)} className="ml-auto text-[13px] text-gray-500 hover:text-white leading-none">×</button>
+                  </div>
+                  {runDetail?.error && <pre className="text-[10px] leading-4 text-accent-red/90 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto bg-surface-1 rounded p-2 border border-border">{runDetail.error}</pre>}
+                  {runDetail?.hint && (
+                    <div className="flex items-start gap-2 bg-brand/[0.06] border border-brand/20 rounded p-2">
+                      <span className="text-[10px] text-gray-300 flex-1">{runDetail.hint.message}</span>
+                      {runDetail.hint.check_id && (
+                        <button onClick={() => openGuide(runDetail.hint!.check_id!, runDetail.hint!.message)}
+                          className="flex-shrink-0 text-[10px] font-semibold text-brand hover:underline">Guide me →</button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

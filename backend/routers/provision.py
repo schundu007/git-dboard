@@ -98,6 +98,57 @@ async def runs(repo: str):
             for w in data]
 
 
+# Map common CI failure signatures → the gap check that fixes them (for one-click Guide).
+_ERROR_HINTS = [
+    ("configure-aws-credentials", "oidc_roles",
+     "AWS OIDC role couldn't be assumed. Set the repo variable AWS_PROVISION_ROLE_ARN and ensure the GitHub OIDC provider + role trust policy exist in AWS."),
+    ("could not load credentials", "oidc_roles",
+     "No AWS credentials in CI. Configure OIDC: an AWS_PROVISION_ROLE_ARN and an aws_iam_openid_connect_provider trusting this repo."),
+    ("no valid credential", "oidc_roles", "AWS credentials missing — configure OIDC role assumption."),
+    ("backend.hcl", "iac_remote_state", "Terraform remote-state backend not found. Create the S3 state bucket + DynamoDB lock and backend.hcl."),
+    ("bucket does not exist", "iac_remote_state", "State bucket missing — bootstrap S3 + DynamoDB for remote state."),
+    ("access denied", "oidc_roles", "The assumed role lacks permissions — widen the CI role policy or fix the trust condition."),
+    ("terraform: not found", "provision_pipeline", "terraform isn't installed in the job — add hashicorp/setup-terraform@v3."),
+]
+
+
+def _error_hint(step: str | None, error: str) -> dict | None:
+    hay = f"{step or ''}\n{error or ''}".lower()
+    for sig, check_id, msg in _ERROR_HINTS:
+        if sig in hay:
+            return {"check_id": check_id, "message": msg}
+    return None
+
+
+@router.get("/run-detail")
+async def run_detail(repo: str, run_id: int):
+    """Surface WHY a run failed — failing step + error excerpt + a Guide hint — so the
+    user never has to leave GitPulse for GitHub Actions."""
+    async with httpx.AsyncClient(timeout=30) as c:
+        jr = await c.get(f"{GITHUB_API}/repos/{repo}/actions/runs/{run_id}/jobs", headers=gh._headers())
+        jobs = jr.json().get("jobs", []) if jr.status_code == 200 else []
+        failed_step = None
+        failed_job = None
+        for j in jobs:
+            for s in (j.get("steps") or []):
+                if s.get("conclusion") == "failure":
+                    failed_step, failed_job = s.get("name"), j
+                    break
+            if failed_step:
+                break
+        error = ""
+        if failed_job:
+            lr = await c.get(f"{GITHUB_API}/repos/{repo}/actions/jobs/{failed_job['id']}/logs",
+                             headers=gh._headers(), follow_redirects=True)
+            if lr.status_code == 200:
+                bad = [ln.strip() for ln in lr.text.splitlines()
+                       if any(k in ln.lower() for k in ("error", "could not", "denied", "not found", "fatal"))]
+                error = "\n".join(bad[-12:])
+    return {"run_id": run_id, "failed_step": failed_step, "error": error[:2000],
+            "hint": _error_hint(failed_step, error),
+            "jobs": [{"name": j.get("name"), "conclusion": j.get("conclusion")} for j in jobs]}
+
+
 async def _dispatch_check(c: httpx.AsyncClient, repo: str) -> dict:
     """Is `repo` reachable, does it have provision.yml, and can the token dispatch it?"""
     rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=gh._headers())
