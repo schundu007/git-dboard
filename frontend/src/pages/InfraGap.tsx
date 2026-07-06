@@ -21,6 +21,20 @@ type GapReport = {
   actions: { id: string; title: string; fix: string; severity: string; status: string }[]
 }
 
+// Persist the last report so a page refresh keeps it (scoped per repo).
+const CACHE_KEY = 'gitpulse:gap-report'
+type Cached = { repo: string; prefix: string; ts: number; data: GapReport }
+function readCache(): Cached | null {
+  try { const v = localStorage.getItem(CACHE_KEY); return v ? JSON.parse(v) as Cached : null } catch { return null }
+}
+function ago(ts: number, now: number) {
+  const s = Math.max(0, Math.round((now - ts) / 1000))
+  if (s < 60) return `${s}s ago`
+  const m = Math.round(s / 60); if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`
+  return `${Math.round(h / 24)}d ago`
+}
+
 const chip = (s: string) =>
   s === 'OK' ? 'bg-accent-green/15 text-accent-green'
   : s === 'PARTIAL' ? 'bg-accent-yellow/15 text-accent-yellow'
@@ -67,6 +81,7 @@ export default function InfraGap() {
   const repo = useRepoSlug()  // part of gitpulse: always the live active repo
   const [prefix, setPrefix] = useState('myrock')
   const [data, setData] = useState<GapReport | null>(null)
+  const [analyzedAt, setAnalyzedAt] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState('')
   const [err, setErr] = useState('')
@@ -91,6 +106,12 @@ export default function InfraGap() {
   }
   const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
+  // Rehydrate the last analysis for this repo so a refresh keeps the report.
+  useEffect(() => {
+    if (!repo) return
+    const c = readCache()
+    if (c && c.repo === repo) { setData(c.data); setAnalyzedAt(c.ts); setPrefix(c.prefix) }
+  }, [repo])
   useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 20000); return () => clearInterval(t) }, [repo, pf?.repo, hasActive])
   useEffect(() => { if (!msg && !err) return; const t = setTimeout(() => { setMsg(null); setErr('') }, 4000); return () => clearTimeout(t) }, [msg, err])
 
@@ -114,7 +135,10 @@ export default function InfraGap() {
         body: JSON.stringify({ repo, prefix }),
       })
       if (!r.ok) throw new Error(await r.text())
-      setData(await r.json())
+      const report = await r.json() as GapReport
+      const ts = Date.now()
+      setData(report); setAnalyzedAt(ts)
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ repo, prefix, ts, data: report })) } catch { /* quota — non-fatal */ }
     } catch (e: any) { setErr(String(e.message || e)) }
     finally { setLoading(false) }
   }
@@ -150,6 +174,21 @@ export default function InfraGap() {
   }
   const askGuide = (c: Check) => openGuide(c.id, c.title, c.in_repo, c.in_aws)
 
+  async function autoFix(check_id: string, apply = false) {
+    setBusy('autofix'); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/auto-fix`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo, check_id, apply, prefix }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'auto-fix dispatch failed' }); return }
+      setGuide(null)
+      setMsg({ ok: true, text: `Auto-fix agent dispatched for ${check_id} → ${j.repo || repo}${apply ? ' (apply)' : ' (plan → PR)'}` })
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setBusy('') }
+  }
+
   async function showRunDetail(runId: number) {
     setRunDetail({ run_id: runId }); setDetailLoading(true)
     try {
@@ -176,6 +215,9 @@ export default function InfraGap() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {data && analyzedAt && !loading && (
+            <span className="text-[10px] text-gray-500">analyzed {ago(analyzedAt, Date.now())}</span>
+          )}
           <span className="font-mono text-[11px] text-gray-300 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5">{repo || '—'}</span>
           <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
             className="w-32 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-brand/50" />
@@ -345,8 +387,12 @@ export default function InfraGap() {
                 : <pre className="text-[11px] leading-5 text-gray-200 whitespace-pre-wrap font-mono">{guide.guide}</pre>}
             </div>
             <div className="px-4 py-2.5 border-t border-border flex items-center gap-2">
-              <button onClick={() => { setGuide(null); analyze() }} disabled={loading}
+              <button onClick={() => autoFix(guide.check_id, false)} disabled={busy === 'autofix'}
                 className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+                {busy === 'autofix' ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />} Auto-fix (agent → PR)
+              </button>
+              <button onClick={() => { setGuide(null); analyze() }} disabled={loading}
+                className="flex items-center gap-1.5 border border-border text-gray-300 rounded-lg px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-40">
                 {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Re-analyze to verify
               </button>
               <button onClick={() => setGuide(null)} className="text-[11px] text-gray-400 hover:text-white ml-auto">Close</button>

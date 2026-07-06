@@ -1,0 +1,100 @@
+name: ai-remediate
+
+# Agentic auto-fix for a single infra/security gap. Dispatched by GitPulse
+# (/provision/auto-fix). A Claude agent — wired to the Terraform, GitHub and AWS
+# MCP servers (.mcp.json) — closes ONE gap: in plan mode it writes the IaC and
+# opens a PR; in apply mode (behind the 'production' environment approval) it
+# applies under GitHub OIDC. No cloud credentials ever live on the app server.
+#
+# Required repo settings (Settings → Secrets and variables → Actions):
+#   Variables: AWS_PROVISION_ROLE_ARN, AWS_REGION (optional)
+#   Secrets:   ANTHROPIC_API_KEY
+#   Environment "production" with required reviewers (gates apply mode).
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_id:
+        description: "Gap id to remediate (e.g. oidc_roles, iac_remote_state)"
+        type: string
+        required: true
+      apply:
+        description: "Apply changes now (else plan-only + open a PR)"
+        type: boolean
+        default: false
+      prefix:
+        description: "AWS resource name prefix"
+        type: string
+        default: "myrock"
+
+permissions:
+  id-token: write      # OIDC → AWS
+  contents: write      # commit IaC / branch
+  pull-requests: write # open remediation PR
+
+concurrency:
+  group: ai-remediate-${{ github.ref }}-${{ inputs.check_id }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    # apply mode requires the environment approval; plan mode runs unattended
+    environment: ${{ inputs.apply && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC — no static keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Install Claude Code (agent runtime)
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run remediation agent (Terraform + GitHub + AWS MCP)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_PAT: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          CHECK_ID: ${{ inputs.check_id }}
+          PREFIX: ${{ inputs.prefix }}
+          MODE: ${{ inputs.apply && 'APPLY' || 'PLAN' }}
+        run: |
+          set -euo pipefail
+          [ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "::error::ANTHROPIC_API_KEY secret not set"; exit 1; }
+          git checkout -b "ai-remediate/${CHECK_ID}-${GITHUB_RUN_ID}"
+
+          claude -p "You are a DevOps remediation agent for ${GITHUB_REPOSITORY}. \
+          Close exactly ONE infra/security gap: '${CHECK_ID}' (AWS prefix '${PREFIX}'). \
+          Use the terraform, github and aws MCP servers. Prefer idempotent Terraform in infra/ \
+          with the S3 remote-state backend. \
+          MODE=${MODE}: if PLAN, write/adjust the Terraform, run 'terraform plan', commit to the \
+          current branch and open a pull request describing the change — do NOT apply. \
+          If APPLY, run 'terraform apply' for just this change under the assumed OIDC role, then commit. \
+          Never touch unrelated resources. End with a one-paragraph summary and the exact verify command." \
+            --mcp-config .mcp.json \
+            --permission-mode acceptEdits \
+            --allowedTools "Bash,Read,Write,Edit,mcp__terraform,mcp__github,mcp__aws" \
+            2>&1 | tee agent.log
+
+      - name: Open remediation PR (plan mode)
+        if: ${{ !inputs.apply }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet HEAD; then echo "No changes produced by the agent."; exit 0; fi
+          git config user.name "gitpulse-agent"
+          git config user.email "gitpulse-agent@users.noreply.github.com"
+          git add -A && git commit -m "ai-remediate: ${{ inputs.check_id }}"
+          git push -u origin HEAD
+          gh pr create --fill --title "AI remediation: ${{ inputs.check_id }}" \
+            --body "Automated remediation for gap \`${{ inputs.check_id }}\` by GitPulse. Review the plan before merge." || true

@@ -79,9 +79,12 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Source Sans 3', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        sans:    ['Source Sans 3', 'system-ui', 'sans-serif'],
-        mono:    ['Source Code Pro', 'ui-monospace', 'monospace'],
+        // Must match the fonts loaded in index.html + index.css. Previously these
+        // named Source Sans 3 / Source Code Pro, which are not loaded, so every
+        // font-display / font-sans utility fell back to system fonts.
+        display: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans:    ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         '2xs': ['0.65rem',  { lineHeight: '1rem' }],
@@ -102,14 +105,12 @@ export default {
         xl:           '0 16px 40px rgba(0,0,0,0.14)',
         inner:        'inset 0 2px 4px rgba(0,0,0,0.04)',
         highlight:    'inset 0 1px 0 rgba(255,255,255,0.8)',
-        // Accent glows
-        'glow-green': '0 0 24px rgba(118,185,0,0.22)',
-        'glow-blue':  '0 0 24px rgba(11,92,255,0.22)',
-        'glow-red':   '0 0 24px rgba(255,27,45,0.22)',
-        'glow-lime':  '0 0 20px rgba(224,255,79,0.25)',
         // Palette modal
         palette: '0 24px 48px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06)',
       },
+      // NOTE: decorative accent-glow shadows (glow-green/blue/red/lime) were
+      // removed — they were unused (0 refs) and glows are an off-register tell
+      // for this dense command surface.
       borderRadius: {
         xl2: '1rem',
         xl3: '1.25rem',

@@ -1,0 +1,19 @@
+{
+  "$comment": "MCP servers for agentic infra work in GitPulse. Used by Claude Code locally and by the ai-remediate GitHub Actions workflow (headless `claude -p ... --mcp-config .mcp.json`). Terraform MCP = registry/module/provider docs; GitHub MCP = repo/secrets/PRs; AWS MCP = read/describe + guided API calls. Write actions to AWS run in CI under OIDC, never on the app server.",
+  "mcpServers": {
+    "terraform": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "hashicorp/terraform-mcp-server"]
+    },
+    "github": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GH_PAT}" }
+    },
+    "aws": {
+      "command": "uvx",
+      "args": ["awslabs.aws-api-mcp-server@latest"],
+      "env": { "AWS_REGION": "${AWS_REGION}" }
+    }
+  }
+}

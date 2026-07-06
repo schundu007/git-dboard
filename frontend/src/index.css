@@ -74,15 +74,9 @@ button:not(:disabled):active { transform: scale(0.98); }
 .card-interactive { transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
 .card-interactive:hover { box-shadow: 0 8px 28px rgba(0, 0, 0, 0.30); }
 
-/* ── Type lift ──────────────────────────────────────────────────────────────
-   Much of the app was hard-coded below the DESIGN.md scale (9–11px). Raise the
-   sub-spec arbitrary sizes to a comfortable, enterprise-grade floor without
-   touching every component. Density is kept; legibility is restored. */
-.text-\[8px\], .text-\[8\.5px\]   { font-size: 10px !important; }
-.text-\[9px\], .text-\[9\.5px\]   { font-size: 11px !important; }
-.text-\[10px\], .text-\[10\.5px\] { font-size: 11.5px !important; }
-.text-\[11px\]                    { font-size: 12.5px !important; }
-.text-\[12px\]                    { font-size: 13px !important; }
+/* Type-scale lift lives in ONE place: the "Enterprise type-scale" block near the
+   end of this file. A duplicate block previously sat here and was silently
+   overridden by that later one; it was removed to end the confusion. */
 
 /* ── Typography ────────────────────────────────────────────────────────────── */
 code, pre, .font-mono, [data-mono] {
@@ -362,8 +356,10 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
 
 /* ── Sharp borders — zero radius everywhere ────────────────────────────────── */
 .rounded-3xl, .rounded-2xl, .rounded-xl,
-.rounded-lg, .rounded-md, .rounded, .rounded-sm,
-.rounded-full { border-radius: 1px !important; }
+.rounded-lg, .rounded-md, .rounded, .rounded-sm { border-radius: 1px !important; }
+/* Circular / pill elements (status dots, spinners, avatars, badges, progress
+   bar ends) must stay round. Squaring rounded-full read as broken, not sharp. */
+.rounded-full { border-radius: 9999px !important; }
 .recharts-default-tooltip { border-radius: 1px !important; }
 /* Floating overlays: minimal rounding to avoid visual glitch */
 [cmdk-root]      { border-radius: 4px !important; }
@@ -394,12 +390,9 @@ h6 { font-size: 0.75rem;   font-weight: 600; }
   border-bottom-color: rgba(0,0,0,0.10);
 }
 
-/* ── Elite health ring glow — only when score ≥ 95 ───────────────────────── */
-@keyframes ring-glow {
-  0%, 100% { filter: drop-shadow(0 0 1px rgba(118, 185, 0, 0.0)); }
-  50%       { filter: drop-shadow(0 0 6px rgba(118, 185, 0, 0.4)); }
-}
-.ring-elite-glow { animation: ring-glow 2.5s ease-in-out infinite; }
+/* Decorative pulsing "elite" ring glow removed — animated colored glow is an
+   off-register tell for a command surface. The score value carries the state.
+   .ring-elite-glow intentionally left undefined so any stray className no-ops. */
 
 /* ── Card entrance animations ─────────────────────────────────────────────── */
 @keyframes card-appear {

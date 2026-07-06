@@ -86,6 +86,50 @@ async def dispatch(req: DispatchRequest):
         raise HTTPException(r.status_code, f"dispatch failed: {r.text}")
 
 
+async def _dispatch_workflow(c: httpx.AsyncClient, target: str, workflow: str, inputs: dict, ref: str):
+    url = f"{GITHUB_API}/repos/{target}/actions/workflows/{workflow}/dispatches"
+    return await c.post(url, headers=gh._headers(), json={"ref": ref, "inputs": inputs})
+
+
+class AutoFixRequest(BaseModel):
+    repo: str
+    check_id: str
+    apply: bool = False          # plan→PR by default; apply gated by the env approval
+    prefix: str = "myrock"
+    ref: str = "main"
+
+
+@router.post("/auto-fix")
+async def auto_fix(req: AutoFixRequest):
+    """Dispatch the ai-remediate agent workflow to close ONE gap. Falls back to the
+    caller's fork like /dispatch. The agent (Claude + Terraform/GitHub/AWS MCP) runs
+    in CI under OIDC — no cloud creds on the app server."""
+    inputs = {"check_id": req.check_id, "apply": str(req.apply).lower(), "prefix": req.prefix}
+    wf = "ai-remediate.yml"
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await _dispatch_workflow(c, req.repo, wf, inputs, req.ref)
+        if r.status_code in (201, 204):
+            return {"dispatched": True, "repo": req.repo, "check_id": req.check_id, "apply": req.apply,
+                    "runs_url": f"https://github.com/{req.repo}/actions/workflows/{wf}"}
+        if r.status_code in (403, 404):
+            me = await c.get(f"{GITHUB_API}/user", headers=gh._headers())
+            login = me.json().get("login") if me.status_code == 200 else None
+            name = req.repo.split("/")[-1]
+            if login and f"{login}/{name}".lower() != req.repo.lower():
+                fork = f"{login}/{name}"
+                fr = await c.get(f"{GITHUB_API}/repos/{fork}", headers=gh._headers())
+                if fr.status_code == 200:
+                    fr2 = await _dispatch_workflow(c, fork, wf, inputs, fr.json().get("default_branch", req.ref))
+                    if fr2.status_code in (201, 204):
+                        return {"dispatched": True, "repo": fork, "via_fork": True,
+                                "check_id": req.check_id, "apply": req.apply,
+                                "runs_url": f"https://github.com/{fork}/actions/workflows/{wf}"}
+                    raise HTTPException(fr2.status_code,
+                        f"'{req.repo}' not dispatchable and fork '{fork}' has no ai-remediate.yml on its "
+                        f"default branch yet — add the agent workflow first. {fr2.text}")
+        raise HTTPException(r.status_code, f"auto-fix dispatch failed (is ai-remediate.yml present on the repo?): {r.text}")
+
+
 @router.get("/runs")
 async def runs(repo: str):
     """Latest provision.yml runs (for the UI status panel)."""
