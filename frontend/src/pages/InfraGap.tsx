@@ -29,6 +29,10 @@ const chip = (s: string) =>
 const sevDot = (sev: string) =>
   sev === 'high' ? 'bg-accent-red' : sev === 'medium' ? 'bg-accent-yellow' : 'bg-gray-600'
 
+type Run = { id: number; status: string; conclusion: string; event: string; created: string; url: string }
+const conc = (c: string) =>
+  c === 'success' ? 'text-accent-green' : c === 'failure' ? 'text-accent-red' : 'text-accent-yellow'
+
 function ReadinessGauge({ pct }: { pct: number }) {
   const R = 40, C = 2 * Math.PI * R
   const stroke = pct >= 80 ? '#76b900' : pct >= 50 ? '#d97706' : '#c1442a'
@@ -67,15 +71,23 @@ export default function InfraGap() {
   const [busy, setBusy] = useState('')
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string; repo?: string; via_fork?: boolean } | null>(null)
   const [enabling, setEnabling] = useState(false)
+  const [runs, setRuns] = useState<Run[]>([])
 
   function checkPreflight() {
     if (!repo) { setPf(null); return }
     fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)
       .then(r => r.json()).then(setPf).catch(() => setPf(null))
   }
+  async function loadRuns() {
+    const t = pf?.repo || repo  // runs execute on the fork when dispatch falls back there
+    if (!t) return
+    try { const r = await fetch(`${API}/provision/runs?repo=${encodeURIComponent(t)}`); if (r.ok) setRuns(await r.json()) } catch { /* ignore */ }
+  }
+  const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
+  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 20000); return () => clearInterval(t) }, [repo, pf?.repo, hasActive])
   useEffect(() => { if (!msg && !err) return; const t = setTimeout(() => { setMsg(null); setErr('') }, 4000); return () => clearTimeout(t) }, [msg, err])
 
   async function enableViaFork() {
@@ -115,6 +127,8 @@ export default function InfraGap() {
     setBusy('')
     if (!r.ok) { setMsg({ ok: false, text: j.detail || 'dispatch failed' }); return }
     setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
+    // burst-refresh so the new run surfaces in the strip below within seconds
+    loadRuns(); [1500, 4000, 8000].forEach(d => setTimeout(loadRuns, d))
   }
 
   const gaps = data ? data.score.total - data.score.ok - data.score.partial : 0
@@ -166,6 +180,34 @@ export default function InfraGap() {
       )}
       {err && <p className="text-[11px] text-accent-red break-words">{err}</p>}
       {msg && <p className={clsx('text-[11px] break-words', msg.ok ? 'text-accent-green' : 'text-accent-red')}>{msg.text}</p>}
+
+      {/* live provision runs — polls the effective (fork) repo; status stays in-UI */}
+      {runs.length > 0 && (
+        <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-border">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">provision runs</span>
+            {hasActive && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-medium text-accent-yellow">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-yellow animate-pulse" />live
+              </span>
+            )}
+            <span className="ml-auto text-[9px] text-gray-500 font-mono">{pf?.repo || repo}</span>
+          </div>
+          <table className="w-full text-xs"><tbody>
+            {runs.slice(0, 5).map(r => (
+              <tr key={r.id} className="border-b border-border/40 last:border-0">
+                <td className="px-4 py-1.5 text-[10px] font-mono text-gray-500">{r.event}</td>
+                <td className="px-2 py-1.5 text-[10px] text-gray-500">{new Date(r.created).toLocaleString()}</td>
+                <td className="px-4 py-1.5 text-right">
+                  {r.status !== 'completed'
+                    ? <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-accent-yellow"><Loader2 size={9} className="animate-spin" />{r.status === 'queued' ? 'queued' : 'running'}</span>
+                    : <span className={clsx('text-[10px] font-mono font-semibold', conc(r.conclusion))}>{r.conclusion || 'done'}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody></table>
+        </div>
+      )}
 
       {data ? (
         <>

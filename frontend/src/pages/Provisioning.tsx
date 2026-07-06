@@ -57,7 +57,7 @@ export default function Provisioning() {
   const [adminToken, setAdminToken] = useState('')
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string; repo?: string; via_fork?: boolean } | null>(null)
   const [showStarter, setShowStarter] = useState(false)
   const [copiedYaml, setCopiedYaml] = useState(false)
   const [scaffolding, setScaffolding] = useState(false)
@@ -91,9 +91,11 @@ export default function Provisioning() {
   }
 
   async function loadRuns() {
-    if (!repo) return
+    // Runs execute on the effective repo — the fork when dispatch falls back there.
+    const target = pf?.repo || repo
+    if (!target) return
     try {
-      const r = await fetch(`${API}/provision/runs?repo=${encodeURIComponent(repo)}`)
+      const r = await fetch(`${API}/provision/runs?repo=${encodeURIComponent(target)}`)
       if (r.ok) setRuns(await r.json())
     } catch { /* ignore */ }
   }
@@ -107,7 +109,7 @@ export default function Provisioning() {
   const hasActive = runs.some(r => r.status !== 'completed')
   useEffect(() => { checkPreflight() }, [repo])
   // Adaptive polling: fast (3s) while a run is queued/in-progress, relaxed (15s) when idle.
-  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 15000); return () => clearInterval(t) }, [repo, hasActive])
+  useEffect(() => { loadRuns(); const t = setInterval(loadRuns, hasActive ? 3000 : 15000); return () => clearInterval(t) }, [repo, pf?.repo, hasActive])
   useEffect(() => { if (!msg) return; const t = setTimeout(() => setMsg(null), 4000); return () => clearTimeout(t) }, [msg])
 
   async function dispatch(action: string) {
@@ -241,12 +243,13 @@ export default function Provisioning() {
       <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-300">provision.yml runs</span>
+          {pf?.via_fork && <span className="text-[9px] text-gray-500 font-mono">on fork</span>}
           {hasActive && (
             <span className="inline-flex items-center gap-1 text-[9px] font-medium text-accent-yellow">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-yellow animate-pulse" />live
             </span>
           )}
-          <span className="ml-auto text-[10px] text-gray-500 font-mono">{repo}</span>
+          <span className="ml-auto text-[10px] text-gray-500 font-mono">{pf?.repo || repo}</span>
         </div>
         {runs.length === 0 ? (
           <div className="py-8 text-center text-[12px] text-gray-500">No provision runs yet.</div>
