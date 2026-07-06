@@ -73,6 +73,8 @@ export default function InfraGap() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string; repo?: string; via_fork?: boolean } | null>(null)
   const [enabling, setEnabling] = useState(false)
+  const [guide, setGuide] = useState<{ check_id: string; title: string; guide?: string } | null>(null)
+  const [guideLoading, setGuideLoading] = useState(false)
   const [runs, setRuns] = useState<Run[]>([])
 
   function checkPreflight() {
@@ -129,6 +131,20 @@ export default function InfraGap() {
     setMsg({ ok: true, text: `Dispatched ${action} → ${j.repo || repo}` })
     // burst-refresh so the new run surfaces in the strip below within seconds
     loadRuns(); [1500, 4000, 8000].forEach(d => setTimeout(loadRuns, d))
+  }
+
+  async function askGuide(c: Check) {
+    setGuide({ check_id: c.id, title: c.title }); setGuideLoading(true)
+    try {
+      const r = await fetch(`${API}/gap/guide`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo, check_id: c.id, prefix, in_repo: c.in_repo, in_aws: c.in_aws }),
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setGuide({ check_id: c.id, title: c.title, guide: `⚠ ${j.detail || 'Could not generate guidance.'}` }); return }
+      setGuide({ check_id: c.id, title: j.title || c.title, guide: j.guide })
+    } catch (e: any) { setGuide({ check_id: c.id, title: c.title, guide: `⚠ ${String(e.message || e)}` }) }
+    finally { setGuideLoading(false) }
   }
 
   const gaps = data ? data.score.total - data.score.ok - data.score.partial : 0
@@ -248,7 +264,12 @@ export default function InfraGap() {
                           <td className="px-2 py-2">
                             <span className="block text-[11px] text-gray-200 leading-snug">{c.title}</span>
                             <span className="block text-[9px] text-gray-600 font-mono mt-0.5">repo:{c.in_repo === null ? 'n/a' : c.in_repo ? 'yes' : 'no'} · aws:{c.in_aws === null ? 'n/a' : c.in_aws ? 'yes' : 'no'}</span>
-                            {c.status !== 'OK' && <span className="block text-[10px] text-accent-yellow/80 mt-0.5">→ {c.fix}</span>}
+                            {c.status !== 'OK' && (
+                              <div className="mt-0.5 flex items-start gap-2">
+                                <span className="block text-[10px] text-accent-yellow/80 flex-1">→ {c.fix}</span>
+                                <button onClick={() => askGuide(c)} className="flex-shrink-0 text-[9px] font-medium text-brand hover:underline">Guide me →</button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -267,6 +288,31 @@ export default function InfraGap() {
           <button onClick={analyze} disabled={loading || !repo} className="mt-1 flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-4 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
             {loading ? <Loader2 size={13} className="animate-spin" /> : <Gauge size={13} />} Run Analysis
           </button>
+        </div>
+      )}
+
+      {/* AI guided setup — one integration at a time */}
+      {guide && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setGuide(null)}>
+          <div className="bg-surface-1 border border-border rounded-xl w-full max-w-2xl max-h-[82vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+              <ShieldCheck size={15} className="text-brand flex-shrink-0" />
+              <span className="text-[13px] font-semibold text-white flex-1 min-w-0 truncate">Configure: {guide.title}</span>
+              <button onClick={() => setGuide(null)} className="text-gray-500 hover:text-white text-[18px] leading-none">×</button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              {guideLoading
+                ? <div className="flex items-center gap-2 text-[12px] text-gray-400"><Loader2 size={14} className="animate-spin" /> Generating step-by-step guidance…</div>
+                : <pre className="text-[11px] leading-5 text-gray-200 whitespace-pre-wrap font-mono">{guide.guide}</pre>}
+            </div>
+            <div className="px-4 py-2.5 border-t border-border flex items-center gap-2">
+              <button onClick={() => { setGuide(null); analyze() }} disabled={loading}
+                className="flex items-center gap-1.5 bg-brand text-black font-semibold rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+                {loading ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Re-analyze to verify
+              </button>
+              <button onClick={() => setGuide(null)} className="text-[11px] text-gray-400 hover:text-white ml-auto">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
