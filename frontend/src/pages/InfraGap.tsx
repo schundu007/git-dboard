@@ -27,10 +27,7 @@ const chip = (s: string) =>
   : 'bg-accent-red/15 text-accent-red'
 
 export default function InfraGap() {
-  const activeSlug = useRepoSlug()
-  const [mode, setMode] = useState<'active' | 'custom'>('active')
-  const [custom, setCustom] = useState('schundu007/rocm-ci')
-  const repo = mode === 'active' ? activeSlug : custom
+  const repo = useRepoSlug()  // part of gitpulse: always the live active repo
   const [prefix, setPrefix] = useState('myrock')
   const [data, setData] = useState<GapReport | null>(null)
   const [loading, setLoading] = useState(false)
@@ -84,21 +81,8 @@ export default function InfraGap() {
 
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">Target repo</span>
-          <div className="flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
-            {(['active', 'custom'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={clsx('px-2.5 py-0.5 rounded text-[10px] transition-colors', mode === m ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
-                {m === 'active' ? 'Active repo' : 'Custom / fork'}
-              </button>
-            ))}
-          </div>
-          {mode === 'active' ? (
-            <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{activeSlug || '—'}</span>
-          ) : (
-            <input value={custom} onChange={e => setCustom(e.target.value)} placeholder="owner/repo"
-              className="flex-1 min-w-[200px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
-          )}
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Repo</span>
+          <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
           <input value={prefix} onChange={e => setPrefix(e.target.value)} placeholder="aws prefix"
             className="w-36 bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
           {pf && (

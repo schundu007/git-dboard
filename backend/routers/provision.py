@@ -99,10 +99,19 @@ async def preflight(repo: str):
             return {"ok": False, "repo": repo, "reason": "workflow_error",
                     "message": f"Cannot read provision.yml on '{repo}' (HTTP {wr.status_code})."}
 
+        # workflow_dispatch needs write (push) access — a read-only token passes the
+        # existence checks above but fails the POST with 403 "Must have admin rights".
+        perms = (rr.json() or {}).get("permissions") or {}
+        if not (perms.get("push") or perms.get("maintain") or perms.get("admin")):
+            return {"ok": False, "repo": repo, "reason": "no_write",
+                    "message": f"The active token is read-only on '{repo}'. Dispatching a workflow "
+                               f"needs write access — set a PAT with 'workflow' scope + write access "
+                               f"to this repo in Settings."}
+
         wf = wr.json()
         return {"ok": True, "repo": repo, "workflow_id": wf.get("id"),
                 "state": wf.get("state"),
-                "message": f"Ready — provision.yml found on '{repo}'."}
+                "message": f"Ready — provision.yml found and writable on '{repo}'."}
 
 
 # ---------- 2. BREAK-GLASS (direct apply, admin-gated) ----------

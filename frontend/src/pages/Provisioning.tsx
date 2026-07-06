@@ -14,10 +14,7 @@ const conc = (c: string) =>
   c === 'success' ? 'text-accent-green' : c === 'failure' ? 'text-accent-red' : 'text-accent-yellow'
 
 export default function Provisioning() {
-  const activeSlug = useRepoSlug()
-  const [mode, setMode] = useState<'active' | 'custom'>('active')
-  const [custom, setCustom] = useState('schundu007/rocm-ci')
-  const repo = mode === 'active' ? activeSlug : custom
+  const repo = useRepoSlug()  // part of gitpulse: always the live active repo
 
   const [runs, setRuns] = useState<Run[]>([])
   const [buildAmis, setBuildAmis] = useState(false)
@@ -84,23 +81,10 @@ export default function Provisioning() {
       </div>
 
       <div className="bg-surface-1 border border-border rounded-xl p-4 space-y-3">
-        {/* repo target toggle — both options */}
+        {/* active repo — part of gitpulse, no separate repo picker */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-wider text-gray-500">Target repo</span>
-          <div className="flex items-center gap-0.5 bg-surface-2 rounded-md p-0.5">
-            {(['active', 'custom'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)}
-                className={clsx('px-2.5 py-0.5 rounded text-[10px] transition-colors', mode === m ? 'bg-surface-3 text-white' : 'text-gray-500 hover:text-gray-300')}>
-                {m === 'active' ? 'Active repo' : 'Custom / fork'}
-              </button>
-            ))}
-          </div>
-          {mode === 'active' ? (
-            <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{activeSlug || '—'}</span>
-          ) : (
-            <input value={custom} onChange={e => setCustom(e.target.value)} placeholder="owner/repo"
-              className="flex-1 min-w-[220px] bg-surface-2 border border-border rounded-lg px-3 py-1.5 font-mono text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-nvidia/50" />
-          )}
+          <span className="text-[10px] uppercase tracking-wider text-gray-500">Repo</span>
+          <span className="font-mono text-[12px] text-gray-300 bg-surface-2 border border-border rounded-lg px-3 py-1.5">{repo || '—'}</span>
           {pf && (
             <span className={clsx('text-[10px] font-medium', pf.ok ? 'text-accent-green' : 'text-accent-red')}>
               {pf.ok ? '✓ provision.yml ready' : '✗ not dispatchable'}
