@@ -219,6 +219,72 @@ async def get_nightly_failures(days: int = 14):
     return {"days": days, "timeline": timeline, "slowest": slowest}
 
 
+_STAGE_ORDER = ["Setup", "Builds", "Packaging", "Publish", "Tests", "PyTorch Builds", "PyTorch Tests", "Other"]
+_OS_ORDER = ["Linux", "Windows", ""]
+
+
+def _stage_of(name: str) -> tuple[str, str]:
+    """Derive (os, stage) lane from a job name like 'Linux::gfx::release / Build Artifacts'."""
+    first = name.split("::", 1)[0].strip().lower()
+    os_ = "Linux" if first == "linux" else "Windows" if first == "windows" else ""
+    seg = name.split(" / ")[-1] if " / " in name else name.split("::")[-1]
+    sl = seg.lower()
+    if "pytorch" in sl and "test" in sl:
+        stage = "PyTorch Tests"
+    elif "pytorch" in sl:
+        stage = "PyTorch Builds"
+    elif "packag" in sl:
+        stage = "Packaging"
+    elif "publish" in sl:
+        stage = "Publish"
+    elif "validate" in sl or "configure" in sl or "setup" in sl:
+        stage = "Setup"
+    elif "build" in sl:
+        stage = "Builds"
+    elif "test" in sl:
+        stage = "Tests"
+    else:
+        stage = "Other"
+    return os_, stage
+
+
+@router.get("/multiarch")
+async def get_multiarch(days: int = 14):
+    """Multi-arch lane view — runs (rows) x pipeline-stage lanes (cols), fractional pass cells."""
+    m = await _build_matrix(days)
+    matrix, dates, job_names = m["matrix"], m["dates"], m["job_names"]
+
+    grid: dict[str, dict] = {}
+    lane_set: set[tuple[str, str]] = set()
+    for d in dates:
+        grid[d] = {}
+        for name in job_names:
+            c = matrix.get(d, {}).get(name)
+            if not c:
+                continue
+            os_, stage = _stage_of(name)
+            lane_set.add((os_, stage))
+            key = f"{os_}|{stage}"
+            cell = grid[d].setdefault(key, {"passed": 0, "failed": 0, "running": 0, "total": 0, "url": c.get("url")})
+            st = (c.get("status") or "").lower()
+            cell["total"] += 1
+            if st == "success":
+                cell["passed"] += 1
+            elif st == "failure":
+                cell["failed"] += 1
+            elif st in ("in_progress", "queued"):
+                cell["running"] += 1
+
+    ordered = sorted(
+        lane_set,
+        key=lambda t: (_OS_ORDER.index(t[0]) if t[0] in _OS_ORDER else 9,
+                       _STAGE_ORDER.index(t[1]) if t[1] in _STAGE_ORDER else 9),
+    )
+    lanes = [{"key": f"{o}|{s}", "os": o, "stage": s, "label": (f"{o} {s}").strip()} for o, s in ordered]
+    rows = [{"date": d, "cells": grid[d]} for d in dates]
+    return {"days": days, "lanes": lanes, "rows": rows}
+
+
 @router.get("/trend")
 async def get_nightly_trend(days: int = 30):
     """Daily pass-rate trend for charting."""
