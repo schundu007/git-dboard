@@ -34,13 +34,27 @@ export default function InfraGap() {
   const [busy, setBusy] = useState('')
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [pf, setPf] = useState<{ ok: boolean; message: string } | null>(null)
+  const [pf, setPf] = useState<{ ok: boolean; message: string; reason?: string } | null>(null)
+  const [enabling, setEnabling] = useState(false)
 
-  useEffect(() => {
+  function checkPreflight() {
     if (!repo) { setPf(null); return }
     fetch(`${API}/provision/preflight?repo=${encodeURIComponent(repo)}`)
       .then(r => r.json()).then(setPf).catch(() => setPf(null))
-  }, [repo])
+  }
+  useEffect(() => { checkPreflight() }, [repo])
+
+  async function enableViaFork() {
+    setEnabling(true); setMsg(null)
+    try {
+      const r = await fetch(`${API}/provision/scaffold?repo=${encodeURIComponent(repo)}&to_default=true`, { method: 'POST' })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'Failed to enable provisioning' }); return }
+      setMsg({ ok: true, text: j.message || `Provisioning enabled on ${j.repo}.` })
+      checkPreflight()
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setEnabling(false) }
+  }
 
   async function analyze() {
     setLoading(true); setErr(''); setMsg(null)
@@ -90,6 +104,12 @@ export default function InfraGap() {
           )}
         </div>
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
+        {pf && !pf.ok && (pf.reason === 'workflow_missing' || pf.reason === 'no_write') && (
+          <button onClick={enableViaFork} disabled={enabling}
+            className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40 w-fit">
+            {enabling ? <Loader2 size={12} className="animate-spin" /> : <Gauge size={12} />} Enable provisioning via fork
+          </button>
+        )}
         <div className="flex gap-2 flex-wrap">
           <button onClick={analyze} disabled={loading || !repo}
             className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">

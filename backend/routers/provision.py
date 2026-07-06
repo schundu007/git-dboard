@@ -98,43 +98,50 @@ async def runs(repo: str):
             for w in data]
 
 
+async def _dispatch_check(c: httpx.AsyncClient, repo: str) -> dict:
+    """Is `repo` reachable, does it have provision.yml, and can the token dispatch it?"""
+    rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=gh._headers())
+    if rr.status_code == 404:
+        return {"ok": False, "reason": "repo_not_found",
+                "message": f"Repo '{repo}' not found, or the active token has no access to it."}
+    if rr.status_code >= 400:
+        return {"ok": False, "reason": "repo_error", "message": f"Cannot access '{repo}' (HTTP {rr.status_code})."}
+    wr = await c.get(f"{GITHUB_API}/repos/{repo}/actions/workflows/provision.yml", headers=gh._headers())
+    if wr.status_code == 404:
+        return {"ok": False, "reason": "workflow_missing",
+                "message": f"'{repo}' has no .github/workflows/provision.yml. "
+                           f"Add that workflow (with 'on: workflow_dispatch') to enable provisioning."}
+    if wr.status_code >= 400:
+        return {"ok": False, "reason": "workflow_error", "message": f"Cannot read provision.yml on '{repo}' (HTTP {wr.status_code})."}
+    perms = (rr.json() or {}).get("permissions") or {}
+    if not (perms.get("push") or perms.get("maintain") or perms.get("admin")):
+        return {"ok": False, "reason": "no_write",
+                "message": f"The active token is read-only on '{repo}'. Dispatching a workflow "
+                           f"needs write access — or use 'Enable via fork'."}
+    return {"ok": True, "workflow_id": wr.json().get("id"),
+            "message": f"Ready — provision.yml found and writable on '{repo}'."}
+
+
 @router.get("/preflight")
 async def preflight(repo: str):
-    """Verify the target repo is reachable and has a dispatchable provision.yml,
-    so the UI can show an actionable message instead of a raw 404."""
+    """Check the live repo; if it isn't dispatchable, check the caller's fork so
+    the UI reflects 'ready via your fork' (dispatch falls back there)."""
     async with httpx.AsyncClient(timeout=20) as c:
-        rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=gh._headers())
-        if rr.status_code == 404:
-            return {"ok": False, "repo": repo, "reason": "repo_not_found",
-                    "message": f"Repo '{repo}' not found, or the active token has no access to it. "
-                               f"Check the name, and that Settings' PAT can reach this repo."}
-        if rr.status_code >= 400:
-            return {"ok": False, "repo": repo, "reason": "repo_error",
-                    "message": f"Cannot access '{repo}' (HTTP {rr.status_code})."}
-
-        wr = await c.get(f"{GITHUB_API}/repos/{repo}/actions/workflows/provision.yml",
-                         headers=gh._headers())
-        if wr.status_code == 404:
-            return {"ok": False, "repo": repo, "reason": "workflow_missing",
-                    "message": f"'{repo}' has no .github/workflows/provision.yml. "
-                               f"Add that workflow (with 'on: workflow_dispatch') to enable provisioning."}
-        if wr.status_code >= 400:
-            return {"ok": False, "repo": repo, "reason": "workflow_error",
-                    "message": f"Cannot read provision.yml on '{repo}' (HTTP {wr.status_code})."}
-
-        # workflow_dispatch needs write (push) access — a read-only token passes the
-        # existence checks above but fails the POST with 403 "Must have admin rights".
-        perms = (rr.json() or {}).get("permissions") or {}
-        if not (perms.get("push") or perms.get("maintain") or perms.get("admin")):
-            return {"ok": False, "repo": repo, "reason": "no_write",
-                    "message": f"The active token is read-only on '{repo}'. Dispatching a workflow "
-                               f"needs write access — set a PAT with 'workflow' scope + write access "
-                               f"to this repo in Settings."}
-
-        wf = wr.json()
-        return {"ok": True, "repo": repo, "workflow_id": wf.get("id"),
-                "state": wf.get("state"),
-                "message": f"Ready — provision.yml found and writable on '{repo}'."}
+        res = await _dispatch_check(c, repo)
+        if res["ok"]:
+            return {**res, "repo": repo}
+        # Live repo not dispatchable — is the caller's fork already set up?
+        if res.get("reason") in ("workflow_missing", "no_write"):
+            me = await c.get(f"{GITHUB_API}/user", headers=gh._headers())
+            login = me.json().get("login") if me.status_code == 200 else None
+            name = repo.split("/")[-1]
+            if login and f"{login}/{name}".lower() != repo.lower():
+                fork = f"{login}/{name}"
+                fres = await _dispatch_check(c, fork)
+                if fres.get("ok"):
+                    return {"ok": True, "via_fork": True, "repo": fork,
+                            "message": f"Ready via your fork '{fork}' — dispatch runs there."}
+        return {**res, "repo": repo}
 
 
 _STARTER_YAML = """name: provision
@@ -171,10 +178,12 @@ jobs:
 
 
 @router.post("/scaffold")
-async def scaffold(repo: str, path: str = ".github/workflows/provision.yml", dry_run: bool = False):
-    """One-click: commit provision.yml + open a PR on the target repo.
-    If the token can't write to the live repo, fall back to forking it and
-    opening the PR from the fork (standard contribution flow)."""
+async def scaffold(repo: str, path: str = ".github/workflows/provision.yml",
+                   dry_run: bool = False, to_default: bool = False):
+    """One-click: add provision.yml so the repo (or your fork of it) becomes
+    dispatchable. If the token can't write the live repo, fork it first.
+    - to_default=True: commit straight to the (fork's) default branch → dispatchable now.
+    - otherwise: commit to a branch and open a PR."""
     branch = "gitpulse/add-provision-yml"
     h = gh._headers()
     async with httpx.AsyncClient(timeout=45) as c:
@@ -209,16 +218,19 @@ async def scaffold(repo: str, path: str = ".github/workflows/provision.yml", dry
             raise HTTPException(ref.status_code, f"base ref on '{work_repo}': {ref.text}")
         base_sha = ref.json()["object"]["sha"]
 
-        br = await c.post(f"{GITHUB_API}/repos/{work_repo}/git/refs", headers=h,
-                          json={"ref": f"refs/heads/{branch}", "sha": base_sha})
-        if br.status_code not in (201, 422):  # 422 = branch already exists
-            raise HTTPException(br.status_code, f"create branch on '{work_repo}': {br.text}")
+        # commit straight to the default branch (dispatchable now) or to a PR branch
+        commit_branch = work_default if to_default else branch
+        if not to_default:
+            br = await c.post(f"{GITHUB_API}/repos/{work_repo}/git/refs", headers=h,
+                              json={"ref": f"refs/heads/{branch}", "sha": base_sha})
+            if br.status_code not in (201, 422):  # 422 = branch already exists
+                raise HTTPException(br.status_code, f"create branch on '{work_repo}': {br.text}")
 
-        existing = await c.get(f"{GITHUB_API}/repos/{work_repo}/contents/{path}?ref={branch}", headers=h)
+        existing = await c.get(f"{GITHUB_API}/repos/{work_repo}/contents/{path}?ref={commit_branch}", headers=h)
         put_body = {
             "message": "ci: add provision.yml (via gitpulse)",
             "content": base64.b64encode(_STARTER_YAML.encode()).decode(),
-            "branch": branch,
+            "branch": commit_branch,
         }
         if existing.status_code == 200:
             put_body["sha"] = existing.json()["sha"]
@@ -231,6 +243,12 @@ async def scaffold(repo: str, path: str = ".github/workflows/provision.yml", dry
                     "branch": branch,
                     "file_url": f"https://github.com/{work_repo}/blob/{branch}/{path}",
                     "note": f"dry-run: committed to {'fork' if via_fork else 'repo'} '{work_repo}'; upstream PR skipped"}
+
+        if to_default:  # committed straight to the default branch → dispatchable immediately
+            return {"ok": True, "enabled": True, "via_fork": via_fork, "repo": work_repo,
+                    "runs_url": f"https://github.com/{work_repo}/actions/workflows/provision.yml",
+                    "message": f"provision.yml added to '{work_repo}' ({work_default}) — dispatch works now"
+                               + (" · via your fork" if via_fork else "")}
 
         work_owner = work_repo.split("/")[0]
         head = f"{work_owner}:{branch}" if via_fork else branch

@@ -77,6 +77,19 @@ export default function Provisioning() {
     finally { setScaffolding(false) }
   }
 
+  async function enableViaFork() {
+    setScaffolding(true); setMsg(null)
+    try {
+      // commit provision.yml straight to the (fork's) default branch → dispatchable now
+      const r = await fetch(`${API}/provision/scaffold?repo=${encodeURIComponent(repo)}&to_default=true`, { method: 'POST' })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) { setMsg({ ok: false, text: j.detail || 'Failed to enable provisioning' }); return }
+      setMsg({ ok: true, text: j.message || `Provisioning enabled on ${j.repo}.` })
+      checkPreflight()
+    } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }
+    finally { setScaffolding(false) }
+  }
+
   async function loadRuns() {
     if (!repo) return
     try {
@@ -142,11 +155,17 @@ export default function Provisioning() {
           )}
         </div>
         {pf && !pf.ok && <p className="text-[10px] text-accent-red/80 leading-snug">{pf.message}</p>}
-        {pf?.reason === 'workflow_missing' && (
+        {pf && !pf.ok && (pf.reason === 'workflow_missing' || pf.reason === 'no_write') && (
           <div>
-            <button onClick={() => setShowStarter(v => !v)} className="text-[10px] text-brand hover:underline">
-              {showStarter ? 'hide' : 'show'} starter provision.yml
-            </button>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button onClick={enableViaFork} disabled={scaffolding}
+                className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
+                {scaffolding ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />} Enable provisioning via fork
+              </button>
+              <button onClick={() => setShowStarter(v => !v)} className="text-[10px] text-brand hover:underline">
+                {showStarter ? 'hide' : 'show'} starter provision.yml
+              </button>
+            </div>
             {showStarter && (
               <div className="mt-1.5 border border-border rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-1.5 bg-surface-2 border-b border-border">
@@ -174,12 +193,22 @@ export default function Provisioning() {
           <label className="flex gap-1.5 items-center cursor-pointer"><input type="checkbox" checked={enableK8s} onChange={e => setEnableK8s(e.target.checked)} /> enable EKS + cache</label>
         </div>
 
+        {pf !== null && !pf.ok && (
+          <p className="text-[10px] text-accent-yellow/90 leading-snug">
+            Provisioning can only target a repo you own or a fork — <span className="font-mono">{repo}</span> isn't dispatchable, so Dispatch is disabled.
+            {pf.reason === 'no_write'
+              ? ' Your token is read-only on it (needs a PAT with write + workflow scope).'
+              : ' Use "Create via PR" above to fork it and add provision.yml,'} or switch your active repo (sidebar) to one you control.
+          </p>
+        )}
         <div className="flex gap-2 flex-wrap items-center">
-          <button onClick={() => dispatch('plan')} disabled={!!busy || !repo}
+          <button onClick={() => dispatch('plan')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
+            title={pf !== null && !pf.ok ? 'Not dispatchable — see note above' : undefined}
             className="flex items-center gap-1.5 bg-brand text-black font-medium rounded-lg px-3 py-1.5 text-xs hover:opacity-90 disabled:opacity-40">
             {busy === 'plan' ? <Loader2 size={12} className="animate-spin" /> : <Rocket size={12} />} Dispatch Plan
           </button>
-          <button onClick={() => dispatch('apply')} disabled={!!busy || !repo}
+          <button onClick={() => dispatch('apply')} disabled={!!busy || !repo || (pf !== null && !pf.ok)}
+            title={pf !== null && !pf.ok ? 'Not dispatchable — see note above' : undefined}
             className="border border-accent-yellow/50 text-accent-yellow rounded-lg px-3 py-1.5 text-xs hover:bg-accent-yellow/10 disabled:opacity-40">
             {busy === 'apply' ? '…' : 'Dispatch Apply (needs approval)'}
           </button>
