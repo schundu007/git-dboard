@@ -8,7 +8,7 @@ import {
   Shield, BarChart2, Cpu, Lightbulb, Gauge, Rocket, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
   Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
-  Boxes, FileText, Flame,
+  Boxes, FileText, Flame, ShieldAlert,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -42,8 +42,9 @@ const NAV: NavSection[] = [
     label: 'CI / CD',
     items: [
       { to: '/builds',        icon: Container, label: 'CI Pipeline'   },
-      { to: '/release-notes', icon: FileText,  label: 'Release Notes' },
-      { to: '/registry',      icon: Layers,    label: 'Registry'      },
+      { to: '/release-notes', icon: FileText,    label: 'Release Notes' },
+      { to: '/sanitizers',    icon: ShieldAlert, label: 'Sanitizers'    },
+      { to: '/registry',      icon: Layers,      label: 'Registry'      },
     ],
   },
   {

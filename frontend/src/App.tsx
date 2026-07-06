@@ -13,6 +13,7 @@ const BuildPipeline   = lazy(() => import('./pages/BuildPipeline'))
 const ReleaseNotes    = lazy(() => import('./pages/ReleaseNotes'))
 const Failures        = lazy(() => import('./pages/Failures'))
 const BumpPRs         = lazy(() => import('./pages/BumpPRs'))
+const Sanitizers      = lazy(() => import('./pages/Sanitizers'))
 const InfraAssignment = lazy(() => import('./pages/InfraAssignment'))
 const RegistryManager = lazy(() => import('./pages/RegistryManager'))
 const ImprovementPlan = lazy(() => import('./pages/ImprovementPlan'))
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/release-notes" element={<ReleaseNotes />} />
           <Route path="/failures"    element={<Failures />} />
           <Route path="/bumps"       element={<BumpPRs />} />
+          <Route path="/sanitizers"  element={<Sanitizers />} />
           <Route path="/action-plan" element={<ImprovementPlan />} />
           <Route path="/infra-gap"   element={<InfraGap />} />
           <Route path="/provisioning" element={<Provisioning />} />
