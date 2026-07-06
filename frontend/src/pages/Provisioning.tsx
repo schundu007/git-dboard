@@ -69,7 +69,8 @@ export default function Provisioning() {
       const j = await r.json().catch(() => ({}))
       if (!r.ok) { setMsg({ ok: false, text: j.detail || 'Failed to create PR' }); return }
       const link = j.pr_url || j.compare_url
-      setMsg({ ok: true, text: link ? `PR ready → ${link}` : 'Branch pushed.' })
+      const forkNote = j.via_fork ? 'No write on the live repo — opened a PR from your fork. ' : ''
+      setMsg({ ok: true, text: forkNote + (link ? `PR ready → ${link}` : 'Branch pushed.') })
       if (j.pr_url) window.open(j.pr_url, '_blank')
       checkPreflight()
     } catch (e: any) { setMsg({ ok: false, text: String(e.message || e) }) }

@@ -14,7 +14,7 @@ Mount:
     app.include_router(provision.router)
 """
 from __future__ import annotations
-import os, json, subprocess, httpx, base64
+import os, json, subprocess, httpx, base64, asyncio
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
 from services import github_client as gh
@@ -149,26 +149,49 @@ jobs:
 
 @router.post("/scaffold")
 async def scaffold(repo: str, path: str = ".github/workflows/provision.yml"):
-    """One-click: branch + commit provision.yml + open a PR on the target repo."""
+    """One-click: commit provision.yml + open a PR on the target repo.
+    If the token can't write to the live repo, fall back to forking it and
+    opening the PR from the fork (standard contribution flow)."""
     branch = "gitpulse/add-provision-yml"
     h = gh._headers()
-    async with httpx.AsyncClient(timeout=30) as c:
+    async with httpx.AsyncClient(timeout=45) as c:
         rr = await c.get(f"{GITHUB_API}/repos/{repo}", headers=h)
         if rr.status_code >= 400:
             raise HTTPException(rr.status_code, f"Cannot access '{repo}': {rr.text}")
-        default_branch = rr.json().get("default_branch", "main")
+        upstream = rr.json()
+        default_branch = upstream.get("default_branch", "main")
+        perms = upstream.get("permissions") or {}
+        can_write = bool(perms.get("push") or perms.get("maintain") or perms.get("admin"))
 
-        ref = await c.get(f"{GITHUB_API}/repos/{repo}/git/ref/heads/{default_branch}", headers=h)
+        # Pick where we push: the live repo if writable, else a fork of it.
+        work_repo = repo
+        via_fork = False
+        if not can_write:
+            fk = await c.post(f"{GITHUB_API}/repos/{repo}/forks", headers=h)
+            if fk.status_code not in (200, 202):
+                raise HTTPException(fk.status_code,
+                                    f"No write access to '{repo}', and forking failed: {fk.text}")
+            work_repo = fk.json().get("full_name")
+            via_fork = True
+            # forks are created asynchronously — wait until it's queryable
+            for _ in range(15):
+                if (await c.get(f"{GITHUB_API}/repos/{work_repo}", headers=h)).status_code == 200:
+                    break
+                await asyncio.sleep(2)
+
+        wr = (await c.get(f"{GITHUB_API}/repos/{work_repo}", headers=h)).json()
+        work_default = wr.get("default_branch", default_branch)
+        ref = await c.get(f"{GITHUB_API}/repos/{work_repo}/git/ref/heads/{work_default}", headers=h)
         if ref.status_code >= 400:
-            raise HTTPException(ref.status_code, f"base ref: {ref.text}")
+            raise HTTPException(ref.status_code, f"base ref on '{work_repo}': {ref.text}")
         base_sha = ref.json()["object"]["sha"]
 
-        br = await c.post(f"{GITHUB_API}/repos/{repo}/git/refs", headers=h,
+        br = await c.post(f"{GITHUB_API}/repos/{work_repo}/git/refs", headers=h,
                           json={"ref": f"refs/heads/{branch}", "sha": base_sha})
         if br.status_code not in (201, 422):  # 422 = branch already exists
-            raise HTTPException(br.status_code, f"create branch (needs write access): {br.text}")
+            raise HTTPException(br.status_code, f"create branch on '{work_repo}': {br.text}")
 
-        existing = await c.get(f"{GITHUB_API}/repos/{repo}/contents/{path}?ref={branch}", headers=h)
+        existing = await c.get(f"{GITHUB_API}/repos/{work_repo}/contents/{path}?ref={branch}", headers=h)
         put_body = {
             "message": "ci: add provision.yml (via gitpulse)",
             "content": base64.b64encode(_STARTER_YAML.encode()).decode(),
@@ -176,24 +199,27 @@ async def scaffold(repo: str, path: str = ".github/workflows/provision.yml"):
         }
         if existing.status_code == 200:
             put_body["sha"] = existing.json()["sha"]
-        put = await c.put(f"{GITHUB_API}/repos/{repo}/contents/{path}", headers=h, json=put_body)
+        put = await c.put(f"{GITHUB_API}/repos/{work_repo}/contents/{path}", headers=h, json=put_body)
         if put.status_code not in (200, 201):
-            raise HTTPException(put.status_code, f"commit file (needs write access): {put.text}")
+            raise HTTPException(put.status_code, f"commit file on '{work_repo}': {put.text}")
 
+        work_owner = work_repo.split("/")[0]
+        head = f"{work_owner}:{branch}" if via_fork else branch
         pr = await c.post(f"{GITHUB_API}/repos/{repo}/pulls", headers=h, json={
-            "title": "Add provision.yml (gitpulse)", "head": branch, "base": default_branch,
+            "title": "Add provision.yml (gitpulse)", "head": head, "base": default_branch,
             "body": "Adds a starter `provision.yml` so gitpulse can dispatch provisioning.\n\n"
                     "Fill the TODO placeholders (terraform root, AWS region, OIDC role ARN) before applying.",
         })
         if pr.status_code == 201:
-            return {"ok": True, "pr_url": pr.json()["html_url"], "branch": branch}
-        # PR may already exist for this branch
-        owner = repo.split("/")[0]
-        found = await c.get(f"{GITHUB_API}/repos/{repo}/pulls?head={owner}:{branch}&state=open", headers=h)
+            return {"ok": True, "pr_url": pr.json()["html_url"], "via_fork": via_fork, "work_repo": work_repo}
+
+        found = await c.get(f"{GITHUB_API}/repos/{repo}/pulls?head={work_owner}:{branch}&state=open", headers=h)
         prs = found.json() if found.status_code == 200 else []
         if prs:
-            return {"ok": True, "pr_url": prs[0]["html_url"], "branch": branch, "note": "existing PR"}
-        return {"ok": True, "branch": branch, "compare_url": f"https://github.com/{repo}/compare/{branch}?expand=1",
+            return {"ok": True, "pr_url": prs[0]["html_url"], "via_fork": via_fork, "note": "existing PR"}
+        compare = (f"https://github.com/{repo}/compare/{default_branch}...{work_owner}:{branch}?expand=1"
+                   if via_fork else f"https://github.com/{repo}/compare/{branch}?expand=1")
+        return {"ok": True, "via_fork": via_fork, "compare_url": compare,
                 "note": "branch pushed — open the PR from the compare link"}
 
 
