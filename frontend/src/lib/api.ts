@@ -83,6 +83,8 @@ export const getMultiArch = (days = 14) =>
 export const getMultiArchTrends = (days = 30) =>
   request<any>(`/nightly/multiarch-trends?days=${days}`)
 
+export const getBumpPRs = () => request<any>(`/prs/bumps`)
+
 export const getNightlyJobs = (runId: number) =>
   request<any>(`/nightly/runs/${runId}/jobs`)
 

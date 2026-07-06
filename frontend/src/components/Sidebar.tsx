@@ -5,7 +5,7 @@ import GitPulseLogo from './GitPulseLogo'
 import {
   LayoutDashboard, GitPullRequest, Container,
   Server, Layers,
-  Shield, BarChart2, Cpu, Lightbulb, ChevronLeft, ChevronRight,
+  Shield, BarChart2, Cpu, Lightbulb, Gauge, Rocket, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
   Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
   Boxes, FileText, Flame,
@@ -25,14 +25,17 @@ const NAV: NavSection[] = [
   {
     label: 'Overview',
     items: [
-      { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard'   },
-      { to: '/action-plan', icon: Lightbulb,       label: 'Action Plan' },
+      { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
+      { to: '/action-plan',  icon: Lightbulb,       label: 'Action Plan'  },
+      { to: '/infra-gap',    icon: Gauge,           label: 'Infra Gap'    },
+      { to: '/provisioning', icon: Rocket,          label: 'Provisioning' },
     ],
   },
   {
     label: 'Source Control',
     items: [
-      { to: '/prs',      icon: GitPullRequest, label: 'Source Control' },
+      { to: '/prs',   icon: GitPullRequest, label: 'Source Control' },
+      { to: '/bumps', icon: Boxes,          label: 'Bump PRs'       },
     ],
   },
   {

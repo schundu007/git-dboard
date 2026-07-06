@@ -191,6 +191,66 @@ async def get_pr_stats():
     }
 
 
+@router.get("/bumps")
+async def get_bump_prs():
+    """Submodule/dependency bump PRs — open bumps, per-submodule counts, staleness."""
+    import re
+    from datetime import datetime, timezone
+
+    data = await gh.get_prs(state="open", per_page=100)
+    prs = data if isinstance(data, list) else []
+    now = datetime.now(timezone.utc)
+
+    def is_bump(p: dict) -> bool:
+        t = (p.get("title") or "").lower()
+        labels = {l.get("name", "").lower() for l in (p.get("labels") or [])}
+        author = (p.get("user") or {}).get("login", "").lower()
+        return ("bump" in t or bool(labels & {"dependencies", "dependency", "submodule", "submodules"})
+                or author.endswith("[bot]"))
+
+    def submodule_of(title: str) -> str:
+        m = re.search(r"bump\s+([\w./-]+?)\s+(?:from|to|and|\()", title, re.I)
+        if m:
+            return m.group(1)
+        m = re.search(r"bump\s+([\w./-]+)", title, re.I)
+        return m.group(1) if m else "other"
+
+    out = []
+    by_sub: dict[str, int] = {}
+    for p in prs:
+        if not is_bump(p):
+            continue
+        title = p.get("title") or ""
+        sub = submodule_of(title)
+        by_sub[sub] = by_sub.get(sub, 0) + 1
+        created = p.get("created_at")
+        age_days = None
+        if created:
+            try:
+                age_days = (now - datetime.fromisoformat(created.replace("Z", "+00:00"))).days
+            except Exception:
+                age_days = None
+        out.append({
+            "number": p.get("number"),
+            "title": title,
+            "url": p.get("html_url"),
+            "author": (p.get("user") or {}).get("login"),
+            "submodule": sub,
+            "draft": bool(p.get("draft")),
+            "age_days": age_days,
+            "created_at": created,
+        })
+
+    out.sort(key=lambda x: (x["age_days"] is None, -(x["age_days"] or 0)))
+    oldest = max((x["age_days"] or 0 for x in out), default=0)
+    return {
+        "total": len(out),
+        "oldest_days": oldest,
+        "by_submodule": dict(sorted(by_sub.items(), key=lambda kv: -kv[1])),
+        "prs": out,
+    }
+
+
 @router.get("/{pr_number}")
 async def get_pr(pr_number: int):
     return await gh.get_pr(pr_number)
