@@ -344,8 +344,11 @@ async def get_sanitizers():
             claimed.add(wf)
             assigned[kind] = wf
 
-    async def build(kind: str, wf: str):
+    async def build(kind: str, wf: str | None):
         full, _kws, desc = meta[kind]
+        if not wf:
+            return {"kind": kind, "full": full, "desc": desc, "workflow": None,
+                    "configured": False, "run": None, "jobs": []}
         try:
             runs = (await gh.get_workflow_runs(wf, per_page=1)).get("workflow_runs", [])
         except Exception:
@@ -368,6 +371,7 @@ async def get_sanitizers():
             "full": full,
             "desc": desc,
             "workflow": wf,
+            "configured": True,
             "run": ({
                 "number": run.get("run_number"),
                 "url": run.get("html_url"),
@@ -377,8 +381,8 @@ async def get_sanitizers():
             "jobs": jobs_out,
         }
 
-    suites = [await build(kind, assigned[kind]) for kind, *_ in _SANITIZERS if kind in assigned]
-    return {"suites": suites}
+    suites = [await build(kind, assigned.get(kind)) for kind, *_ in _SANITIZERS]
+    return {"suites": suites, "configured": sum(1 for s in suites if s["configured"])}
 
 
 @router.get("/trend")

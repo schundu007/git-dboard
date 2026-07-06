@@ -5,7 +5,7 @@ import { getSanitizers } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
 
 type Job = { name: string; arch: string; status: string; url?: string }
-type Suite = { kind: string; full?: string; desc?: string; workflow: string; run: { number: number; url: string; created_at: string; status: string } | null; jobs: Job[] }
+type Suite = { kind: string; full?: string; desc?: string; workflow: string | null; configured?: boolean; run: { number: number; url: string; created_at: string; status: string } | null; jobs: Job[] }
 
 function statusStyle(s: string) {
   const v = (s || '').toLowerCase()
@@ -17,6 +17,15 @@ function statusStyle(s: string) {
 }
 
 function SuiteCard({ s }: { s: Suite }) {
+  if (!s.configured) {
+    return (
+      <div className="bg-surface-1 border border-border/60 rounded-xl px-4 py-2.5 flex items-center gap-2 opacity-60">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{s.kind}</span>
+        {s.full && <span className="text-[10px] text-gray-600">{s.full}</span>}
+        <span className="ml-auto text-[9px] uppercase tracking-wider text-gray-600 bg-surface-2 border border-border rounded px-1.5 py-0.5">not configured</span>
+      </div>
+    )
+  }
   const fails = s.jobs.filter(j => (j.status || '').toLowerCase() === 'failure').length
   return (
     <div className="bg-surface-1 border border-border rounded-xl overflow-hidden">
@@ -86,6 +95,7 @@ export default function Sanitizers() {
     refetchInterval: 300_000,
   })
   const suites: Suite[] = data?.suites ?? []
+  const configuredCount: number = data?.configured ?? suites.filter(s => s.configured).length
 
   return (
     <div className="space-y-5">
@@ -96,12 +106,15 @@ export default function Sanitizers() {
       </div>
       {isLoading ? (
         <div className="py-10 text-center text-[12px] text-gray-500">Loading sanitizer runs…</div>
-      ) : suites.length === 0 ? (
+      ) : configuredCount === 0 ? (
         <div className="bg-surface-1 border border-border rounded-xl py-10 text-center text-[12px] text-gray-500">
-          No ASAN/TSAN sanitizer workflows detected for this repo.
+          No sanitizer workflows (ASan / TSan / MSan / UBSan / HWASan) detected for this repo.
         </div>
       ) : (
-        suites.map(s => <SuiteCard key={s.kind} s={s} />)
+        <>
+          <p className="text-[10px] text-gray-500">{configuredCount} of 5 sanitizers configured</p>
+          {suites.map(s => <SuiteCard key={s.kind} s={s} />)}
+        </>
       )}
     </div>
   )
