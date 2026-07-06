@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
-  ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
+  ChevronDown, ChevronUp, AlertTriangle, CheckCircle,
   TrendingDown, TrendingUp, Zap, Clock, GitPullRequest, Shield,
   DollarSign, Activity, Target, BarChart2, Info,
 } from 'lucide-react'

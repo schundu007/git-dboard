@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Copy, Check, Server, Clock, ChevronDown } from 'lucide-react'
-import { getTagsMatrix, getTagsLifecycle, getTagsCompute, getActiveRepo } from '../lib/api'
+import { Copy, Check } from 'lucide-react'
+import { getTagsLifecycle, getActiveRepo } from '../lib/api'
 
 // ── Copyable tag pill ────────────────────────────────────────────────────────
 

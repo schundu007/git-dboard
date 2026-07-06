@@ -7,7 +7,7 @@ import { NavLink } from 'react-router-dom'
 import {
   CheckCircle, XCircle, Circle, Minus, AlertTriangle,
   ExternalLink, ChevronRight, ChevronDown, Cpu, Package,
-  Boxes, RefreshCw, ShieldCheck, GitPullRequest,
+  RefreshCw, ShieldCheck, GitPullRequest,
   Activity, TrendingUp, TrendingDown, Target,
   GitMerge, FlaskConical, Box, Server, Upload,
   Zap, Clock, Timer, Rocket, Moon, Wrench, BarChart2, CheckCircle2,

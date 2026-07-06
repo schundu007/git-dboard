@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Layers, RefreshCw, Copy, Trash2, CheckCircle, Search,
-  ArrowUpDown, Package, AlertTriangle, Check, ChevronDown,
-  Tag, GitBranch as GitBranchIcon, Database,
+  ArrowUpDown, Package, AlertTriangle, Check,
+  Tag, Database,
 } from 'lucide-react'
-import { getECRImages, getECRUri, deleteECRImage, getRegistryPushStatus, getTagsMatrix, getTagsLifecycle, getTagsCompute, getActiveRepo } from '../lib/api'
+import { getECRImages, getECRUri, deleteECRImage, getTagsLifecycle, getActiveRepo } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
 import { formatDistanceToNow } from 'date-fns'
 import type { ECRImage } from '../lib/types'
