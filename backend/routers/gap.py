@@ -66,3 +66,46 @@ def target():
     """The target model itself (for the UI to render the checklist)."""
     from services.target_model import TARGET
     return {"checks": [c.__dict__ for c in TARGET]}
+
+
+class GuideRequest(BaseModel):
+    repo: str
+    check_id: str                   # which missing integration to guide
+    prefix: str = "myrock"
+    in_repo: bool | None = None     # current detection state (from /gap/analyze)
+    in_aws: bool | None = None
+
+
+@router.post("/guide")
+async def guide(req: GuideRequest):
+    """AI walks the user through configuring ONE missing integration, step by step.
+    Turns the gap scorecard into an actionable setup flow (not a passive report)."""
+    from services.target_model import TARGET
+    from services import llm
+    check = next((c for c in TARGET if c.id == req.check_id), None)
+    if not check:
+        raise HTTPException(404, f"unknown check '{req.check_id}'")
+    state = (f"detected in repo files: {req.in_repo}; "
+             f"detected live in AWS: {req.in_aws}") if (req.in_repo is not None or req.in_aws is not None) else "not yet detected"
+    system = (
+        "You are a senior cloud/DevOps architect guiding a user to configure ONE missing "
+        "integration for a GitHub Actions + AWS OIDC + Terraform CI/CD platform. "
+        "Cover only THIS single item. Be concrete and copy-pasteable: exact CLI commands, "
+        "file paths, GitHub Settings navigation (Secrets/Variables/Environments), Terraform "
+        "snippets, and end with a one-line VERIFY step the user can run to confirm it's done. "
+        "No preamble. Use short numbered steps and fenced code blocks."
+    )
+    prompt = (
+        f"Repo: {req.repo}\n"
+        f"Missing capability: {check.title} (category: {check.category}, severity: {check.severity})\n"
+        f"Target (what 'good' looks like): {check.target}\n"
+        f"Suggested fix: {check.fix}\n"
+        f"Current state: {state}\n\n"
+        f"Give the numbered steps to configure THIS one item, then a VERIFY step."
+    )
+    try:
+        text = await llm.call(prompt, system)
+    except Exception as e:
+        raise HTTPException(502, f"AI guidance unavailable: {e}")
+    return {"check_id": req.check_id, "title": check.title, "category": check.category,
+            "severity": check.severity, "fix": check.fix, "guide": text}
