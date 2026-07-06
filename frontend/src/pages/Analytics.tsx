@@ -69,14 +69,15 @@ const TOOLTIP_STYLE = {
 // ── Stat row ──────────────────────────────────────────────────────────────────
 
 function StatRow({ items }: { items: { label: string; value: string | number; color?: string; sub?: string }[] }) {
+  // Flat metric strip (was a grid of KPI cards) — one bordered row, hairline dividers.
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 bg-surface-1 border border-border rounded-xl overflow-hidden mb-6">
       {items.map(({ label, value, color, sub }) => (
-        <Card key={label}>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-          <p className={clsx('text-2xl font-semibold tabular-nums', color ?? 'text-white')}>{value}</p>
-          {sub && <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>}
-        </Card>
+        <div key={label} className="px-3.5 py-2.5 border-r border-border/50 last:border-r-0 min-w-0">
+          <p className="text-[9px] text-gray-500 uppercase tracking-wider truncate">{label}</p>
+          <p className={clsx('text-[18px] font-semibold tabular-nums leading-none mt-1', color ?? 'text-white')}>{value}</p>
+          {sub && <p className="text-[9px] text-gray-600 mt-1 truncate">{sub}</p>}
+        </div>
       ))}
     </div>
   )

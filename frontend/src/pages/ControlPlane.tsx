@@ -31,6 +31,7 @@ import {
 } from '../lib/api'
 import { useCountUp } from '../hooks/useCountUp'
 import IssuesPanel from '../components/IssuesPanel'
+import CIHealthDigest from '../components/CIHealthDigest'
 import { classifyWorkflowStage, WORKFLOW_STAGE_ORDER } from '../components/LiveCICDPipeline'
 import { useRepoSlug } from '../lib/hooks'
 
@@ -255,7 +256,7 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
       <div className="p-4 flex items-center gap-6">
         {/* Score ring */}
         <div className="flex-shrink-0 relative">
-          <svg width="80" height="80" viewBox="0 0 80 80" className={score >= 95 ? 'ring-elite-glow' : ''}>
+          <svg width="58" height="58" viewBox="0 0 80 80" className={score >= 95 ? 'ring-elite-glow' : ''}>
             {/* Background track */}
             <circle
               cx="40" cy="40" r={RADIUS}
@@ -336,9 +337,9 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
       <div className="border-t border-border grid grid-cols-4">
 
         {/* Open PRs */}
-        <div className="px-4 py-3 border-r border-border relative overflow-hidden">
-          <p className="text-[10px] text-gray-500 font-medium">Open PRs</p>
-          <p className="text-[1.6rem] font-bold font-mono tabular-nums leading-none mt-1 text-white">{prCount}</p>
+        <div className="px-3.5 py-2.5 border-r border-border relative overflow-hidden">
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">Open PRs</p>
+          <p className="text-[18px] font-bold font-mono tabular-nums leading-none mt-1 text-white">{prCount}</p>
           <p className="text-[10px] mt-1">
             {prsTodayCount > 0
               ? <span className="text-accent-green">+{prsTodayCount} today</span>
@@ -347,9 +348,9 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
         </div>
 
         {/* Active Builds */}
-        <div className="px-4 py-3 border-r border-border relative overflow-hidden">
-          <p className="text-[10px] text-gray-500 font-medium">Active Builds</p>
-          <p className="text-[1.6rem] font-bold font-mono tabular-nums leading-none mt-1 text-white">{buildCount}</p>
+        <div className="px-3.5 py-2.5 border-r border-border relative overflow-hidden">
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">Active Builds</p>
+          <p className="text-[18px] font-bold font-mono tabular-nums leading-none mt-1 text-white">{buildCount}</p>
           <p className="text-[10px] mt-1">
             {queued > 0
               ? <span className="text-accent-yellow">{queued} queued</span>
@@ -360,9 +361,9 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
         </div>
 
         {/* Nightly Build */}
-        <div className="px-4 py-3 border-r border-border relative overflow-hidden">
-          <p className="text-[10px] text-gray-500 font-medium">Nightly Build</p>
-          <p className={clsx('text-[1.6rem] font-bold font-mono leading-none mt-1',
+        <div className="px-3.5 py-2.5 border-r border-border relative overflow-hidden">
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">Nightly Build</p>
+          <p className={clsx('text-[18px] font-bold font-mono leading-none mt-1',
             !latestNightly ? 'text-gray-500'
               : nightlyOk ? 'text-accent-green'
               : 'text-accent-red',
@@ -373,9 +374,9 @@ function HealthScore({ builds, nightly, prs, openPRs = 0, prsTodayCount = 0, act
         </div>
 
         {/* GPU Runners */}
-        <div className="px-4 py-3 relative overflow-hidden">
-          <p className="text-[10px] text-gray-500 font-medium">GPU Runners</p>
-          <p className="text-[1.6rem] font-bold font-mono tabular-nums leading-none mt-1 text-white">
+        <div className="px-3.5 py-2.5 relative overflow-hidden">
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 font-medium">GPU Runners</p>
+          <p className="text-[18px] font-bold font-mono tabular-nums leading-none mt-1 text-white">
             {busyCount}<span className="text-sm text-gray-500 font-normal">/{onlineCount || '–'}</span>
           </p>
           <div className="mt-1.5 flex items-center gap-2">
@@ -1613,81 +1614,29 @@ export default function ControlPlane() {
         </a>
       </div>
 
-      {/* ── CI Usage summary — wall-clock stats ──────────────────────────────── */}
+      {/* ── CI Usage summary — flat metric strip (was a 4-card grid) ──────────── */}
       {usageData && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {usageData.self_hosted ? (
-            <>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Wall-Clock</p>
-                  <Timer size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-white">{usageData.total_actual_min}m</p>
-                <p className="text-[10px] text-gray-500">across last 30 runs each</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Workflows Tracked</p>
-                  <Activity size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-accent-green">{(usageData.workflows ?? []).length}</p>
-                <p className="text-[10px] text-gray-500">active workflows</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Longest Avg</p>
-                  <Clock size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-white">
-                  {(usageData.workflows ?? [])[0] ? `${(usageData.workflows)[0].avg_min}m` : '—'}
-                </p>
-                <p className="text-[10px] text-gray-500 truncate">{(usageData.workflows ?? [])[0]?.name ?? ''}</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">GitHub Billable</p>
-                  <Timer size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-gray-400">0m</p>
-                <p className="text-[10px] text-gray-500">self-hosted runners</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Billable</p>
-                  <Timer size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-white">{usageData.total_min}m</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Ubuntu</p>
-                  <Timer size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-accent-green">{usageData.total_ubuntu_min}m</p>
-                <p className="text-[10px] text-gray-500">Linux runners</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">macOS</p>
-                  <Timer size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-white">{usageData.total_macos_min}m</p>
-                <p className="text-[10px] text-gray-500">macOS runners</p>
-              </div>
-              <div className="bg-surface-1 border border-border rounded-xl p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">Wall-Clock</p>
-                  <Clock size={12} className="text-gray-400" />
-                </div>
-                <p className="text-2xl font-semibold tabular-nums text-white">{usageData.total_actual_min}m</p>
-                <p className="text-[10px] text-gray-500">from recent runs</p>
-              </div>
-            </>
-          )}
+        <div className="grid grid-cols-2 md:grid-cols-4 bg-surface-1 border border-border rounded-xl overflow-hidden">
+          {(usageData.self_hosted
+            ? [
+                { k: 'Total Wall-Clock', v: `${usageData.total_actual_min}m`, s: 'last 30 runs each', c: 'text-white' },
+                { k: 'Workflows Tracked', v: (usageData.workflows ?? []).length, s: 'active workflows', c: 'text-accent-green' },
+                { k: 'Longest Avg', v: (usageData.workflows ?? [])[0] ? `${(usageData.workflows)[0].avg_min}m` : '—', s: (usageData.workflows ?? [])[0]?.name ?? '', c: 'text-white' },
+                { k: 'GitHub Billable', v: '0m', s: 'self-hosted runners', c: 'text-gray-400' },
+              ]
+            : [
+                { k: 'Total Billable', v: `${usageData.total_min}m`, s: 'billable minutes', c: 'text-white' },
+                { k: 'Ubuntu', v: `${usageData.total_ubuntu_min}m`, s: 'Linux runners', c: 'text-accent-green' },
+                { k: 'macOS', v: `${usageData.total_macos_min}m`, s: 'macOS runners', c: 'text-white' },
+                { k: 'Wall-Clock', v: `${usageData.total_actual_min}m`, s: 'from recent runs', c: 'text-white' },
+              ]
+          ).map((m, i) => (
+            <div key={i} className="px-3.5 py-2.5 border-r border-border/50 last:border-r-0 min-w-0">
+              <p className="text-[9px] uppercase tracking-wider text-gray-500 truncate">{m.k}</p>
+              <p className={clsx('text-[17px] font-semibold tabular-nums leading-none mt-1', m.c)}>{m.v}</p>
+              {m.s && <p className="text-[9px] text-gray-600 mt-1 truncate">{m.s}</p>}
+            </div>
+          ))}
         </div>
       )}
 
@@ -1704,6 +1653,9 @@ export default function ControlPlane() {
 
       {/* ── Issues & Recommendations ──────────────────────────────────────────── */}
       <IssuesPanel />
+
+      {/* ── CI Health Digest ──────────────────────────────────────────────────── */}
+      <CIHealthDigest />
 
       {/* ── SLO Tracker ───────────────────────────────────────────────────────── */}
       <section className="space-y-5">

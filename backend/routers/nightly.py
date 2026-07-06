@@ -1,4 +1,5 @@
 import asyncio
+import re
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 
@@ -32,8 +33,7 @@ async def get_nightly_jobs(run_id: int):
     return await gh.get_run_jobs(run_id)
 
 
-@router.get("/matrix")
-async def get_nightly_matrix(days: int = 14):
+async def _build_matrix(days: int = 14) -> dict:
     """
     Per-job matrix:
       rows  = job names  (e.g. "test-isaaclab-tasks-compat (5.0.0)")
@@ -110,6 +110,67 @@ async def get_nightly_matrix(days: int = 14):
         "flaky_jobs": flaky,
         "consecutive_failures": consecutive,
         "workflow": await _nightly_workflow(),
+    }
+
+
+@router.get("/matrix")
+async def get_nightly_matrix(days: int = 14):
+    return await _build_matrix(days)
+
+
+@router.get("/digest")
+async def get_nightly_digest(days: int = 7):
+    """Heuristic CI health digest — failure hotspots, worst architectures, needs-attention."""
+    m = await _build_matrix(days)
+    matrix, dates, job_names = m["matrix"], m["dates"], m["job_names"]
+    consecutive, flaky = m["consecutive_failures"], m["flaky_jobs"]
+
+    total = failures = 0
+    fail_by_job: dict[str, dict] = {}
+    for d in dates:
+        for name in job_names:
+            cell = matrix.get(d, {}).get(name)
+            if not cell:
+                continue
+            total += 1
+            if cell.get("status") == "failure":
+                failures += 1
+                fj = fail_by_job.setdefault(name, {"count": 0, "days": set(), "url": cell.get("url")})
+                fj["count"] += 1
+                fj["days"].add(d)
+
+    hotspots = sorted(fail_by_job.items(), key=lambda kv: -kv[1]["count"])[:6]
+    hotspots_out = [
+        {"job": n, "failures": i["count"], "days": len(i["days"]), "url": i["url"]}
+        for n, i in hotspots
+    ]
+
+    arch_fail: dict[str, int] = {}
+    for name, info in fail_by_job.items():
+        for arch in set(re.findall(r"gfx[0-9a-zA-Z]+(?:-[a-z0-9]+)?", name)):
+            arch_fail[arch] = arch_fail.get(arch, 0) + info["count"]
+    total_arch = sum(arch_fail.values()) or 1
+    arch_out = [
+        {"arch": a, "failures": c, "pct": round(c / total_arch * 100, 1)}
+        for a, c in sorted(arch_fail.items(), key=lambda kv: -kv[1])[:5]
+    ]
+
+    attention_out = [
+        {"job": n, "streak": consecutive.get(n, 0)}
+        for n in sorted(job_names, key=lambda x: -consecutive.get(x, 0))
+        if consecutive.get(n, 0) >= 3
+    ]
+
+    return {
+        "days": days,
+        "dates_covered": len(dates),
+        "total_jobs": total,
+        "total_failures": failures,
+        "failure_rate": round(failures / total * 100, 1) if total else 0.0,
+        "hotspots": hotspots_out,
+        "top_architectures": arch_out,
+        "needs_attention": attention_out,
+        "flaky_jobs": flaky[:10],
     }
 
 

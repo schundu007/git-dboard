@@ -168,141 +168,112 @@ export default function IssuesPanel() {
       {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
 
-          {/* ── Left: Active Issues ─────────────────────────────────────── */}
-          <div className="p-4 space-y-2">
-            <div className="section-head">Active Issues</div>
-
-            {liveAlerts.map((alert, i) => {
-              const s = SEV[alert.severity]
-              return (
-                <div key={`live-${i}`} className={clsx('flex items-start gap-3 px-3 py-2.5 rounded-lg', s.bg)}
-                     style={{ animation: anim(`fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) ${i * 55}ms both`) }}>
-                  <span className={clsx('flex-shrink-0 mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase', s.badge)}>
-                    {s.label}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className={clsx('text-[11px] font-semibold leading-snug', s.text)}>{alert.headline}</p>
-                    <p className="text-[9px] text-gray-500 font-mono mt-0.5">{alert.category}</p>
-                  </div>
-                  <span className={clsx('flex-shrink-0 text-[10px] font-mono font-bold whitespace-nowrap', s.text)}>
-                    {alert.metric}
-                  </span>
-                </div>
-              )
-            })}
-
-            {shownIssues.map((item: any, i: number) => {
-              const sev: keyof typeof SEV = item.priority === 'critical' ? 'critical' : item.priority === 'high' ? 'high' : 'medium'
-              const s = SEV[sev]
-              return (
-                <div key={item.id ?? i} className={clsx('flex items-start gap-3 px-3 py-2.5 rounded-lg', s.bg)}
-                     style={{ animation: anim(`fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) ${(liveAlerts.length + i) * 55}ms both`) }}>
-                  <span className={clsx('flex-shrink-0 mt-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase', s.badge)}>
-                    {s.label}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className={clsx('text-[11px] font-semibold leading-snug', s.text)}>{item.title}</p>
-                    <p className="text-[9px] text-gray-500 font-mono mt-0.5 capitalize">
-                      {item.category} · {item.scope}
-                    </p>
-                  </div>
-                  <span className={clsx('flex-shrink-0 text-[10px] font-mono font-bold whitespace-nowrap', s.text)}>
-                    {ciGain(item)}
-                  </span>
-                </div>
-              )
-            })}
-
-            {issueItems.length === 0 && liveAlerts.length === 0 && (
+          {/* ── Left: Active Issues (dense table) ───────────────────────── */}
+          <div>
+            <div className="section-head px-4 pt-3 mb-0">Active Issues</div>
+            {(liveAlerts.length + shownIssues.length) === 0 ? (
               <div className="flex flex-col items-center gap-1.5 py-8 justify-center">
                 <CheckCircle size={20} className="text-accent-green mb-0.5" />
                 <p className="text-[12px] font-semibold text-accent-green">All systems clean</p>
                 <p className="text-[10px] text-gray-400">No critical or high-priority issues</p>
               </div>
+            ) : (
+              <table className="w-full text-xs">
+                <tbody>
+                  {liveAlerts.map((alert, i) => {
+                    const s = SEV[alert.severity]
+                    return (
+                      <tr key={`live-${i}`} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 transition-colors"
+                          style={{ animation: anim(`fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) ${i * 45}ms both`) }}>
+                        <td className="pl-4 pr-2 py-2 align-top w-0">
+                          <span className={clsx('inline-block text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase', s.badge)}>{s.label}</span>
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className={clsx('block text-[11px] font-medium leading-snug', s.text)}>{alert.headline}</span>
+                          <span className="block text-[9px] text-gray-500 font-mono">{alert.category}</span>
+                        </td>
+                        <td className="pr-4 pl-2 py-2 text-right align-top">
+                          <span className={clsx('text-[10px] font-mono font-bold whitespace-nowrap', s.text)}>{alert.metric}</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {shownIssues.map((item: any, i: number) => {
+                    const sev: keyof typeof SEV = item.priority === 'critical' ? 'critical' : item.priority === 'high' ? 'high' : 'medium'
+                    const s = SEV[sev]
+                    return (
+                      <tr key={item.id ?? i} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 transition-colors"
+                          style={{ animation: anim(`fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) ${(liveAlerts.length + i) * 45}ms both`) }}>
+                        <td className="pl-4 pr-2 py-2 align-top w-0">
+                          <span className={clsx('inline-block text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase', s.badge)}>{s.label}</span>
+                        </td>
+                        <td className="px-2 py-2">
+                          <span className={clsx('block text-[11px] font-medium leading-snug', s.text)}>{item.title}</span>
+                          <span className="block text-[9px] text-gray-500 font-mono capitalize">{item.category} · {item.scope}</span>
+                        </td>
+                        <td className="pr-4 pl-2 py-2 text-right align-top">
+                          <span className={clsx('text-[10px] font-mono font-bold whitespace-nowrap', s.text)}>{ciGain(item)}</span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             )}
-
-            {/* Overflow hint */}
             {issueItems.length > issueSlots && (
-              <p className="text-[10px] text-gray-400 text-center pt-1">
-                +{issueItems.length - issueSlots} more issues — see Improvement Plan
+              <p className="text-[10px] text-gray-400 text-center py-2">
+                +{issueItems.length - issueSlots} more — see Improvement Plan
               </p>
             )}
           </div>
 
-          {/* ── Right: Recommended Actions ──────────────────────────────── */}
-          <div className="p-4">
-            <div className="section-head">Recommended Actions</div>
-
-            <div className="space-y-0">
-              {recommendations.map((item: any, i: number) => {
-                const effortStyle = EFFORT_STYLE[item.effort] ?? EFFORT_STYLE.medium
-                const catStyle    = CAT_STYLE[item.category]  ?? 'text-gray-400 bg-surface-3 border-border'
-                const gain        = ciGain(item)
-                const benefit     = shortBenefit(item)
-                return (
-                  <div
-                    key={item.id ?? i}
-                    className="flex items-start gap-3 py-2.5 border-b border-border/60 last:border-0"
-                    style={{ animation: anim(`fade-up 0.2s cubic-bezier(0.22, 1, 0.36, 1) ${i * 40}ms both`) }}
-                  >
-                    {/* Rank */}
-                    <span className="text-[11px] text-gray-400 font-mono w-4 flex-shrink-0 pt-0.5">{i + 1}</span>
-
-                    {/* Action + tags */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-gray-100 font-medium leading-snug">{item.title}</p>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border capitalize', effortStyle)}>
-                          {item.effort} effort
-                        </span>
-                        <span className={clsx('text-[9px] font-semibold px-1.5 py-0.5 rounded border capitalize', catStyle)}>
-                          {item.category}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-gray-500 mt-1 leading-snug">{benefit}</p>
-                    </div>
-
-                    {/* Right column: gain + links */}
-                    <div className="flex-shrink-0 text-right space-y-1 min-w-[80px]">
-                      <p className="text-[10px] font-mono font-bold text-accent-green">{gain}</p>
-                      <div className="flex items-center gap-1 justify-end flex-wrap">
-                        {ghBase && (item.active_prs ?? []).slice(0, 1).map((pr: number) => (
-                          <a
-                            key={pr}
-                            href={`${ghBase}/pull/${pr}`}
-                            target="_blank" rel="noreferrer"
-                            className="flex items-center gap-0.5 text-[9px] font-mono text-accent-blue bg-accent-blue/10 border border-accent-blue/20 px-1.5 py-0.5 rounded hover:bg-accent-blue/20 transition-colors"
-                          >
-                            PR #{pr} <ExternalLink size={7} />
-                          </a>
-                        ))}
-                        {ghBase && (item.github_issues ?? []).slice(0, 1).map((iss: number) => (
-                          <a
-                            key={iss}
-                            href={`${ghBase}/issues/${iss}`}
-                            target="_blank" rel="noreferrer"
-                            className="flex items-center gap-0.5 text-[9px] font-mono text-gray-500 bg-surface-3 border border-border px-1.5 py-0.5 rounded hover:text-white transition-colors"
-                          >
-                            #{iss} <ExternalLink size={7} />
-                          </a>
-                        ))}
-                        {item.in_progress && (
-                          <span className="text-[9px] text-accent-blue bg-accent-blue/10 border border-accent-blue/20 px-1.5 py-0.5 rounded font-semibold">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {recommendations.length === 0 && (
-                <p className="py-6 text-center text-[11px] text-gray-400">
-                  No improvement data yet — backend still analyzing
-                </p>
-              )}
-            </div>
+          {/* ── Right: Recommended Actions (dense table) ────────────────── */}
+          <div>
+            <div className="section-head px-4 pt-3 mb-0">Recommended Actions</div>
+            {recommendations.length === 0 ? (
+              <p className="py-6 text-center text-[11px] text-gray-400">No improvement data yet — backend still analyzing</p>
+            ) : (
+              <table className="w-full text-xs">
+                <tbody>
+                  {recommendations.map((item: any, i: number) => {
+                    const effortStyle = EFFORT_STYLE[item.effort] ?? EFFORT_STYLE.medium
+                    const catStyle    = CAT_STYLE[item.category]  ?? 'text-gray-400 bg-surface-3 border-border'
+                    const pr  = ghBase ? (item.active_prs ?? [])[0] : null
+                    const iss = ghBase ? (item.github_issues ?? [])[0] : null
+                    return (
+                      <tr key={item.id ?? i} className="border-b border-border/40 last:border-0 hover:bg-surface-2/40 transition-colors"
+                          style={{ animation: anim(`fade-up 0.2s cubic-bezier(0.22, 1, 0.36, 1) ${i * 35}ms both`) }}>
+                        <td className="pl-4 pr-1 py-2 text-[10px] text-gray-500 font-mono align-top w-0">{i + 1}</td>
+                        <td className="px-2 py-2">
+                          <span className="block text-[11px] text-gray-100 font-medium leading-snug">{item.title}</span>
+                          <span className="block text-[9.5px] text-gray-500 mt-0.5">{shortBenefit(item)}</span>
+                        </td>
+                        <td className="px-1.5 py-2 align-top">
+                          <span className={clsx('inline-block text-[8.5px] font-bold px-1.5 py-0.5 rounded border capitalize whitespace-nowrap', effortStyle)}>{item.effort}</span>
+                        </td>
+                        <td className="px-1.5 py-2 align-top hidden md:table-cell">
+                          <span className={clsx('inline-block text-[8.5px] font-semibold px-1.5 py-0.5 rounded border capitalize whitespace-nowrap', catStyle)}>{item.category}</span>
+                        </td>
+                        <td className="px-1.5 py-2 text-right align-top">
+                          <span className="text-[10px] font-mono font-bold text-accent-green whitespace-nowrap">{ciGain(item)}</span>
+                        </td>
+                        <td className="pr-4 pl-1 py-2 text-right align-top w-0">
+                          {pr ? (
+                            <a href={`${ghBase}/pull/${pr}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[9px] font-mono text-accent-blue hover:underline whitespace-nowrap">#{pr}<ExternalLink size={7} /></a>
+                          ) : iss ? (
+                            <a href={`${ghBase}/issues/${iss}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[9px] font-mono text-gray-500 hover:text-white whitespace-nowrap">#{iss}<ExternalLink size={7} /></a>
+                          ) : item.in_progress ? (
+                            <span className="text-[9px] text-accent-blue font-semibold">active</span>
+                          ) : (
+                            <span className="text-gray-600">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
         </div>

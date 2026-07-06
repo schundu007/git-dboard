@@ -199,11 +199,11 @@ function StatsBar({ stats }: { stats: any }) {
     { label: 'Conflicts', value: stats.has_conflicts, color: 'text-accent-red' },
   ]
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-5 bg-surface-1 border border-border rounded-lg overflow-hidden">
       {items.map(({ label, value, color }) => (
-        <div key={label} className="bg-surface-1 border border-border rounded-lg px-3 py-2.5 text-center">
-          <p className={clsx('text-xl font-semibold tabular-nums', color)}>{value ?? '—'}</p>
-          <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+        <div key={label} className="px-3 py-2.5 border-r border-border/50 last:border-r-0 text-center">
+          <p className={clsx('text-[17px] font-semibold tabular-nums leading-none', color)}>{value ?? '—'}</p>
+          <p className="text-[9px] uppercase tracking-wider text-gray-500 mt-1">{label}</p>
         </div>
       ))}
     </div>

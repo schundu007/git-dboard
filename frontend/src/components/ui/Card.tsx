@@ -89,8 +89,8 @@ export function StatCard({
   }
 
   return (
-    <div className="bg-surface-1 ring-1 ring-border rounded-lg p-3.5 shadow-card card-interactive">
-      <div className="flex items-start justify-between mb-2.5">
+    <div className="bg-surface-1 ring-1 ring-border rounded-lg px-3 py-2.5">
+      <div className="flex items-start justify-between mb-1.5">
         <p className="section-label">{label}</p>
         {icon && (
           <span className={cn('flex-shrink-0', iconColors[accentColor])}>
@@ -98,9 +98,9 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className="stat-value">{value}</p>
+      <p className="stat-value !text-[19px]">{value}</p>
       {(sub || trend) && (
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1">
           {sub && <p className="text-[11px] text-neutral-400">{sub}</p>}
           {trend && (
             <span className={cn(
