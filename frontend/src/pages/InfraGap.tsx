@@ -5,6 +5,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import { Gauge, Loader2, AlertTriangle, Cloud, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { useRepoSlug } from '../lib/hooks'
+import { Markdown } from '../components/ui/Markdown'
 
 const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
 
@@ -385,7 +386,7 @@ export default function InfraGap() {
             <div className="p-4 overflow-y-auto">
               {guideLoading
                 ? <div className="flex items-center gap-2 text-[12px] text-gray-400"><Loader2 size={14} className="animate-spin" /> Generating step-by-step guidance…</div>
-                : <pre className="text-[11px] leading-5 text-gray-200 whitespace-pre-wrap font-mono">{guide.guide}</pre>}
+                : <Markdown content={guide.guide ?? ''} />}
             </div>
             <div className="px-4 py-2.5 border-t border-border flex items-center gap-2">
               <button onClick={() => autoFix(guide.check_id, false)} disabled={busy === 'autofix'}
