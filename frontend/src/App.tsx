@@ -1,5 +1,5 @@
 import { lazy, Suspense, Component } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -7,25 +7,49 @@ import { getActiveRepo, getRepos } from './lib/api'
 import Layout from './components/Layout'
 import RepoWelcome from './components/RepoWelcome'
 
-const ControlPlane    = lazy(() => import('./pages/ControlPlane'))
-const PRHub           = lazy(() => import('./pages/PRHub'))
-const BuildPipeline   = lazy(() => import('./pages/BuildPipeline'))
-const ReleaseNotes    = lazy(() => import('./pages/ReleaseNotes'))
-const Failures        = lazy(() => import('./pages/Failures'))
-const BumpPRs         = lazy(() => import('./pages/BumpPRs'))
-const Sanitizers      = lazy(() => import('./pages/Sanitizers'))
-const InfraAssignment = lazy(() => import('./pages/InfraAssignment'))
-const RegistryManager = lazy(() => import('./pages/RegistryManager'))
-const ImprovementPlan = lazy(() => import('./pages/ImprovementPlan'))
-const InfraGap        = lazy(() => import('./pages/InfraGap'))
-const Provisioning    = lazy(() => import('./pages/Provisioning'))
-const ErrorMonitor    = lazy(() => import('./pages/ErrorMonitor'))
-const Analytics       = lazy(() => import('./pages/Analytics'))
-const SecurityAudit   = lazy(() => import('./pages/SecurityAudit'))
-const Settings        = lazy(() => import('./pages/Settings'))
-const ScriptPlayground   = lazy(() => import('./pages/ScriptPlayground'))
-const ScriptBrowser      = lazy(() => import('./pages/ScriptBrowser'))
-const GroupDashboard     = lazy(() => import('./pages/GroupDashboard'))
+// A failed dynamic import is almost always a stale chunk: the browser is holding
+// an old index.html that references hashed chunk filenames purged by a newer
+// deploy. Reload once (guarded so we never loop) to fetch the fresh index.html
+// and its new chunk hashes. Any success clears the guard so a future deploy can
+// recover the same way.
+const CHUNK_RELOAD_KEY = 'chunk-reload-attempt'
+
+function lazyWithReload<T extends ComponentType<any>>(factory: () => Promise<{ default: T }>) {
+  return lazy(async () => {
+    try {
+      const mod = await factory()
+      sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+      return mod
+    } catch (err) {
+      if (!sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+        window.location.reload()
+        return new Promise<{ default: T }>(() => {}) // hold render until reload
+      }
+      throw err
+    }
+  })
+}
+
+const ControlPlane    = lazyWithReload(() => import('./pages/ControlPlane'))
+const PRHub           = lazyWithReload(() => import('./pages/PRHub'))
+const BuildPipeline   = lazyWithReload(() => import('./pages/BuildPipeline'))
+const ReleaseNotes    = lazyWithReload(() => import('./pages/ReleaseNotes'))
+const Failures        = lazyWithReload(() => import('./pages/Failures'))
+const BumpPRs         = lazyWithReload(() => import('./pages/BumpPRs'))
+const Sanitizers      = lazyWithReload(() => import('./pages/Sanitizers'))
+const InfraAssignment = lazyWithReload(() => import('./pages/InfraAssignment'))
+const RegistryManager = lazyWithReload(() => import('./pages/RegistryManager'))
+const ImprovementPlan = lazyWithReload(() => import('./pages/ImprovementPlan'))
+const InfraGap        = lazyWithReload(() => import('./pages/InfraGap'))
+const Provisioning    = lazyWithReload(() => import('./pages/Provisioning'))
+const ErrorMonitor    = lazyWithReload(() => import('./pages/ErrorMonitor'))
+const Analytics       = lazyWithReload(() => import('./pages/Analytics'))
+const SecurityAudit   = lazyWithReload(() => import('./pages/SecurityAudit'))
+const Settings        = lazyWithReload(() => import('./pages/Settings'))
+const ScriptPlayground   = lazyWithReload(() => import('./pages/ScriptPlayground'))
+const ScriptBrowser      = lazyWithReload(() => import('./pages/ScriptBrowser'))
+const GroupDashboard     = lazyWithReload(() => import('./pages/GroupDashboard'))
 
 function PageFallback() {
   return (
@@ -45,7 +69,13 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
           <p className="text-[13px] font-semibold text-accent-red">Page failed to load</p>
           <p className="text-[11px] text-gray-500 font-mono max-w-sm truncate">{(this.state.error as Error).message}</p>
           <button
-            onClick={() => this.setState({ error: null })}
+            onClick={() => {
+              // Full reload recovers stale chunks (fresh index.html + new hashes)
+              // as well as transient render errors — clearing state alone would
+              // just re-run the same cached, failed dynamic import.
+              sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+              window.location.reload()
+            }}
             className="text-[11px] text-gray-400 hover:text-white border border-border rounded-lg px-3 py-1.5 hover:bg-surface-2 transition-colors"
           >
             Retry

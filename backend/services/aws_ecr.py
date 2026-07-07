@@ -8,6 +8,12 @@ def _client():
     return boto3.client("ecr", region_name=settings.AWS_REGION)
 
 
+def is_configured() -> bool:
+    """True only when the ECR repo + account are set, so callers can degrade
+    gracefully instead of letting boto3 raise on an empty repositoryName."""
+    return bool(settings.ECR_REPO and settings.ECR_ACCOUNT_ID)
+
+
 def get_login_token() -> Dict:
     client = _client()
     resp = client.get_authorization_token(registryIds=[settings.ECR_ACCOUNT_ID])

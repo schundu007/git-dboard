@@ -88,12 +88,21 @@ async def get_push_status():
 
 @router.get("/ecr/images")
 async def list_ecr_images(max_results: int = 50):
+    if not aws_ecr.is_configured():
+        return {
+            "images": [],
+            "repository": settings.ECR_REPO,
+            "uri": aws_ecr.get_ecr_uri(),
+            "configured": False,
+            "note": "ECR is not configured. Set ECR_REPO and ECR_ACCOUNT_ID.",
+        }
     try:
         images = aws_ecr.list_images(max_results=max_results)
         return {
             "images": images,
             "repository": settings.ECR_REPO,
             "uri": aws_ecr.get_ecr_uri(),
+            "configured": True,
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -114,6 +123,8 @@ async def ecr_uri():
 
 @router.get("/ecr/info")
 async def ecr_repo_info():
+    if not aws_ecr.is_configured():
+        return {"configured": False, "note": "ECR is not configured. Set ECR_REPO and ECR_ACCOUNT_ID."}
     try:
         return aws_ecr.describe_repository()
     except Exception as e:
