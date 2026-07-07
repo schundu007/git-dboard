@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { NavLink, useLocation, Link } from 'react-router-dom'
 import GitPulseLogo from './GitPulseLogo'
 import {
-  LayoutDashboard, GitPullRequest, Container,
+  LayoutDashboard, LayoutGrid, GitPullRequest, Container,
   Server, Layers,
   Shield, BarChart2, Cpu, Lightbulb, Gauge, Rocket, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
@@ -26,6 +26,7 @@ const NAV: NavSection[] = [
     label: 'Overview',
     items: [
       { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
+      { to: '/summary',      icon: LayoutGrid,      label: 'Summary'      },
       { to: '/action-plan',  icon: Lightbulb,       label: 'Action Plan'  },
       { to: '/infra-gap',    icon: Gauge,           label: 'Infra Gap'    },
       { to: '/provisioning', icon: Rocket,          label: 'Provisioning' },
@@ -357,7 +358,7 @@ function RepoSwitcher() {
                     ? <CheckCircle2 size={11} className="flex-shrink-0 mt-px" />
                     : <XCircle size={11} className="flex-shrink-0 mt-px" />
                   }
-                  <span>{testResult.ok ? `Connected — ${testResult.repo?.full_name ?? 'ok'}` : testResult.error}</span>
+                  <span>{testResult.ok ? `Connected: ${testResult.repo?.full_name ?? 'ok'}` : testResult.error}</span>
                 </div>
               )}
 
@@ -542,7 +543,8 @@ function NavItemRow({ item }: { item: NavItem }) {
   const showLabels = mobileOpen || !collapsed
   const isActive = item.exact
     ? location.pathname === item.to
-    : location.pathname.startsWith(item.to) && item.to !== '/'
+    // Match on a segment boundary so '/infra-gap' doesn't also light up '/infra'.
+    : (location.pathname === item.to || location.pathname.startsWith(item.to + '/')) && item.to !== '/'
 
   const linkContent = (
     <NavLink

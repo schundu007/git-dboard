@@ -77,6 +77,19 @@ async def _warm_stats_cache():
     logger.info("All GitHub stats cached.")
 
 
+async def _warm_ai_digest():
+    """Pre-compute the 7-day AI weekly digest for the active repo shortly after
+    boot so the Summary page's first load is instant (served from cache)."""
+    await asyncio.sleep(30)
+    try:
+        from routers import nightly
+        slug = gh.get_active_repo_slug() or "default"
+        nightly._AI_DIGEST_CACHE[(slug, 7)] = await nightly._generate_ai_digest(7)
+        logger.info("AI weekly digest pre-warmed for %s", slug)
+    except Exception as exc:
+        logger.warning("AI digest warm-up failed: %s", exc)
+
+
 async def _auto_ingest_loop():
     """Background task: every AUTO_INGEST_INTERVAL seconds, pull logs for new completed runs."""
     await asyncio.sleep(10)  # small delay to let the app fully start
@@ -122,6 +135,7 @@ async def lifespan(app: FastAPI):
         logger.warning("apply AWS creds: %s", exc)
     ingest_task = asyncio.create_task(_auto_ingest_loop())
     asyncio.create_task(_warm_stats_cache())
+    asyncio.create_task(_warm_ai_digest())
     pr_automation.start_scheduler()  # starts paused (enabled=False by default)
     yield
     ingest_task.cancel()

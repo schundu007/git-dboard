@@ -1,11 +1,12 @@
 import asyncio
 import re
 import statistics
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 
 from services import github_client as gh
+from services import llm
 
 router = APIRouter(prefix="/nightly", tags=["nightly"])
 
@@ -123,6 +124,10 @@ async def get_nightly_matrix(days: int = 14):
 @router.get("/digest")
 async def get_nightly_digest(days: int = 7):
     """Heuristic CI health digest — failure hotspots, worst architectures, needs-attention."""
+    return await _compute_digest(days)
+
+
+async def _compute_digest(days: int = 7) -> dict:
     m = await _build_matrix(days)
     matrix, dates, job_names = m["matrix"], m["dates"], m["job_names"]
     consecutive, flaky = m["consecutive_failures"], m["flaky_jobs"]
@@ -174,6 +179,90 @@ async def get_nightly_digest(days: int = 7):
         "needs_attention": attention_out,
         "flaky_jobs": flaky[:10],
     }
+
+
+# ── AI weekly digest ─────────────────────────────────────────────────────────
+# Cache the LLM-written narrative per (repo, days) so the Summary page loads
+# instantly and we don't re-bill a generation on every view. Served with a
+# cache-age indicator and force-refreshable via ?refresh=true.
+_AI_DIGEST_CACHE: dict[tuple[str, int], dict] = {}
+_AI_DIGEST_TTL = 6 * 3600  # seconds
+
+_AI_SYSTEM = (
+    "You are a CI reliability analyst. Given structured CI health metrics, write a concise, "
+    "high-signal weekly digest in GitHub-flavored markdown. Structure it exactly as:\n"
+    "1. An H3 title line: '### CI Health Digest — Weekly report (<start> -> <end>)'.\n"
+    "2. One executive-summary paragraph with the headline numbers (jobs, failures, failure rate) "
+    "and the 2-3 dominant themes.\n"
+    "3. '**Top failure hotspots**' as a bullet list — each bullet names the job in `code` and, in "
+    "plain language, what the number implies.\n"
+    "4. '**Most affected architectures**' as a bullet list with the failure share and a one-line "
+    "interpretation.\n"
+    "5. '**What needs immediate attention**' as a numbered list of 1-3 concrete, reasoned actions.\n"
+    "6. A final '**Bottom line:**' one-sentence TL;DR.\n"
+    "Be specific and reference the real numbers. Do not invent data not present in the input. "
+    "If there is no failure data, say so plainly in one line."
+)
+
+
+def _digest_to_prompt(d: dict, start: str, end: str) -> str:
+    import json
+    return (
+        f"Date range: {start} -> {end} ({d['days']} days, {d['dates_covered']} with data).\n"
+        f"Metrics JSON:\n{json.dumps(d, indent=2)}"
+    )
+
+
+async def _generate_ai_digest(days: int) -> dict:
+    d = await _compute_digest(days)
+    now = datetime.now(timezone.utc)
+    start = (now - timedelta(days=days)).date().isoformat()
+    end = now.date().isoformat()
+
+    if d["total_jobs"] == 0:
+        markdown = f"### CI Health Digest — Weekly report ({start} -> {end})\n\nNo nightly job data in this window."
+        provider = model = None
+    else:
+        row = await llm.get_settings()
+        provider = row.provider or "anthropic"
+        model = llm.PROVIDERS.get(provider, {}).get("model")
+        markdown = await llm.call(_digest_to_prompt(d, start, end), _AI_SYSTEM)
+
+    return {
+        "days": days,
+        "date_range": {"start": start, "end": end},
+        "generated_at": now.isoformat(),
+        "_generated_epoch": now.timestamp(),
+        "provider": provider,
+        "model": model,
+        "markdown": markdown.strip(),
+        "digest": d,
+    }
+
+
+@router.get("/ai-digest")
+async def get_ai_digest(days: int = 7, refresh: bool = False):
+    """AI-written weekly CI health digest (Claude via llm.call), cached per repo."""
+    slug = gh.get_active_repo_slug() or "default"
+    key = (slug, days)
+    cached = _AI_DIGEST_CACHE.get(key)
+    now_epoch = datetime.now(timezone.utc).timestamp()
+
+    if cached and not refresh and (now_epoch - cached["_generated_epoch"]) < _AI_DIGEST_TTL:
+        out = cached
+    else:
+        try:
+            out = await _generate_ai_digest(days)
+            _AI_DIGEST_CACHE[key] = out
+        except Exception as e:
+            if cached:  # generation failed — serve the last good digest rather than error out
+                out = cached
+            else:
+                raise HTTPException(status_code=503, detail=f"AI digest generation failed: {e}")
+
+    resp = {k: v for k, v in out.items() if k != "_generated_epoch"}
+    resp["cache_age_seconds"] = int(now_epoch - out["_generated_epoch"])
+    return resp
 
 
 @router.get("/failures")

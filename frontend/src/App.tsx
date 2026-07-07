@@ -43,6 +43,7 @@ const RegistryManager = lazyWithReload(() => import('./pages/RegistryManager'))
 const ImprovementPlan = lazyWithReload(() => import('./pages/ImprovementPlan'))
 const InfraGap        = lazyWithReload(() => import('./pages/InfraGap'))
 const Provisioning    = lazyWithReload(() => import('./pages/Provisioning'))
+const Summary         = lazyWithReload(() => import('./pages/Summary'))
 const ErrorMonitor    = lazyWithReload(() => import('./pages/ErrorMonitor'))
 const Analytics       = lazyWithReload(() => import('./pages/Analytics'))
 const SecurityAudit   = lazyWithReload(() => import('./pages/SecurityAudit'))
@@ -155,6 +156,7 @@ export default function App() {
         <Routes>
           <Route path="/"            element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard"   element={<ControlPlane />} />
+          <Route path="/summary"     element={<Summary />} />
           <Route path="/prs"         element={<PRHub />} />
           <Route path="/builds"      element={<BuildPipeline />} />
           <Route path="/release-notes" element={<ReleaseNotes />} />

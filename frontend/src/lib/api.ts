@@ -74,6 +74,9 @@ export const getNightlyTrend = (days = 30) =>
 export const getNightlyDigest = (days = 7) =>
   request<any>(`/nightly/digest?days=${days}`)
 
+export const getAIDigest = (days = 7, refresh = false) =>
+  request<any>(`/nightly/ai-digest?days=${days}${refresh ? '&refresh=true' : ''}`)
+
 export const getNightlyFailures = (days = 14) =>
   request<any>(`/nightly/failures?days=${days}`)
 
