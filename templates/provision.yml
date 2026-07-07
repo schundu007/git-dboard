@@ -46,7 +46,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_PROVISION_ROLE_ARN }}  # TODO: IAM role trusting this repo's OIDC
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}  # repo VARIABLE (set by GitPulse); ARNs aren't secret
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Build AMIs

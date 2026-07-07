@@ -493,7 +493,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_PROVISION_ROLE_ARN }}   # TODO
+          role-to-assume: ${{ vars.AWS_PROVISION_ROLE_ARN }}   # repo VARIABLE (set by GitPulse); ARNs aren't secret
           aws-region: ${{ env.AWS_REGION }}
       - uses: hashicorp/setup-terraform@v3
       - run: terraform init -backend-config=backend.hcl
