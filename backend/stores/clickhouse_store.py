@@ -273,6 +273,9 @@ class ClickHouseStore(AnalyticsStore):
         result = await self.client.query(
             query,
             parameters={"repo": repo, "since": self._since(days), "min_streak": min_streak},
+            # Bound parallelism: the window-function pipeline otherwise exhausts the
+            # thread pool on small Railway instances (CANNOT_SCHEDULE_TASK / code 439).
+            settings={"max_threads": 2, "max_execution_time": 30},
         )
         return [
             {
