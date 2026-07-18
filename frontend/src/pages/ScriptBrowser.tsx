@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   FileCode, ExternalLink, Loader2, AlertCircle, Search,
@@ -533,14 +533,7 @@ export default function ScriptBrowser() {
     [paths],
   )
 
-  useEffect(() => {
-    if (!owner || !repo || yamlTargets.length === 0) return
-    startPrewarm(owner, repo, yamlTargets).catch(() => {
-      /* non-fatal: files still analyse on demand when opened */
-    })
-  }, [owner, repo, yamlTargets])
-
-  const { data: prewarm } = useQuery({
+  const { data: prewarm, refetch: refetchPrewarm } = useQuery({
     queryKey: ['prewarm-status', owner, repo],
     queryFn: () => fetchPrewarmStatus(owner, repo),
     enabled: !!owner && !!repo && yamlTargets.length > 0,
@@ -548,11 +541,34 @@ export default function ScriptBrowser() {
     refetchInterval: q => (q.state.data?.running ? 3000 : false),
   })
 
+  // Pre-generation is explicit: each analysis is a billed API call, so switching
+  // repos must never start spending on its own.
+  const [starting, setStarting] = useState(false)
+  const [prewarmError, setPrewarmError] = useState<string | null>(null)
+
   const { data: cachedPaths } = useQuery({
     queryKey: ['cached-paths', owner, repo, prewarm?.done, prewarm?.running],
     queryFn: () => fetchCachedPaths(owner, repo),
     enabled: !!owner && !!repo,
   })
+
+  const pendingYaml = useMemo(
+    () => yamlTargets.filter(p => !cachedPaths?.has(p)),
+    [yamlTargets, cachedPaths],
+  )
+
+  async function handlePrewarm() {
+    setStarting(true)
+    setPrewarmError(null)
+    try {
+      await startPrewarm(owner, repo, yamlTargets)
+      await refetchPrewarm()
+    } catch (e) {
+      setPrewarmError((e as Error).message)
+    } finally {
+      setStarting(false)
+    }
+  }
 
   const paneProps: PaneProps = {
     analysis,
@@ -710,12 +726,14 @@ export default function ScriptBrowser() {
           {paths.length > 0 && (
             <p className="text-[9px] text-neutral-600 font-mono">{paths.length} scripts · {slug}</p>
           )}
-          {prewarm && prewarm.running && prewarm.total > 0 && (
+          {/* Pre-generation is opt-in: each file is a billed API call, so this
+              never runs on its own — not on load, not on repo switch. */}
+          {prewarm?.running && prewarm.total > 0 ? (
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <Loader2 size={9} className="animate-spin text-brand flex-shrink-0" />
                 <p className="text-[9px] text-gray-400 font-mono">
-                  Pre-analysing Actions {prewarm.done}/{prewarm.total}
+                  Pre-analysing {prewarm.done}/{prewarm.total}
                 </p>
               </div>
               <div className="h-0.5 rounded-full bg-surface-3 overflow-hidden">
@@ -725,11 +743,36 @@ export default function ScriptBrowser() {
                 />
               </div>
             </div>
-          )}
+          ) : yamlTargets.length > 0 && pendingYaml.length > 0 ? (
+            <button
+              onClick={handlePrewarm}
+              disabled={starting}
+              title={`Analyses ${pendingYaml.length} Actions YAML file${pendingYaml.length === 1 ? '' : 's'} up front — one API call each. Other file types stay on demand.`}
+              className={cn(
+                'w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg',
+                'text-[10px] font-semibold border transition-colors',
+                starting
+                  ? 'text-gray-500 border-border bg-surface-2 cursor-wait'
+                  : 'text-brand border-brand/30 bg-brand/10 hover:bg-brand/15',
+              )}
+            >
+              {starting
+                ? <Loader2 size={9} className="animate-spin" />
+                : <BookOpen size={9} />}
+              Pre-analyse {pendingYaml.length} workflow{pendingYaml.length === 1 ? '' : 's'}
+            </button>
+          ) : yamlTargets.length > 0 ? (
+            <p className="text-[9px] text-gray-500 font-mono">
+              {yamlTargets.length} workflows ready
+            </p>
+          ) : null}
           {prewarm && !prewarm.running && prewarm.failed > 0 && (
             <p className="text-[9px] text-accent-yellow font-mono">
               {prewarm.failed} file{prewarm.failed === 1 ? '' : 's'} could not be pre-analysed
             </p>
+          )}
+          {prewarmError && (
+            <p className="text-[9px] text-accent-red font-mono">{prewarmError}</p>
           )}
         </div>
       </div>
