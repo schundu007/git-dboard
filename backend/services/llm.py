@@ -37,7 +37,18 @@ def _resolve_key(row: AISettings, provider: str) -> str | None:
     return db_key or os.environ.get(ENV_KEY_MAP[provider])
 
 
-async def call(prompt: str, system: str) -> str:
+async def call(prompt: str, system: str, max_tokens: int = 4096,
+               thinking: bool = True) -> str:
+    """Call the configured provider.
+
+    `max_tokens` caps the response. Note that on thinking-capable models the
+    thinking tokens are drawn from this same budget, so a long thinking pass can
+    crowd out the answer — leaving truncated JSON or an empty string.
+
+    `thinking=False` disables extended thinking (Anthropic only). Use it for
+    structured/JSON output, where the whole budget should go to the answer and a
+    partial response is worthless.
+    """
     row = await get_settings()
     primary = row.provider or "anthropic"
 
@@ -50,7 +61,7 @@ async def call(prompt: str, system: str) -> str:
         if not key:
             continue  # no key configured — skip silently
         try:
-            return await _dispatch(prompt, system, provider, key)
+            return await _dispatch(prompt, system, provider, key, max_tokens, thinking)
         except Exception as exc:
             last_error = exc
             # try next provider
@@ -60,22 +71,33 @@ async def call(prompt: str, system: str) -> str:
     raise ValueError("No AI provider keys configured. Set ANTHROPIC_GITPULSE_API_KEY (or add a key in Settings → AI Provider).")
 
 
-async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
+async def _dispatch(prompt: str, system: str, provider: str, key: str, max_tokens: int = 4096,
+                    thinking: bool = True) -> str:
     if provider == "anthropic":
         from anthropic import AsyncAnthropic
-        msg = await AsyncAnthropic(api_key=key).messages.create(
-            model=PROVIDERS["anthropic"]["model"], max_tokens=4096,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        kwargs = {
+            "model": PROVIDERS["anthropic"]["model"],
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if not thinking:
+            kwargs["thinking"] = {"type": "disabled"}
+        msg = await AsyncAnthropic(api_key=key).messages.create(**kwargs)
         # Newer models can return thinking blocks first — pick the text block(s).
-        return "\n".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+        text = "\n".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+        if not text.strip():
+            raise ValueError(
+                f"Model returned no text (stop_reason={msg.stop_reason!r}). "
+                "This usually means max_tokens was too low for the response."
+            )
+        return text
 
     if provider == "gemini":
         payload = {
             "model": PROVIDERS["gemini"]["model"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
-            "max_tokens": 4096,
+            "max_tokens": max_tokens,
         }
         async with httpx.AsyncClient(timeout=60) as c:
             r = await c.post(
@@ -89,7 +111,7 @@ async def _dispatch(prompt: str, system: str, provider: str, key: str) -> str:
         payload = {
             "model": PROVIDERS["deepseek"]["model"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
-            "max_tokens": 4096,
+            "max_tokens": max_tokens,
         }
         async with httpx.AsyncClient(timeout=60) as c:
             r = await c.post("https://api.deepseek.com/chat/completions", json=payload,

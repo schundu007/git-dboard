@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   FileCode, ExternalLink, Loader2, AlertCircle, Search,
@@ -219,6 +219,40 @@ export type FileAnalysis = {
   concepts: string[]
   issues: AnalysisIssue[]
   deep_dive: { q: string; a: string }[]
+}
+
+export type PrewarmState = {
+  running: boolean
+  total: number
+  done: number
+  failed: number
+  eligible?: number
+  already_cached?: number
+}
+
+/** Kick off pre-generation for this repo's Actions YAML. Idempotent and cheap:
+ *  the server filters to .github/**.y(a)ml and skips anything already cached. */
+async function startPrewarm(owner: string, repo: string, paths: string[]): Promise<PrewarmState> {
+  const res = await fetch(`${API_BASE}/analyze/prewarm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ owner, repo, paths }),
+  })
+  if (!res.ok) throw new Error(`Prewarm failed (${res.status})`)
+  return res.json()
+}
+
+async function fetchPrewarmStatus(owner: string, repo: string): Promise<PrewarmState> {
+  const res = await fetch(`${API_BASE}/analyze/prewarm/status?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`)
+  if (!res.ok) throw new Error(`Status failed (${res.status})`)
+  return res.json()
+}
+
+async function fetchCachedPaths(owner: string, repo: string): Promise<Set<string>> {
+  const res = await fetch(`${API_BASE}/analyze/cached?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`)
+  if (!res.ok) return new Set()
+  const data = await res.json()
+  return new Set<string>(data.paths ?? [])
 }
 
 async function fetchAnalysis(owner: string, repo: string, path: string): Promise<FileAnalysis> {
@@ -489,6 +523,37 @@ export default function ScriptBrowser() {
     retry: false,
   })
 
+  // Pre-generate Actions YAML analyses as soon as the file list lands, so those
+  // panes are already populated when opened rather than generating on click.
+  const yamlTargets = useMemo(
+    () => paths.filter(p => {
+      const l = p.toLowerCase()
+      return l.startsWith('.github/') && (l.endsWith('.yml') || l.endsWith('.yaml'))
+    }),
+    [paths],
+  )
+
+  useEffect(() => {
+    if (!owner || !repo || yamlTargets.length === 0) return
+    startPrewarm(owner, repo, yamlTargets).catch(() => {
+      /* non-fatal: files still analyse on demand when opened */
+    })
+  }, [owner, repo, yamlTargets])
+
+  const { data: prewarm } = useQuery({
+    queryKey: ['prewarm-status', owner, repo],
+    queryFn: () => fetchPrewarmStatus(owner, repo),
+    enabled: !!owner && !!repo && yamlTargets.length > 0,
+    // Poll while work is outstanding, then stop.
+    refetchInterval: q => (q.state.data?.running ? 3000 : false),
+  })
+
+  const { data: cachedPaths } = useQuery({
+    queryKey: ['cached-paths', owner, repo, prewarm?.done, prewarm?.running],
+    queryFn: () => fetchCachedPaths(owner, repo),
+    enabled: !!owner && !!repo,
+  })
+
   const paneProps: PaneProps = {
     analysis,
     loading: analysisLoading && analysisWanted,
@@ -624,18 +689,47 @@ export default function ScriptBrowser() {
                     </span>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono text-gray-400 mt-0.5 flex-shrink-0 bg-surface-3 px-1.5 py-0.5 rounded border border-border/60">
-                  {LANG_DISPLAY[lang] ?? 'txt'}
-                </span>
+                <div className="flex items-center gap-1 mt-0.5 flex-shrink-0">
+                  {cachedPaths?.has(path) && (
+                    <span
+                      title="Analysis ready — opens instantly"
+                      className="w-1.5 h-1.5 rounded-full bg-brand/70"
+                    />
+                  )}
+                  <span className="text-[9px] font-mono text-gray-400 bg-surface-3 px-1.5 py-0.5 rounded border border-border/60">
+                    {LANG_DISPLAY[lang] ?? 'txt'}
+                  </span>
+                </div>
               </button>
             )
           })}
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-2.5 border-t border-border">
+        <div className="px-3 py-2.5 border-t border-border space-y-1.5">
           {paths.length > 0 && (
             <p className="text-[9px] text-neutral-600 font-mono">{paths.length} scripts · {slug}</p>
+          )}
+          {prewarm && prewarm.running && prewarm.total > 0 && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Loader2 size={9} className="animate-spin text-brand flex-shrink-0" />
+                <p className="text-[9px] text-gray-400 font-mono">
+                  Pre-analysing Actions {prewarm.done}/{prewarm.total}
+                </p>
+              </div>
+              <div className="h-0.5 rounded-full bg-surface-3 overflow-hidden">
+                <div
+                  className="h-full bg-brand transition-all duration-500"
+                  style={{ width: `${Math.round((prewarm.done / prewarm.total) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+          {prewarm && !prewarm.running && prewarm.failed > 0 && (
+            <p className="text-[9px] text-accent-yellow font-mono">
+              {prewarm.failed} file{prewarm.failed === 1 ? '' : 's'} could not be pre-analysed
+            </p>
           )}
         </div>
       </div>

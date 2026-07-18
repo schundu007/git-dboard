@@ -13,6 +13,7 @@ Mount in backend/main.py:
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
@@ -213,7 +214,10 @@ async def analyze_file(owner: str, repo: str, path: str, refresh: bool = False):
     )
 
     try:
-        raw = await llm.call(prompt, SYSTEM)
+        # 8192, not the 4096 default: a full analysis of a large workflow runs
+        # ~1.5-3k tokens, and a response truncated at the cap arrives as broken
+        # JSON — or as an empty string when the cut lands mid-thinking-block.
+        raw = await llm.call(prompt, SYSTEM, max_tokens=8192, thinking=False)
         result = _normalise(_parse_json(raw))
     except ValueError as exc:
         # No provider key configured, or the model returned unparseable output.
@@ -229,3 +233,103 @@ async def analyze_file(owner: str, repo: str, path: str, refresh: bool = False):
         await db.commit()
 
     return {"cached": False, "lang": lang, "content_sha": sha, **result}
+
+
+# ─── Pre-generation ───────────────────────────────────────────────────────────
+#
+# Analysis is billed per call against the configured provider key, so prewarm is
+# deliberately narrow: GitHub Actions YAML only (workflows + composite actions).
+# Those are the files worth having ready — they're the ones most often read, and
+# the largest, so they benefit most from not waiting. Python and shell stay
+# on-demand, analysed the first time someone actually opens them.
+
+PREWARM_CONCURRENCY = 4
+_prewarm_state: dict[str, dict] = {}
+
+
+def _is_prewarm_target(path: str) -> bool:
+    low = path.lower()
+    return low.startswith(".github/") and (low.endswith(".yml") or low.endswith(".yaml"))
+
+
+async def _prewarm_worker(owner: str, repo: str, paths: list[str]) -> None:
+    slug = f"{owner}/{repo}"
+    state = _prewarm_state[slug]
+    sem = asyncio.Semaphore(PREWARM_CONCURRENCY)
+
+    async def one(path: str):
+        async with sem:
+            try:
+                await analyze_file(owner=owner, repo=repo, path=path)
+                state["done"] += 1
+            except Exception as exc:
+                state["failed"] += 1
+                state["errors"].append({"path": path, "error": str(exc)[:200]})
+                logger.warning("prewarm failed for %s: %s", path, exc)
+
+    try:
+        await asyncio.gather(*(one(p) for p in paths))
+    finally:
+        state["running"] = False
+
+
+@router.post("/prewarm")
+async def prewarm(body: dict):
+    """Pre-generate analyses for a repo's Actions YAML so the panes open instantly.
+
+    Body: {owner, repo, paths: [...]}. Paths are filtered to .github/**.y(a)ml
+    server-side, and already-cached files are skipped, so calling this repeatedly
+    is cheap and idempotent.
+    """
+    owner = (body.get("owner") or "").strip()
+    repo  = (body.get("repo") or "").strip()
+    paths = body.get("paths") or []
+    if not owner or not repo:
+        raise HTTPException(status_code=422, detail="owner and repo are required")
+
+    slug = f"{owner}/{repo}"
+    existing = _prewarm_state.get(slug)
+    if existing and existing.get("running"):
+        return {"started": False, "reason": "already running", **existing}
+
+    targets = [p for p in paths if _is_prewarm_target(p)]
+
+    # Skip anything already cached — cache is keyed by content hash, so a file
+    # whose content changed upstream falls through and is re-analysed.
+    async with AsyncSessionLocal() as db:
+        rows = await db.execute(
+            select(FileAnalysis.path).where(FileAnalysis.repo_slug == slug)
+        )
+        cached = {r[0] for r in rows.all()}
+    todo = [p for p in targets if p not in cached]
+
+    _prewarm_state[slug] = {
+        "running": bool(todo), "total": len(todo), "done": 0, "failed": 0,
+        "eligible": len(targets), "already_cached": len(targets) - len(todo),
+        "errors": [],
+    }
+    if not todo:
+        return {"started": False, "reason": "nothing to do", **_prewarm_state[slug]}
+
+    asyncio.create_task(_prewarm_worker(owner, repo, todo))
+    return {"started": True, **_prewarm_state[slug]}
+
+
+@router.get("/prewarm/status")
+async def prewarm_status(owner: str, repo: str):
+    slug = f"{owner}/{repo}"
+    state = _prewarm_state.get(slug)
+    if not state:
+        return {"running": False, "total": 0, "done": 0, "failed": 0, "errors": []}
+    return state
+
+
+@router.get("/cached")
+async def cached_paths(owner: str, repo: str):
+    """Paths with a stored analysis — lets the UI mark which files open instantly."""
+    slug = f"{owner}/{repo}"
+    async with AsyncSessionLocal() as db:
+        rows = await db.execute(
+            select(FileAnalysis.path).where(FileAnalysis.repo_slug == slug)
+        )
+    return {"paths": sorted({r[0] for r in rows.all()})}
