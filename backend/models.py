@@ -70,3 +70,21 @@ class RepoConfig(Base):
     created_at = Column(DateTime, server_default=func.now())
     capabilities = Column(JSON, default={})
     business_unit = Column(String(100), nullable=True, default=None)
+
+
+class FileAnalysis(Base):
+    """Cached LLM analysis of a single CI/infra file.
+
+    Keyed by the sha256 of the file *content*, so an unchanged file is analysed
+    once and reused forever; editing the file upstream produces a new hash and
+    therefore a fresh analysis. Nothing here is derived from the filename alone.
+    """
+    __tablename__ = "file_analyses"
+    id = Column(Integer, primary_key=True)
+    repo_slug = Column(String(200), index=True)
+    path = Column(String(500), index=True)
+    content_sha = Column(String(64), index=True)
+    lang = Column(String(30))
+    result = Column(JSON, default={})          # {summary, steps, concepts, issues, deep_dive}
+    provider = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())

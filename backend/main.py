@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from config import settings
 from database import init_db, AsyncSessionLocal
-from routers import analytics, ai_config, automation, builds, gap, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, provision, prs, registry, release_notes, repos, security, tags
+from routers import analytics, ai_config, automation, builds, file_analysis, gap, groups, health_analysis, improvement, infra, issues, insights, logs, nightly, overview, provision, prs, registry, release_notes, repos, security, tags
 from stores import webhooks as ch_webhooks, ci_router as ch_ci
 from services import github_client as gh
 from services import log_store
@@ -197,6 +197,7 @@ app.include_router(groups.router)
 app.include_router(security.router)
 app.include_router(tags.router)
 app.include_router(gap.router)
+app.include_router(file_analysis.router)  # GET /analyze/file — per-file CI script analysis
 app.include_router(provision.router)
 app.include_router(ch_webhooks.router)  # POST /webhooks/github — CI event ingestion
 app.include_router(ch_ci.router)        # GET /ci/* — Failure Intelligence (ClickHouse)
