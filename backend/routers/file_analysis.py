@@ -176,6 +176,34 @@ def _normalise(obj: dict) -> dict:
     }
 
 
+async def _generate(prompt: str) -> dict:
+    """Ask the model for the analysis, retrying once if the JSON is malformed.
+
+    Producing JSON as free text is occasionally lossy — a stray unescaped quote
+    inside a summary invalidates the whole document. It is intermittent, so the
+    same file can succeed on a second attempt. Showing the reject back to the
+    model is far more reliable than trying to repair arbitrary broken JSON here.
+
+    max_tokens is raised to 8192 and thinking disabled: on thinking-capable
+    models the thinking tokens come out of the same budget as the answer, and a
+    long thinking pass leaves the JSON truncated (or, if the cut lands inside the
+    thinking block, produces no text at all).
+    """
+    raw = await llm.call(prompt, SYSTEM, max_tokens=8192, thinking=False)
+    try:
+        return _parse_json(raw)
+    except Exception as exc:
+        logger.warning("malformed JSON, retrying once: %s", exc)
+        retry_prompt = (
+            f"{prompt}\n\n"
+            f"Your previous response could not be parsed as JSON ({exc}). "
+            "Return ONLY the JSON object. Escape every double quote and newline "
+            "that appears inside a string value. Do not wrap it in a code fence."
+        )
+        raw = await llm.call(retry_prompt, SYSTEM, max_tokens=8192, thinking=False)
+        return _parse_json(raw)
+
+
 @router.get("/file")
 async def analyze_file(owner: str, repo: str, path: str, refresh: bool = False):
     """Analyse one CI/infra file. Cached by content hash; `refresh=true` re-runs."""
@@ -214,11 +242,7 @@ async def analyze_file(owner: str, repo: str, path: str, refresh: bool = False):
     )
 
     try:
-        # 8192, not the 4096 default: a full analysis of a large workflow runs
-        # ~1.5-3k tokens, and a response truncated at the cap arrives as broken
-        # JSON — or as an empty string when the cut lands mid-thinking-block.
-        raw = await llm.call(prompt, SYSTEM, max_tokens=8192, thinking=False)
-        result = _normalise(_parse_json(raw))
+        result = _normalise(await _generate(prompt))
     except ValueError as exc:
         # No provider key configured, or the model returned unparseable output.
         raise HTTPException(status_code=503, detail=str(exc))
