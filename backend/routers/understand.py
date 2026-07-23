@@ -217,27 +217,11 @@ def _build_graph(owner: str, repo: str, summaries: dict[str, dict], commit_sha: 
                           "summary": f"Class `{cl['name']}` in {base}.", "tags": [], "complexity": "moderate"})
             edges.append({"source": f"file:{path}", "target": cid, "type": "contains", "direction": "forward", "weight": 1})
 
-    # directory module nodes + containment edges (module->child)
-    for d in sorted(dirs):
-        nodes.append({
-            "id": f"module:{d}", "type": "module", "name": d.rsplit("/", 1)[-1],
-            "filePath": d, "summary": f"Directory `{d}`.", "tags": ["directory"], "complexity": "moderate",
-        })
-    def parent_id(p: str, is_file: bool) -> str | None:
-        d = dir_of(p)
-        if not d:
-            return None
-        return f"module:{d}"
-    for path in summaries:
-        pid = parent_id(path, True)
-        if pid:
-            edges.append({"source": pid, "target": f"file:{path}", "type": "contains",
-                          "direction": "forward", "weight": 1})
-    for d in dirs:
-        pid = parent_id(d, False)
-        if pid:
-            edges.append({"source": pid, "target": f"module:{d}", "type": "contains",
-                          "direction": "forward", "weight": 1})
+    # NOTE: no directory "module" container nodes — the original Understand Anything
+    # graph has none; it groups directories via `layers` (metadata), letting files
+    # float as free nodes connected by import/relationship edges. Module container
+    # nodes made the viewer nest every file into a directory box ("everything in
+    # boxes"). Directories are represented only as layers (below).
 
     # import edges (file -> file): resolve each import to a repo file by basename,
     # so the graph shows real cross-file dependencies (the connecting lines). Only
