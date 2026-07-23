@@ -50,9 +50,20 @@ export default function KnowledgeGraph() {
     }
   }
 
-  const openViewer = (r: any) => {
-    const base = graphDataBase(r.owner, r.repo)
-    window.open(`/git-graph/viewer.html?base=${encodeURIComponent(base)}`, '_blank')
+  const openViewer = async (r: any) => {
+    const slug = r.slug ?? `${r.owner}/${r.repo}`
+    setCmd(c => ({ ...c, [slug]: { loading: true } }))
+    try {
+      const s = await getGraphStatus(r.owner, r.repo)
+      if (s?.existing || s?.nodes) {
+        setCmd(c => ({ ...c, [slug]: {} }))
+        window.open(`/git-graph/viewer.html?base=${encodeURIComponent(graphDataBase(r.owner, r.repo))}`, '_blank')
+      } else {
+        setCmd(c => ({ ...c, [slug]: { msg: 'No graph generated yet — click Analyze first, then Open graph.', err: true } }))
+      }
+    } catch (e: any) {
+      setCmd(c => ({ ...c, [slug]: { msg: e.message, err: true } }))
+    }
   }
 
   const analyze = async (r: any) => {
