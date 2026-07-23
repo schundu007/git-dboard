@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/git-graph/favicon.svg" />
+    <title>git-graph · viewer</title>
+    <!--
+      Runtime data-base resolver. The compiled dashboard resolves every data file
+      (knowledge-graph.json, meta.json, file-content/*, …) through its fP() helper,
+      which we patched to honour window.__GG_DATA_BASE__. That makes ONE viewer able
+      to render ANY project's data folder — the multi-project seam the source lacks.
+        ?base=<url>       explicit data-dir (e.g. /blog/therock-graph/ or a GitPulser endpoint)
+        ?project=<slug>   shorthand for /git-graph/projects/<slug>/
+      Must run BEFORE the module script so the value exists before the app fetches.
+    -->
+    <script>
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search);
+          var base = q.get("base");
+          var slug = q.get("project");
+          if (!base && slug) base = "/git-graph/projects/" + slug + "/";
+          if (base) {
+            if (base.slice(-1) !== "/" && base.indexOf("?") === -1) base += "/";
+            window.__GG_DATA_BASE__ = base;
+          }
+          // Title hint so the browser tab tracks the open project.
+          if (slug) document.title = "git-graph · " + slug;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/git-graph/assets/index-BnWbhqlq.js"></script>
+    <link rel="modulepreload" crossorigin href="/git-graph/assets/react-vendor-BVoutfaX.js">
+    <link rel="modulepreload" crossorigin href="/git-graph/assets/xyflow-CYMCcsWN.js">
+    <link rel="modulepreload" crossorigin href="/git-graph/assets/graph-layout-7tFr_anw.js">
+    <link rel="stylesheet" crossorigin href="/git-graph/assets/xyflow-BZV40eAE.css">
+    <link rel="stylesheet" crossorigin href="/git-graph/assets/index-DGU1uF8E.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <a href="/knowledge-graph" id="gg-back" title="Back to git-graph projects">‹ git-graph projects</a>
+    <style>
+      #gg-back{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9999;
+        font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.04em;
+        color:#A3B4C2;background:rgba(13,18,24,.85);backdrop-filter:blur(8px);
+        border:1px solid #28353F;border-radius:20px;padding:6px 14px;text-decoration:none;
+        box-shadow:0 6px 20px -8px rgba(0,0,0,.6)}
+      #gg-back:hover{color:#0B0D10;background:linear-gradient(100deg,#D93B2B,#FF6B35);border-color:transparent}
+    </style>
+  </body>
+</html>

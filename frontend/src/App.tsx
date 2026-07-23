@@ -41,6 +41,7 @@ const Sanitizers      = lazyWithReload(() => import('./pages/Sanitizers'))
 const InfraAssignment = lazyWithReload(() => import('./pages/InfraAssignment'))
 const RegistryManager = lazyWithReload(() => import('./pages/RegistryManager'))
 const ImprovementPlan = lazyWithReload(() => import('./pages/ImprovementPlan'))
+const KnowledgeGraph  = lazyWithReload(() => import('./pages/KnowledgeGraph'))
 const InfraGap        = lazyWithReload(() => import('./pages/InfraGap'))
 const Provisioning    = lazyWithReload(() => import('./pages/Provisioning'))
 const Summary         = lazyWithReload(() => import('./pages/Summary'))
@@ -164,6 +165,7 @@ export default function App() {
           <Route path="/bumps"       element={<BumpPRs />} />
           <Route path="/sanitizers"  element={<Sanitizers />} />
           <Route path="/action-plan" element={<ImprovementPlan />} />
+          <Route path="/knowledge-graph" element={<KnowledgeGraph />} />
           <Route path="/infra-gap"   element={<InfraGap />} />
           <Route path="/provisioning" element={<Provisioning />} />
           <Route path="/infra"       element={<InfraAssignment />} />

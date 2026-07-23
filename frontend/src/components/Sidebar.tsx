@@ -8,7 +8,7 @@ import {
   Shield, BarChart2, Cpu, Lightbulb, Gauge, Rocket, ChevronLeft, ChevronRight,
   AlertTriangle, Settings, ChevronDown, Check, Plus,
   Loader2, CheckCircle2, XCircle, Link as LinkIcon, Key, ExternalLink, Terminal, BookOpen, X,
-  Boxes, FileText, Flame, ShieldAlert,
+  Boxes, FileText, Flame, ShieldAlert, Network,
   type LucideIcon,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -28,6 +28,7 @@ const NAV: NavSection[] = [
       { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
       { to: '/summary',      icon: LayoutGrid,      label: 'Summary'      },
       { to: '/action-plan',  icon: Lightbulb,       label: 'Action Plan'  },
+      { to: '/knowledge-graph', icon: Network,      label: 'Knowledge Graph' },
       { to: '/infra-gap',    icon: Gauge,           label: 'Infra Gap'    },
       { to: '/provisioning', icon: Rocket,          label: 'Provisioning' },
     ],

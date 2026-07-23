@@ -309,6 +309,24 @@ export const deactivateRepo = () =>
 export const testRepoConnection = (body: { name: string; owner: string; repo: string; gh_pat?: string }) =>
   request<any>('/repos/test-connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
+// ── Understand / Knowledge Graph ──────────────────────────────────────────────
+const jsonPost = (path: string, body: any) =>
+  request<any>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+export const generateGraph = (owner: string, repo: string, scope?: string) =>
+  jsonPost('/understand/generate', { owner, repo, scope: scope || undefined })
+export const getGraphStatus = (owner: string, repo: string) =>
+  request<any>(`/understand/generate/status?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`)
+export const auditRepo = (owner: string, repo: string) =>
+  jsonPost('/understand/audit', { owner, repo })
+export const chatRepo = (owner: string, repo: string, query: string) =>
+  jsonPost('/understand/chat', { owner, repo, query })
+export const onboardRepo = (owner: string, repo: string) =>
+  jsonPost('/understand/onboard', { owner, repo })
+/** Base URL a viewer should fetch a repo's graph data from (served by GitPulser). */
+export const graphDataBase = (owner: string, repo: string) =>
+  `${BASE}/understand/data/${owner}/${repo}/`
+
 // ── WebSockets ────────────────────────────────────────────────────────────────
 export const buildLogsWS = (runId: number) =>
   new WebSocket(`${WS_BASE}/builds/runs/${runId}/logs/stream`)
