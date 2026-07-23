@@ -45,8 +45,9 @@ logger = logging.getLogger("understand")
 
 GITHUB_API = "https://api.github.com"
 MAX_CHARS = 40_000            # per-file content cap before summarising
-MAX_FILES = 200               # hard cap on files summarised per run (billed calls)
-GEN_CONCURRENCY = 5
+MAX_FILES = 2000              # default cap on files per run; override via body {max_files}
+MAX_FILES_HARD = 6000         # absolute ceiling to avoid runaway on giant monorepos
+GEN_CONCURRENCY = 6
 
 # Directories/files that add noise, not understanding.
 _IGNORE_DIRS = {
@@ -315,8 +316,9 @@ async def generate(body: dict):
     files = [f for f in files if _keep(f, "code")]
     if scope:
         files = [f for f in files if f.startswith(scope + "/") or f == scope]
-    truncated = len(files) > MAX_FILES
-    files = files[:MAX_FILES]
+    cap = min(int(body.get("max_files") or MAX_FILES), MAX_FILES_HARD)
+    truncated = len(files) > cap
+    files = files[:cap]
 
     _gen_state[slug] = {
         "running": True, "total": len(files), "done": 0, "failed": 0,
