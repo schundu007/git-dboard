@@ -433,6 +433,82 @@ async def onboard(body: dict):
     return {"markdown": "\n".join(lines)}
 
 
+AUDIT_SYSTEM = """You are a principal engineer auditing a software system against \
+modern best practices, using its knowledge graph (per-file summaries, tags, roles, \
+and the directory/layer structure). Judge ONLY what the graph evidences — cite real \
+file paths. Absence is evidence too: if there are no test files, no CI config, no \
+security scanning, no observability, say so.
+
+Assess these areas: architecture & modularity, testing, CI/CD, security, \
+documentation, observability/logging, dependency & config management, error handling.
+
+Return ONLY a JSON object (no prose, no fence):
+{
+  "score": 0-100,
+  "summary": "2-3 sentences on the system's overall health vs best practice.",
+  "strengths": ["specific good practice actually present, citing files"],
+  "gaps": [
+    {
+      "area": "one of the areas above",
+      "severity": "critical|high|medium|low",
+      "finding": "what is missing or wrong, grounded in the graph.",
+      "recommendation": "the concrete best-practice change to make.",
+      "evidence": ["file or directory paths that show this"]
+    }
+  ],
+  "quick_wins": ["small high-leverage change that could be done now"]
+}
+Rules: 4-8 gaps, prioritised most-severe first. Every gap must name a real area and
+cite evidence paths from the graph. Do not invent files."""
+
+
+def _graph_context(g: dict, cap: int = 140) -> str:
+    p = g.get("project", {})
+    lines = [
+        f"Project: {p.get('name','?')}",
+        f"Languages: {', '.join(p.get('languages') or []) or 'unknown'}",
+        f"Description: {p.get('description','')}",
+        "",
+        "Layers (top-level directories):",
+    ]
+    for lyr in g.get("layers", []):
+        lines.append(f"  - {lyr['name']}: {len(lyr.get('nodeIds', []))} files")
+    lines.append("")
+    lines.append("Files (path — role — tags — summary):")
+    files = [n for n in g.get("nodes", []) if n.get("type") == "file"]
+    for n in files[:cap]:
+        tags = ", ".join(n.get("tags", []))
+        lines.append(f"  - {n.get('filePath')} — {n.get('complexity','')} — [{tags}] — {n.get('summary','')}")
+    if len(files) > cap:
+        lines.append(f"  … and {len(files) - cap} more files (truncated).")
+    return "\n".join(lines)
+
+
+@router.post("/audit")
+async def audit(body: dict):
+    """Evaluate a repo's EXISTING system against best practices, from its graph.
+
+    This is the capability that lets GitPulser turn a knowledge graph into
+    prioritised, evidence-linked improvement recommendations (feeds Action Plan).
+    Body: {owner, repo}. Requires a generated graph (run /understand/generate).
+    """
+    owner, repo = (body.get("owner") or "").strip(), (body.get("repo") or "").strip()
+    g = (await _load_graph(owner, repo)).graph
+    prompt = (
+        f"Knowledge graph for {owner}/{repo}:\n\n{_graph_context(g)}\n\n"
+        "Audit this existing system against best practices and return the JSON."
+    )
+    raw = await llm.call(prompt, AUDIT_SYSTEM, max_tokens=4096, thinking=False)
+    try:
+        result = _parse_json(raw)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Audit parse failed: {exc}")
+    result.setdefault("gaps", [])
+    result.setdefault("strengths", [])
+    result.setdefault("quick_wins", [])
+    return result
+
+
 @router.post("/diff")
 async def diff(body: dict):
     raise HTTPException(status_code=501, detail="understand-diff lands in Stage 2b (needs a base ref to compare).")
