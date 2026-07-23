@@ -72,6 +72,40 @@ class RepoConfig(Base):
     business_unit = Column(String(100), nullable=True, default=None)
 
 
+class GraphFileSummary(Base):
+    """Per-file summary used to build a project's knowledge graph.
+
+    Cached by content sha256 like FileAnalysis, so each distinct file version is
+    summarised for the graph exactly once and re-analysis only touches changed
+    files (the incremental path).
+    """
+    __tablename__ = "graph_file_summaries"
+    id = Column(Integer, primary_key=True)
+    repo_slug = Column(String(200), index=True)
+    path = Column(String(500), index=True)
+    content_sha = Column(String(64), index=True)
+    result = Column(JSON, default={})          # {summary, tags[], complexity, role}
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class GraphAnalysis(Base):
+    """A generated knowledge-graph.json + meta.json for a repo (one row per repo).
+
+    The graph is a file-level KnowledgeGraph (nodes = files + directory modules,
+    edges = containment); the shape matches the Understand Anything dashboard
+    contract so git-graph's viewer can render it directly.
+    """
+    __tablename__ = "graph_analyses"
+    id = Column(Integer, primary_key=True)
+    repo_slug = Column(String(200), index=True, unique=True)
+    graph = Column(JSON, default={})           # knowledge-graph.json
+    meta = Column(JSON, default={})            # meta.json
+    commit_sha = Column(String(40), nullable=True)
+    analyzed_files = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class FileAnalysis(Base):
     """Cached LLM analysis of a single CI/infra file.
 
