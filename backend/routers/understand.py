@@ -37,6 +37,7 @@ from sqlalchemy import select
 
 from database import AsyncSessionLocal
 from models import GraphAnalysis, GraphFileSummary, GraphOverlay
+from services import code_extract
 from services import github_client as gh
 from services import llm
 
@@ -143,33 +144,43 @@ async def _fetch_tree(owner: str, repo: str) -> tuple[list[str], str]:
 # ─── per-file summarise (cached) ─────────────────────────────────────────────
 
 async def _summarise_file(owner: str, repo: str, path: str) -> dict:
+    """Return {summary, tags, complexity, role, _struct}. Summary is LLM (cached by
+    content hash); _struct is deterministic tree-sitter extraction computed every
+    run. Summary is best-effort — if the LLM fails, the file still yields a node
+    with its real structure, so a provider hiccup never drops the file."""
     slug = f"{owner}/{repo}"
     content = await _fetch_content(owner, repo, path)
+    struct = code_extract.extract(path, content)          # deterministic, no LLM
     sha = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+    summary = {"summary": "", "tags": [], "complexity": "moderate", "role": "core"}
     async with AsyncSessionLocal() as db:
         cached = await db.scalar(select(GraphFileSummary).where(
             GraphFileSummary.repo_slug == slug,
             GraphFileSummary.path == path,
             GraphFileSummary.content_sha == sha,
         ))
-        if cached and cached.result:
-            return cached.result
+    if cached and cached.result:
+        summary = {**summary, **cached.result}
+    else:
+        try:
+            body = content[:MAX_CHARS]
+            prompt = f"File path: `{path}`\nLanguage: {_lang(path)}\n\nContents:\n```\n{body}\n```\n"
+            obj = _parse_json(await llm.call(prompt, SUMMARY_SYSTEM, max_tokens=1024, thinking=False))
+            summary = {
+                "summary": str(obj.get("summary", ""))[:600],
+                "tags": [str(t) for t in (obj.get("tags") or [])][:6],
+                "complexity": obj.get("complexity") if obj.get("complexity") in ("simple", "moderate", "complex") else "moderate",
+                "role": str(obj.get("role", "core")),
+            }
+            async with AsyncSessionLocal() as db:
+                db.add(GraphFileSummary(repo_slug=slug, path=path, content_sha=sha, result=summary))
+                await db.commit()
+        except Exception as exc:
+            logger.debug("summary (best-effort) failed for %s: %s", path, exc)
 
-    body = content[:MAX_CHARS]
-    prompt = f"File path: `{path}`\nLanguage: {_lang(path)}\n\nContents:\n```\n{body}\n```\n"
-    raw = await llm.call(prompt, SUMMARY_SYSTEM, max_tokens=1024, thinking=False)
-    obj = _parse_json(raw)
-    result = {
-        "summary": str(obj.get("summary", ""))[:600],
-        "tags": [str(t) for t in (obj.get("tags") or [])][:6],
-        "complexity": obj.get("complexity") if obj.get("complexity") in ("simple", "moderate", "complex") else "moderate",
-        "role": str(obj.get("role", "core")),
-    }
-    async with AsyncSessionLocal() as db:
-        db.add(GraphFileSummary(repo_slug=slug, path=path, content_sha=sha, result=result))
-        await db.commit()
-    return result
+    summary["_struct"] = struct
+    return summary
 
 
 # ─── graph assembly (file-level; pluggable for function-level later) ─────────
@@ -180,10 +191,11 @@ def _build_graph(owner: str, repo: str, summaries: dict[str, dict], commit_sha: 
     def dir_of(p: str) -> str:
         return p.rsplit("/", 1)[0] if "/" in p else ""
 
-    # file nodes
+    # file nodes + real function/class nodes (tree-sitter), with contains edges
     for path, s in summaries.items():
+        base = path.rsplit("/", 1)[-1]
         nodes.append({
-            "id": f"file:{path}", "type": "file", "name": path.rsplit("/", 1)[-1],
+            "id": f"file:{path}", "type": "file", "name": base,
             "filePath": path, "summary": s.get("summary", ""),
             "tags": s.get("tags", []), "complexity": s.get("complexity", "moderate"),
         })
@@ -191,6 +203,19 @@ def _build_graph(owner: str, repo: str, summaries: dict[str, dict], commit_sha: 
         while d:
             dirs.add(d)
             d = dir_of(d)
+        struct = s.get("_struct") or {}
+        for fn in struct.get("functions", []):
+            fid = f"function:{path}:{fn['name']}"
+            nodes.append({"id": fid, "type": "function", "name": fn["name"], "filePath": path,
+                          "lineRange": [fn.get("line", 1), fn.get("line", 1)],
+                          "summary": f"Function `{fn['name']}` in {base}.", "tags": [], "complexity": "simple"})
+            edges.append({"source": f"file:{path}", "target": fid, "type": "contains", "direction": "forward", "weight": 1})
+        for cl in struct.get("classes", []):
+            cid = f"class:{path}:{cl['name']}"
+            nodes.append({"id": cid, "type": "class", "name": cl["name"], "filePath": path,
+                          "lineRange": [cl.get("line", 1), cl.get("line", 1)],
+                          "summary": f"Class `{cl['name']}` in {base}.", "tags": [], "complexity": "moderate"})
+            edges.append({"source": f"file:{path}", "target": cid, "type": "contains", "direction": "forward", "weight": 1})
 
     # directory module nodes + containment edges (module->child)
     for d in sorted(dirs):
@@ -214,25 +239,41 @@ def _build_graph(owner: str, repo: str, summaries: dict[str, dict], commit_sha: 
             edges.append({"source": pid, "target": f"module:{d}", "type": "contains",
                           "direction": "forward", "weight": 1})
 
-    # concept hubs: files sharing a tag get linked through a concept node, so the
-    # graph reads as a connected web of relationships rather than isolated
-    # directory boxes. Skip singletons and over-generic tags (>60 files) to avoid
-    # both dangling nodes and mega-hubs.
-    tag_files: dict[str, list[str]] = {}
+    # import edges (file -> file): resolve each import to a repo file by basename,
+    # so the graph shows real cross-file dependencies (the connecting lines). Only
+    # unambiguous (single-candidate) basename matches are used, to avoid a hairball.
+    import re as _re
+    _STOP = {"import", "from", "include", "use", "using", "require", "package",
+             "as", "self", "std", "os", "sys", "crate", "super", "const", "let", "var"}
+    by_base: dict[str, list[str]] = {}
+    for p in summaries:
+        b = p.rsplit("/", 1)[-1]
+        b = b[:b.rfind(".")] if "." in b else b
+        by_base.setdefault(b.lower(), []).append(p)
+    tok_re = _re.compile(r"""["'<]([\w./+-]+)["'>]|([A-Za-z_][\w.]{1,})""")
     for path, s in summaries.items():
-        for t in s.get("tags", []):
-            key = str(t).strip().lower()
-            if key:
-                tag_files.setdefault(key, []).append(path)
-    for tag, paths in sorted(tag_files.items()):
-        if len(paths) < 2 or len(paths) > 60:
-            continue
-        cid = f"concept:{tag}"
-        nodes.append({"id": cid, "type": "concept", "name": tag,
-                      "summary": f"{len(paths)} files involve {tag}.", "tags": [tag], "complexity": "simple"})
-        for p in paths:
-            edges.append({"source": f"file:{p}", "target": cid, "type": "relates_to",
-                          "direction": "forward", "weight": 0.4})
+        struct = s.get("_struct") or {}
+        added = 0
+        seen: set[str] = set()
+        for imp in struct.get("imports", []):
+            for m in tok_re.finditer(imp):
+                tok = (m.group(1) or m.group(2) or "").strip()
+                if not tok or tok.lower() in _STOP:
+                    continue
+                base = tok.replace(".", "/").rstrip("/").rsplit("/", 1)[-1]
+                base = (base[:base.rfind(".")] if "." in base else base).lower()
+                if len(base) < 2:
+                    continue
+                cands = [p for p in by_base.get(base, []) if p != path]
+                if len(cands) == 1 and cands[0] not in seen:
+                    seen.add(cands[0])
+                    edges.append({"source": f"file:{path}", "target": f"file:{cands[0]}",
+                                  "type": "imports", "direction": "forward", "weight": 0.6})
+                    added += 1
+                    if added >= 20:
+                        break
+            if added >= 20:
+                break
 
     # layers = top-level directories
     tops: dict[str, list[str]] = {}
@@ -491,6 +532,19 @@ async def onboard(body: dict):
     return {"markdown": "\n".join(lines)}
 
 
+async def _llm_json(prompt: str, system: str, max_tokens: int = 4096) -> dict:
+    """LLM call that must yield JSON; retries once with a stricter nudge. Some
+    providers (e.g. Gemini) wrap JSON in prose/fences on the first try."""
+    raw = await llm.call(prompt, system, max_tokens=max_tokens, thinking=False)
+    try:
+        return _parse_json(raw)
+    except Exception:
+        raw = await llm.call(
+            prompt + "\n\nReturn ONLY the JSON object — no prose, no explanation, no code fence.",
+            system, max_tokens=max_tokens, thinking=False)
+        return _parse_json(raw)
+
+
 AUDIT_SYSTEM = """You are a principal engineer auditing a software system against \
 modern best practices, using its knowledge graph (per-file summaries, tags, roles, \
 and the directory/layer structure). Judge ONLY what the graph evidences — cite real \
@@ -556,11 +610,10 @@ async def audit(body: dict):
         f"Knowledge graph for {owner}/{repo}:\n\n{_graph_context(g)}\n\n"
         "Audit this existing system against best practices and return the JSON."
     )
-    raw = await llm.call(prompt, AUDIT_SYSTEM, max_tokens=4096, thinking=False)
     try:
-        result = _parse_json(raw)
+        result = await _llm_json(prompt, AUDIT_SYSTEM)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Audit parse failed: {exc}")
+        raise HTTPException(status_code=502, detail=f"Audit failed: {exc}")
     result.setdefault("gaps", [])
     result.setdefault("strengths", [])
     result.setdefault("quick_wins", [])
@@ -660,11 +713,10 @@ async def domain(body: dict):
     owner, repo = (body.get("owner") or "").strip(), (body.get("repo") or "").strip()
     g = (await _load_graph(owner, repo)).graph
     prompt = f"Knowledge graph for {owner}/{repo}:\n\n{_graph_context(g)}\n\nExtract the domain model as JSON."
-    raw = await llm.call(prompt, DOMAIN_SYSTEM, max_tokens=4096, thinking=False)
     try:
-        dg = _normalise_domain_graph(_parse_json(raw), g)
+        dg = _normalise_domain_graph(await _llm_json(prompt, DOMAIN_SYSTEM), g)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Domain parse failed: {exc}")
+        raise HTTPException(status_code=502, detail=f"Domain failed: {exc}")
     if not dg["nodes"]:
         raise HTTPException(status_code=502, detail="Model returned no domain nodes.")
     await _save_overlay(f"{owner}/{repo}", "domain", dg)
