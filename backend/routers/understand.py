@@ -214,6 +214,26 @@ def _build_graph(owner: str, repo: str, summaries: dict[str, dict], commit_sha: 
             edges.append({"source": pid, "target": f"module:{d}", "type": "contains",
                           "direction": "forward", "weight": 1})
 
+    # concept hubs: files sharing a tag get linked through a concept node, so the
+    # graph reads as a connected web of relationships rather than isolated
+    # directory boxes. Skip singletons and over-generic tags (>60 files) to avoid
+    # both dangling nodes and mega-hubs.
+    tag_files: dict[str, list[str]] = {}
+    for path, s in summaries.items():
+        for t in s.get("tags", []):
+            key = str(t).strip().lower()
+            if key:
+                tag_files.setdefault(key, []).append(path)
+    for tag, paths in sorted(tag_files.items()):
+        if len(paths) < 2 or len(paths) > 60:
+            continue
+        cid = f"concept:{tag}"
+        nodes.append({"id": cid, "type": "concept", "name": tag,
+                      "summary": f"{len(paths)} files involve {tag}.", "tags": [tag], "complexity": "simple"})
+        for p in paths:
+            edges.append({"source": f"file:{p}", "target": cid, "type": "relates_to",
+                          "direction": "forward", "weight": 0.4})
+
     # layers = top-level directories
     tops: dict[str, list[str]] = {}
     for path in summaries:
