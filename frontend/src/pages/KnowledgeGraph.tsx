@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Network, Loader2, Play, ExternalLink, ShieldCheck, Sparkles,
-  CheckCircle2, AlertTriangle, X,
+  CheckCircle2, AlertTriangle, X, GitCompare, Boxes,
 } from 'lucide-react'
-import { getRepos, getActiveRepo, generateGraph, getGraphStatus, auditRepo, graphDataBase } from '../lib/api'
+import { getRepos, getActiveRepo, generateGraph, getGraphStatus, auditRepo, diffRepo, domainRepo, graphDataBase } from '../lib/api'
 import { cn } from '../lib/cn'
 
 /**
@@ -31,9 +31,24 @@ export default function KnowledgeGraph() {
   const activeId = activeRepoData?.active?.id
 
   const [gen, setGen] = useState<Record<string, any>>({})
+  const [cmd, setCmd] = useState<Record<string, { loading?: boolean; msg?: string; err?: boolean }>>({})
   const [auditFor, setAuditFor] = useState<any | null>(null)
   const [audit, setAudit] = useState<any | null>(null)
   const [auditLoading, setAuditLoading] = useState(false)
+
+  const runCmd = async (r: any, kind: 'diff' | 'domain') => {
+    const slug = r.slug ?? `${r.owner}/${r.repo}`
+    setCmd(c => ({ ...c, [slug]: { loading: true } }))
+    try {
+      const d = kind === 'diff' ? await diffRepo(r.owner, r.repo) : await domainRepo(r.owner, r.repo)
+      const msg = kind === 'diff'
+        ? `${d.changedNodes} changed · ${d.affectedNodes} affected — open graph, toggle Diff`
+        : `${d.domains} domains · ${d.nodes} nodes — open graph, switch to Domain`
+      setCmd(c => ({ ...c, [slug]: { msg } }))
+    } catch (e: any) {
+      setCmd(c => ({ ...c, [slug]: { msg: e.message, err: true } }))
+    }
+  }
 
   const openViewer = (r: any) => {
     const base = graphDataBase(r.owner, r.repo)
@@ -138,7 +153,26 @@ export default function KnowledgeGraph() {
                 >
                   <ShieldCheck size={12} /> Audit
                 </button>
+                <button
+                  onClick={() => runCmd(r, 'diff')}
+                  disabled={cmd[slug]?.loading}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] border border-border bg-surface-2 text-neutral-400 hover:border-neutral-500 disabled:opacity-40 transition-colors"
+                  title="Compute changed/affected nodes since the graph's commit"
+                >
+                  {cmd[slug]?.loading ? <Loader2 size={12} className="animate-spin" /> : <GitCompare size={12} />} Diff
+                </button>
+                <button
+                  onClick={() => runCmd(r, 'domain')}
+                  disabled={cmd[slug]?.loading}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] border border-border bg-surface-2 text-neutral-400 hover:border-neutral-500 disabled:opacity-40 transition-colors"
+                  title="Derive the domain model into the graph's Domain view"
+                >
+                  {cmd[slug]?.loading ? <Loader2 size={12} className="animate-spin" /> : <Boxes size={12} />} Domain
+                </button>
               </div>
+              {cmd[slug]?.msg && (
+                <p className={cn('text-[11px] mt-2', cmd[slug]?.err ? 'text-accent-red' : 'text-neutral-400')}>{cmd[slug]?.msg}</p>
+              )}
             </div>
           )
         })}

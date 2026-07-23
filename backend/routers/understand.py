@@ -36,7 +36,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
 from database import AsyncSessionLocal
-from models import GraphAnalysis, GraphFileSummary
+from models import GraphAnalysis, GraphFileSummary, GraphOverlay
 from services import github_client as gh
 from services import llm
 
@@ -376,6 +376,42 @@ async def data_file_content(owner: str, repo: str, filepath: str):
     return {"path": path, "language": _lang(path), "content": content}
 
 
+# ─── overlays (diff + domain): stored + served to the viewer ────────────────
+
+async def _save_overlay(slug: str, kind: str, data: dict) -> None:
+    async with AsyncSessionLocal() as db:
+        row = await db.scalar(select(GraphOverlay).where(
+            GraphOverlay.repo_slug == slug, GraphOverlay.kind == kind))
+        if row:
+            row.data = data
+        else:
+            db.add(GraphOverlay(repo_slug=slug, kind=kind, data=data))
+        await db.commit()
+
+
+async def _load_overlay(slug: str, kind: str):
+    async with AsyncSessionLocal() as db:
+        row = await db.scalar(select(GraphOverlay).where(
+            GraphOverlay.repo_slug == slug, GraphOverlay.kind == kind))
+    return row.data if row else None
+
+
+@router.get("/data/{owner}/{repo}/diff-overlay.json")
+async def data_diff_overlay(owner: str, repo: str):
+    d = await _load_overlay(f"{owner}/{repo}", "diff")
+    if not d:
+        raise HTTPException(status_code=404, detail="No diff overlay. Run /understand/diff.")
+    return d
+
+
+@router.get("/data/{owner}/{repo}/domain-graph.json")
+async def data_domain_graph(owner: str, repo: str):
+    d = await _load_overlay(f"{owner}/{repo}", "domain")
+    if not d:
+        raise HTTPException(status_code=404, detail="No domain graph. Run /understand/domain.")
+    return d
+
+
 # ─── commands ────────────────────────────────────────────────────────────────
 
 CHAT_SYSTEM = """You answer questions about a codebase using ONLY the provided \
@@ -511,14 +547,110 @@ async def audit(body: dict):
 
 @router.post("/diff")
 async def diff(body: dict):
-    raise HTTPException(status_code=501, detail="understand-diff lands in Stage 2b (needs a base ref to compare).")
+    """understand-diff: changed files since the graph's commit (or a given base)
+    → changed/affected nodes → diff-overlay.json (lights up the Diff toggle)."""
+    owner, repo = (body.get("owner") or "").strip(), (body.get("repo") or "").strip()
+    row = await _load_graph(owner, repo)
+    g = row.graph
+    base = (body.get("base") or row.commit_sha or "").strip()
+    if not base:
+        raise HTTPException(status_code=422, detail="No base commit to diff against; provide {base}.")
+    async with httpx.AsyncClient(timeout=30) as c:
+        r = await c.get(f"{GITHUB_API}/repos/{owner}/{repo}/compare/{base}...HEAD", headers=gh._headers())
+    if not r.is_success:
+        raise HTTPException(status_code=r.status_code, detail=f"GitHub compare {r.status_code} (base {base[:12]})")
+    changed_files = [f["filename"] for f in r.json().get("files", [])]
+    node_ids = {n["id"] for n in g.get("nodes", [])}
+    changed_nodes = [f"file:{p}" for p in changed_files if f"file:{p}" in node_ids]
+    cset = set(changed_nodes)
+    affected = set()
+    for e in g.get("edges", []):
+        if e["source"] in cset:
+            affected.add(e["target"])
+        if e["target"] in cset:
+            affected.add(e["source"])
+    affected -= cset
+    overlay = {
+        "version": "1.0.0", "baseBranch": base[:12], "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "changedFiles": changed_files, "changedNodeIds": changed_nodes, "affectedNodeIds": sorted(affected),
+    }
+    await _save_overlay(f"{owner}/{repo}", "diff", overlay)
+    return {"changedFiles": len(changed_files), "changedNodes": len(changed_nodes),
+            "affectedNodes": len(affected), "base": base[:12],
+            "hint": "Open the graph and toggle Diff to highlight the blast radius."}
+
+
+DOMAIN_SYSTEM = """You extract the DOMAIN model of a system from its knowledge \
+graph (file summaries + structure). Identify the business/functional domains, the \
+key flows within each, and the steps of each flow — grounded in the real files.
+
+Return ONLY a JSON object (no prose, no fence):
+{
+  "nodes": [
+    {"id":"domain:<slug>","type":"domain","name":"...","summary":"...","tags":["..."],"complexity":"moderate"},
+    {"id":"flow:<slug>","type":"flow","name":"...","summary":"...","tags":[],"complexity":"moderate"},
+    {"id":"step:<slug>","type":"step","name":"...","summary":"...","tags":[],"complexity":"simple"}
+  ],
+  "edges": [
+    {"source":"domain:x","target":"flow:y","type":"contains_flow","direction":"forward","weight":1},
+    {"source":"flow:y","target":"step:z","type":"flow_step","direction":"forward","weight":1}
+  ]
+}
+3-7 domains. Ids must be unique and referenced consistently in edges."""
+
+
+def _normalise_domain_graph(obj: dict, base_graph: dict) -> dict:
+    nodes = []
+    for n in obj.get("nodes", []):
+        nid, name = n.get("id"), n.get("name")
+        if not nid or not name:
+            continue
+        t = n.get("type")
+        nodes.append({
+            "id": str(nid), "type": t if t in ("domain", "flow", "step") else "domain",
+            "name": str(name), "summary": str(n.get("summary", "")),
+            "tags": [str(x) for x in (n.get("tags") or [])][:6],
+            "complexity": n.get("complexity") if n.get("complexity") in ("simple", "moderate", "complex") else "moderate",
+        })
+    ids = {n["id"] for n in nodes}
+    edges = []
+    for e in obj.get("edges", []):
+        if e.get("source") in ids and e.get("target") in ids:
+            edges.append({"source": e["source"], "target": e["target"],
+                          "type": e.get("type", "contains_flow"),
+                          "direction": e.get("direction", "forward"), "weight": e.get("weight", 1)})
+    p = base_graph.get("project", {})
+    layers = [{"id": f"layer:{n['id']}", "name": n["name"], "description": n.get("summary", ""), "nodeIds": [n["id"]]}
+              for n in nodes if n["type"] == "domain"]
+    return {
+        "version": "1.0.0",
+        "project": {"name": f"{p.get('name','')} — domains", "languages": p.get("languages", []),
+                    "frameworks": [], "description": "Domain model derived from the knowledge graph.",
+                    "analyzedAt": datetime.now(timezone.utc).isoformat(), "gitCommitHash": p.get("gitCommitHash", "")},
+        "nodes": nodes, "edges": edges, "layers": layers, "tour": [],
+    }
 
 
 @router.post("/domain")
 async def domain(body: dict):
-    raise HTTPException(status_code=501, detail="understand-domain lands in Stage 2b (domain-graph generation).")
+    """understand-domain: derive a domain graph from the knowledge graph → domain-graph.json
+    (lights up the dashboard's Domain view)."""
+    owner, repo = (body.get("owner") or "").strip(), (body.get("repo") or "").strip()
+    g = (await _load_graph(owner, repo)).graph
+    prompt = f"Knowledge graph for {owner}/{repo}:\n\n{_graph_context(g)}\n\nExtract the domain model as JSON."
+    raw = await llm.call(prompt, DOMAIN_SYSTEM, max_tokens=4096, thinking=False)
+    try:
+        dg = _normalise_domain_graph(_parse_json(raw), g)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Domain parse failed: {exc}")
+    if not dg["nodes"]:
+        raise HTTPException(status_code=502, detail="Model returned no domain nodes.")
+    await _save_overlay(f"{owner}/{repo}", "domain", dg)
+    domains = sum(1 for n in dg["nodes"] if n["type"] == "domain")
+    return {"domains": domains, "nodes": len(dg["nodes"]), "edges": len(dg["edges"]),
+            "hint": "Open the graph and switch to the Domain view."}
 
 
 @router.post("/knowledge")
 async def knowledge(body: dict):
-    raise HTTPException(status_code=501, detail="understand-knowledge lands in Stage 2b (wiki ingestion).")
+    raise HTTPException(status_code=501, detail="understand-knowledge (wiki ingestion) is not enabled on this backend yet.")

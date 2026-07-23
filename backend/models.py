@@ -106,6 +106,22 @@ class GraphAnalysis(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class GraphOverlay(Base):
+    """Secondary graph artifacts for a repo: diff-overlay + domain-graph.
+
+    One row per (repo_slug, kind). Served at
+    /understand/data/{o}/{r}/{diff-overlay|domain-graph}.json so the dashboard's
+    Diff toggle and Domain view light up.
+    """
+    __tablename__ = "graph_overlays"
+    id = Column(Integer, primary_key=True)
+    repo_slug = Column(String(200), index=True)
+    kind = Column(String(30), index=True)      # "diff" | "domain"
+    data = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class FileAnalysis(Base):
     """Cached LLM analysis of a single CI/infra file.
 

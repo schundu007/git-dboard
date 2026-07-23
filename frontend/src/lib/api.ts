@@ -323,6 +323,10 @@ export const chatRepo = (owner: string, repo: string, query: string) =>
   jsonPost('/understand/chat', { owner, repo, query })
 export const onboardRepo = (owner: string, repo: string) =>
   jsonPost('/understand/onboard', { owner, repo })
+export const diffRepo = (owner: string, repo: string, base?: string) =>
+  jsonPost('/understand/diff', { owner, repo, base })
+export const domainRepo = (owner: string, repo: string) =>
+  jsonPost('/understand/domain', { owner, repo })
 /** Base URL a viewer should fetch a repo's graph data from (served by GitPulser). */
 export const graphDataBase = (owner: string, repo: string) =>
   `${BASE}/understand/data/${owner}/${repo}/`

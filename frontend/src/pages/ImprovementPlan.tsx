@@ -5,9 +5,10 @@ import {
   ChevronDown, ChevronRight, CheckCircle, AlertTriangle,
   Terminal, RefreshCw, Shield, GitPullRequest, Package,
   Bug, Lightbulb, ExternalLink, BarChart2,
+  ShieldCheck, Sparkles, Loader2, Play,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { getImprovementPlan, getIssuesAnalysis, getActiveRepo } from '../lib/api'
+import { getImprovementPlan, getIssuesAnalysis, getActiveRepo, auditRepo, generateGraph, getGraphStatus } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
 import BusinessReport from '../components/BusinessReport'
 import { TabBar } from '../components/ui/TabBar'
@@ -809,7 +810,125 @@ function CICDArchitectureSection() {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
-type MainTab = 'plan' | 'issues'
+// ── Best Practices tab (graph-driven audit) ─────────────────────────────────────
+
+const AUDIT_SEV: Record<string, string> = {
+  critical: 'text-accent-red', high: 'text-accent-yellow', medium: 'text-accent-blue', low: 'text-gray-400',
+}
+
+function BestPracticesTab() {
+  const { data: ar } = useQuery({ queryKey: ['active-repo'], queryFn: getActiveRepo, staleTime: 30_000 })
+  const owner = ar?.active?.owner ?? ''
+  const repo = ar?.active?.repo ?? ''
+  const slug = ar?.active?.slug ?? ''
+  const [loading, setLoading] = useState(false)
+  const [audit, setAudit] = useState<any | null>(null)
+  const [gen, setGen] = useState<any | null>(null)
+
+  const run = async () => {
+    if (!owner || !repo) return
+    setLoading(true); setAudit(null)
+    try { setAudit(await auditRepo(owner, repo)) }
+    catch (e: any) { setAudit({ error: e.message }) }
+    finally { setLoading(false) }
+  }
+  const analyze = async () => {
+    if (!owner || !repo) return
+    setGen({ running: true })
+    try {
+      await generateGraph(owner, repo)
+      for (let i = 0; i < 240; i++) {
+        await new Promise(r => setTimeout(r, 2500))
+        const s = await getGraphStatus(owner, repo)
+        setGen(s)
+        if (!s.running) break
+      }
+    } catch (e: any) { setGen({ running: false, error: e.message }) }
+  }
+
+  if (!slug) return <div className="text-center py-16 text-gray-500 text-sm">No active repository.</div>
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-surface-1 border border-border rounded-xl p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-white flex items-center gap-2"><ShieldCheck size={14} className="text-brand" /> Best-practices audit</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">Evaluate <span className="font-mono text-gray-400">{slug}</span>'s existing system against best practices, from its knowledge graph.</p>
+        </div>
+        <button onClick={run} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 disabled:opacity-40 flex-shrink-0">
+          {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Run audit
+        </button>
+      </div>
+
+      {loading && <div className="text-center py-10 text-gray-500 text-sm flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin text-brand" /> Auditing from the knowledge graph…</div>}
+
+      {audit?.error && (
+        <div className="bg-surface-1 border border-border rounded-xl p-4">
+          <p className="text-[12px] text-accent-red flex items-center gap-1.5"><AlertTriangle size={12} /> {audit.error}</p>
+          {/No graph/i.test(audit.error) && (
+            <div className="mt-3">
+              <p className="text-[11px] text-gray-400 mb-2">Generate the knowledge graph first, then run the audit.</p>
+              <button onClick={analyze} disabled={gen?.running} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] border border-border bg-surface-2 text-gray-300 hover:border-gray-500 disabled:opacity-40">
+                {gen?.running ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Generate graph
+              </button>
+              {gen && !gen.error && <span className="ml-2 text-[11px] text-gray-400">{gen.running ? `summarised ${gen.done ?? 0}/${gen.total ?? 0}…` : `ready — ${gen.nodes ?? 0} nodes`}</span>}
+              {gen?.error && <span className="ml-2 text-[11px] text-accent-red">{gen.error}</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {audit && !audit.error && (
+        <div className="bg-surface-1 border border-border rounded-xl p-4 flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            {audit.score != null && (
+              <div className="flex-shrink-0 w-16 h-16 rounded-xl border border-border bg-surface-2 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-brand leading-none font-mono">{audit.score}</span>
+                <span className="text-[9px] text-gray-500 mt-0.5">/ 100</span>
+              </div>
+            )}
+            {audit.summary && <p className="text-[13px] text-gray-300">{audit.summary}</p>}
+          </div>
+          {audit.strengths?.length > 0 && (
+            <div>
+              <div className="section-head"><CheckCircle size={13} className="text-accent-green" /> Strengths</div>
+              <ul className="flex flex-col gap-1">{audit.strengths.map((s: string, i: number) => (<li key={i} className="text-[12px] text-gray-300 flex gap-2"><CheckCircle size={12} className="text-accent-green flex-shrink-0 mt-0.5" />{s}</li>))}</ul>
+            </div>
+          )}
+          {audit.gaps?.length > 0 && (
+            <div>
+              <div className="section-head"><AlertTriangle size={13} className="text-accent-yellow" /> Gaps &amp; recommendations</div>
+              <div className="flex flex-col gap-2">
+                {audit.gaps.map((g: any, i: number) => (
+                  <div key={i} className="border border-border rounded-lg p-3 bg-surface-2/40">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={clsx('text-[9px] font-mono uppercase', AUDIT_SEV[g.severity] ?? AUDIT_SEV.medium)}>{g.severity}</span>
+                      <span className="text-[12.5px] font-semibold text-white">{g.area}</span>
+                    </div>
+                    <p className="text-[12px] text-gray-300">{g.finding}</p>
+                    <p className="text-[12px] text-brand mt-1">→ {g.recommendation}</p>
+                    {g.evidence?.length > 0 && <p className="text-[10px] text-gray-500 font-mono mt-1">{g.evidence.join(', ')}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {audit.quick_wins?.length > 0 && (
+            <div>
+              <div className="section-head"><Zap size={13} className="text-accent-green" /> Quick wins</div>
+              <ul className="flex flex-col gap-1">{audit.quick_wins.map((s: string, i: number) => (<li key={i} className="text-[12px] text-gray-300 flex gap-2"><Zap size={11} className="text-accent-green flex-shrink-0 mt-0.5" />{s}</li>))}</ul>
+            </div>
+          )}
+          <p className="text-[10px] text-gray-500 border-t border-border pt-2">Claude's analysis from the knowledge graph — pairs with the live-metrics plan above.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
+
+type MainTab = 'plan' | 'issues' | 'audit'
 
 export default function ImprovementPlan() {
   const slug = useRepoSlug()
@@ -855,17 +974,19 @@ export default function ImprovementPlan() {
       {/* Main tab switcher */}
       <TabBar
         tabs={[
-          { id: 'plan',   label: 'Improvement Plan',      icon: Lightbulb },
-          { id: 'issues', label: 'GitHub Issues Analysis', icon: Bug        },
+          { id: 'plan',   label: 'Improvement Plan',      icon: Lightbulb   },
+          { id: 'issues', label: 'GitHub Issues Analysis', icon: Bug         },
+          { id: 'audit',  label: 'Best Practices',         icon: ShieldCheck },
         ]}
         active={mainTab}
         onChange={setMainTab}
       />
 
-      {isLoading && <div className="text-center py-16 text-gray-500 text-sm">Loading…</div>}
+      {isLoading && mainTab !== 'audit' && <div className="text-center py-16 text-gray-500 text-sm">Loading…</div>}
 
       {!isLoading && mainTab === 'plan' && <PlanTab items={items} summary={summary} />}
       {!isLoading && mainTab === 'issues' && <IssuesAnalysisTab />}
+      {mainTab === 'audit' && <BestPracticesTab />}
 
     </div>
   )
