@@ -15,6 +15,7 @@ import {
   getInsightsCodeFrequency, getInsightsForks, getInsightsParticipation,
   getActiveRepo,
 } from '../lib/api'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
@@ -701,13 +702,17 @@ export default function RepoInsights() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex justify-end">
-        <a href={`https://github.com/${repoSlug}/graphs`} target="_blank" rel="noreferrer"
-          className="text-[10px] text-gray-500 hover:text-neutral-300 flex items-center gap-1">
-          View on GitHub <ExternalLink size={10} />
-        </a>
-      </div>
+      <PageHeader
+        title="Repository Insights"
+        subtitle="Commit activity, contributors, code churn"
+        icon={GitCommit}
+        actions={
+          <a href={`https://github.com/${repoSlug}/graphs`} target="_blank" rel="noreferrer"
+            className="text-[10px] text-gray-500 hover:text-neutral-300 flex items-center gap-1">
+            View on GitHub <ExternalLink size={10} />
+          </a>
+        }
+      />
 
       <InsightSection icon={Zap}      label="Pulse">            <PulseTab />          </InsightSection>
       <InsightSection icon={Users}    label="Contributors">     <ContributorsTab />   </InsightSection>

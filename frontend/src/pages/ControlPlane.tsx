@@ -11,6 +11,7 @@ import {
   Activity, TrendingUp, TrendingDown, Target,
   GitMerge, FlaskConical, Box, Server, Upload,
   Zap, Clock, Timer, Rocket, Moon, Wrench, BarChart2, CheckCircle2,
+  Gauge,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -34,6 +35,7 @@ import IssuesPanel from '../components/IssuesPanel'
 import CIHealthDigest from '../components/CIHealthDigest'
 import { classifyWorkflowStage, WORKFLOW_STAGE_ORDER } from '../components/LiveCICDPipeline'
 import { useRepoSlug } from '../lib/hooks'
+import { PageHeader } from '../components/ui'
 
 // ── SLO Definitions ───────────────────────────────────────────────────────────
 
@@ -1588,6 +1590,7 @@ export default function ControlPlane() {
 
   return (
     <div className="space-y-5">
+      <PageHeader title="Control Plane" subtitle="Readiness, DORA, and CI usage overview" icon={Gauge} />
 
       {/* ── Top row: error banner + GitHub Actions link ───────────────────────── */}
       <div className="flex items-center justify-between gap-3">

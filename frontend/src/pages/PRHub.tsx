@@ -5,7 +5,7 @@ import {
   GitPullRequest, GitBranch, CircleDot, ExternalLink, RefreshCw, ChevronDown, ChevronUp,
   Play, Lock, CheckCircle2, XCircle, Clock, AlertTriangle, Search,
   MessageSquare, FileText, AlertCircle, Users, Calendar, ShieldCheck,
-  Zap, Cpu, ToggleLeft, ToggleRight, Server,
+  Zap, Cpu, ToggleLeft, ToggleRight, Server, Tag, GitMerge,
 } from 'lucide-react'
 import { BranchesTab, IssuesTab } from './BranchMonitor'
 import { formatDistanceToNow, differenceInDays } from 'date-fns'
@@ -672,13 +672,13 @@ function AutomationTab() {
         <div className="bg-surface-2 border border-border rounded-lg p-3 space-y-1.5">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">What it does each pass</p>
           {[
-            { icon: '🏷️', label: 'Auto-label', desc: 'Adds classification label (documentation, testing, enhancement, ci/cd) based on changed files' },
-            { icon: '▶️', label: 'Auto-trigger CI', desc: 'Dispatches build.yml for PRs with missing lint/test check runs' },
-            { icon: '💬', label: 'Auto-comment', desc: 'Posts/updates a gate-status comment showing classification, required checks, and runner recommendation' },
-            { icon: '🔀', label: 'Auto-merge', desc: 'Merges PRs with auto-merge label when all required checks pass and no conflicts' },
-          ].map(({ icon, label, desc }) => (
+            { icon: Tag, label: 'Auto-label', desc: 'Adds classification label (documentation, testing, enhancement, ci/cd) based on changed files' },
+            { icon: Play, label: 'Auto-trigger CI', desc: 'Dispatches build.yml for PRs with missing lint/test check runs' },
+            { icon: MessageSquare, label: 'Auto-comment', desc: 'Posts/updates a gate-status comment showing classification, required checks, and runner recommendation' },
+            { icon: GitMerge, label: 'Auto-merge', desc: 'Merges PRs with auto-merge label when all required checks pass and no conflicts' },
+          ].map(({ icon: Icon, label, desc }) => (
             <div key={label} className="flex items-start gap-2 text-[11px]">
-              <span className="flex-shrink-0 mt-0.5">{icon}</span>
+              <Icon size={12} className="text-brand flex-shrink-0 mt-0.5" />
               <div>
                 <span className="text-white font-medium">{label}</span>
                 <span className="text-gray-500"> — {desc}</span>
@@ -957,6 +957,7 @@ export default function SourceControl() {
           <button
             onClick={() => qc.invalidateQueries({ queryKey: [slug, 'prs'] })}
             className="p-1.5 rounded-lg hover:bg-surface-2 text-gray-500 hover:text-white transition-colors border border-transparent hover:border-border/50"
+            aria-label="Refresh"
             title="Refresh"
           >
             <RefreshCw size={13} />

@@ -6,6 +6,8 @@ import {
   LayoutDashboard, GitPullRequest, Container, Moon, ScrollText,
   Server, Layers, BarChart2, GitBranch, CircleDot, TrendingUp,
   ShieldCheck, Tag, Lightbulb, Search, ArrowRight, BookOpen,
+  Gauge, Rocket, Boxes, FileText, ShieldAlert, Shield, Flame,
+  AlertTriangle, Terminal,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../lib/cn'
@@ -19,22 +21,38 @@ interface NavEntry {
   keywords?: string
 }
 
+// Mirrors the sidebar nav (canonical) plus the secondary routes reachable in
+// App.tsx, so Cmd+K can reach every page. Keep in sync with Sidebar.tsx.
 const NAV_ENTRIES: NavEntry[] = [
-  { group: 'Overview',        label: 'Dashboard',       description: 'System overview',                path: '/',            icon: LayoutDashboard, keywords: 'home main' },
-  { group: 'Source Control',  label: 'PR Hub',          description: 'Pull requests & gate automation', path: '/prs',         icon: GitPullRequest,  keywords: 'pull request review merge' },
-  { group: 'Source Control',  label: 'Issues',          description: 'Open issues & milestones',        path: '/issues',      icon: CircleDot,       keywords: 'bug task ticket' },
-  { group: 'Source Control',  label: 'Branch Monitor',  description: 'Branch CI status',                path: '/branches',    icon: GitBranch,       keywords: 'git branch' },
-  { group: 'CI / CD',         label: 'Build Pipeline',  description: 'Workflow runs',                   path: '/builds',      icon: Container,       keywords: 'build ci workflow actions' },
-  { group: 'CI / CD',         label: 'Nightly Monitor', description: 'Nightly build matrix',            path: '/nightly',     icon: Moon,            keywords: 'nightly cron schedule' },
-  { group: 'CI / CD',         label: 'Registry',        description: 'Container image management',      path: '/registry',    icon: Layers,          keywords: 'docker image container ecr' },
-  { group: 'CI / CD',         label: 'Image Tags',      description: 'Tag naming & lifecycle',          path: '/tags',        icon: Tag,             keywords: 'tag docker ghcr registry' },
-  { group: 'Infrastructure',  label: 'Infra & Runners', description: 'Self-hosted runners & cluster',   path: '/infra',       icon: Server,          keywords: 'runner gpu server slurm' },
-  { group: 'Infrastructure',  label: 'Health Analysis', description: 'DORA metrics & pipeline health',  path: '/health',      icon: ShieldCheck,     keywords: 'dora metrics health performance' },
-  { group: 'Infrastructure',  label: 'Improvements',    description: 'Actionable CI/CD improvements',   path: '/improvement', icon: Lightbulb,       keywords: 'plan improve optimize' },
-  { group: 'Observability',   label: 'Log Monitor',     description: 'Centralised log search',          path: '/logs',        icon: ScrollText,      keywords: 'logs errors warning search' },
-  { group: 'Observability',   label: 'Analytics',       description: 'Commit & build trends',           path: '/analytics',   icon: BarChart2,       keywords: 'analytics charts trends stats' },
-  { group: 'Observability',   label: 'Repo Insights',   description: 'GitHub repository analytics',     path: '/insights',    icon: TrendingUp,      keywords: 'contributors forks pulse' },
-  { group: 'Automations',    label: 'Scripts',         description: 'Bash/Python script analysis & Q&A', path: '/scripts',     icon: BookOpen,        keywords: 'automations bash python yaml ecr ros scripts bugs' },
+  { group: 'Overview',       label: 'Dashboard',       description: 'System overview',                    path: '/dashboard',    icon: LayoutDashboard, keywords: 'home main' },
+  { group: 'Overview',       label: 'Action Plan',     description: 'CI/CD improvement plan & target state', path: '/action-plan', icon: Lightbulb,       keywords: 'improvement optimize target state roadmap plan' },
+  { group: 'Overview',       label: 'Infra Gap',       description: 'Infra & security posture vs target', path: '/infra-gap',    icon: Gauge,           keywords: 'gap readiness aws security posture analyze' },
+  { group: 'Overview',       label: 'Provisioning',    description: 'Provision infra via CI dispatch',    path: '/provisioning', icon: Rocket,          keywords: 'provision terraform apply plan dispatch fork' },
+
+  { group: 'Source Control', label: 'Source Control',  description: 'Pull requests & gate automation',    path: '/prs',          icon: GitPullRequest,  keywords: 'pr pull request review merge' },
+  { group: 'Source Control', label: 'Bump PRs',        description: 'Dependency bump PRs',                path: '/bumps',        icon: Boxes,           keywords: 'dependency bump submodule update bot' },
+  { group: 'Source Control', label: 'Issues',          description: 'Open issues & milestones',           path: '/issues',       icon: CircleDot,       keywords: 'bug task ticket milestone' },
+  { group: 'Source Control', label: 'Branch Monitor',  description: 'Branch CI status',                   path: '/branches',     icon: GitBranch,       keywords: 'git branch' },
+
+  { group: 'CI / CD',        label: 'CI Pipeline',     description: 'Workflow runs',                      path: '/builds',       icon: Container,       keywords: 'build ci workflow actions pipeline' },
+  { group: 'CI / CD',        label: 'Release Notes',   description: 'Generate release notes',             path: '/release-notes', icon: FileText,       keywords: 'release notes changelog compare' },
+  { group: 'CI / CD',        label: 'Sanitizers',      description: 'ASAN / TSAN / UBSAN runs',           path: '/sanitizers',   icon: ShieldAlert,     keywords: 'asan tsan ubsan msan lsan sanitizer' },
+  { group: 'CI / CD',        label: 'Registry',        description: 'Container image management',         path: '/registry',     icon: Layers,          keywords: 'docker image container ecr ghcr' },
+  { group: 'CI / CD',        label: 'Nightly Monitor', description: 'Nightly build matrix',               path: '/nightly',      icon: Moon,            keywords: 'nightly cron schedule matrix' },
+  { group: 'CI / CD',        label: 'Image Tags',      description: 'Tag naming & lifecycle',             path: '/tags',         icon: Tag,             keywords: 'tag docker ghcr registry lifecycle' },
+
+  { group: 'Infrastructure', label: 'Infrastructure',  description: 'Self-hosted runners & cluster',      path: '/infra',        icon: Server,          keywords: 'runner gpu server slurm cluster' },
+  { group: 'Infrastructure', label: 'Security',        description: 'Security posture & compliance',      path: '/security',     icon: Shield,          keywords: 'security compliance audit vulnerability' },
+  { group: 'Infrastructure', label: 'Health & DORA',   description: 'DORA metrics & pipeline health',     path: '/health',       icon: ShieldCheck,     keywords: 'dora metrics health slo performance' },
+
+  { group: 'Observability',  label: 'Failures',        description: 'Failure patterns & analytics',       path: '/failures',     icon: Flame,           keywords: 'failure error flaky pattern' },
+  { group: 'Observability',  label: 'Error Monitor',   description: 'Errors, failing runs, diagnostics',  path: '/monitoring',   icon: AlertTriangle,   keywords: 'error diagnostics logs failing' },
+  { group: 'Observability',  label: 'Analytics',       description: 'Commit & build trends',              path: '/analytics',    icon: BarChart2,       keywords: 'analytics charts trends stats' },
+  { group: 'Observability',  label: 'Repo Insights',   description: 'GitHub repository analytics',        path: '/insights',     icon: TrendingUp,      keywords: 'contributors forks pulse commits' },
+  { group: 'Observability',  label: 'Log Monitor',     description: 'Centralised log search',             path: '/logs',         icon: ScrollText,      keywords: 'logs errors warning search' },
+
+  { group: 'Tools',          label: 'Scripts',         description: 'Bash/Python script analysis & Q&A',  path: '/scripts',      icon: BookOpen,        keywords: 'automations bash python yaml scripts bugs' },
+  { group: 'Tools',          label: 'Playground',      description: 'Script analysis playground',         path: '/playground',   icon: Terminal,        keywords: 'playground paste analyze lint' },
 ]
 
 interface CommandPaletteProps {

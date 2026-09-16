@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, X } from 'lucide-react'
 import { getTagsLifecycle, getActiveRepo } from '../lib/api'
 
 // ── Copyable tag pill ────────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
             {REGISTRY_ROWS.map(r => (
               <tr key={r.feature} className="border-t border-border/50 hover:bg-surface-2/30">
                 <td className="py-2 px-3 text-gray-300">{r.feature}</td>
-                <td className="py-2 px-3 text-center">{r.ghcr ? '✅' : '❌'}</td>
+                <td className="py-2 px-3 text-center">{r.ghcr ? <Check size={13} className="inline text-accent-green" /> : <X size={13} className="inline text-accent-red" />}</td>
               </tr>
             ))}
           </tbody>

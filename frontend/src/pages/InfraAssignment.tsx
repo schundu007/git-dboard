@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Server, RefreshCw, XCircle, Terminal, Cpu, Wifi,
+  Server, RefreshCw, XCircle, Terminal, Cpu, Cloud, Wifi,
   WifiOff, Clock, Search, ChevronDown, ChevronRight, ExternalLink,
   GitPullRequest, CheckCircle, AlertTriangle, Zap, Activity, Play,
 } from 'lucide-react'
@@ -207,6 +207,7 @@ function ClusterJobRow({
           <button
             onClick={() => onViewOutput(job)}
             className="p-1 rounded hover:bg-surface-2 text-gray-500 hover:text-accent-blue transition-colors"
+            aria-label="View output"
             title="View output"
           >
             <Terminal size={11} />
@@ -223,6 +224,7 @@ function ClusterJobRow({
             <button
               onClick={() => setConfirming(true)}
               className="p-1 rounded hover:bg-surface-2 text-gray-500 hover:text-red-400 transition-colors"
+              aria-label="Cancel job"
               title="Cancel job"
             >
               <XCircle size={11} />
@@ -425,7 +427,7 @@ export default function InfraAssignment() {
 
       {/* Refresh */}
       <div className="flex justify-end">
-        <button onClick={refresh} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
+        <button onClick={refresh} aria-label="Refresh" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
           <RefreshCw size={13} />
         </button>
       </div>
@@ -925,8 +927,8 @@ function RunnerAnalysisSection({ runners }: { runners: any[] }) {
                         {rec.runner}
                       </span>
                       {rec.gpu
-                        ? <span className="text-[9px] text-yellow-500">🖥️ GPU required</span>
-                        : <span className="text-[9px] text-accent-green">☁️ Hosted runner</span>
+                        ? <span className="inline-flex items-center gap-1 text-[9px] text-yellow-500"><Cpu size={10} /> GPU required</span>
+                        : <span className="inline-flex items-center gap-1 text-[9px] text-accent-green"><Cloud size={10} /> Hosted runner</span>
                       }
                     </div>
                     <p className="text-[10px] text-gray-500 mt-0.5">{rec.reason}</p>

@@ -551,6 +551,7 @@ export default function Overview() {
         <button
           onClick={() => refetch()}
           className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
+          aria-label="Refresh"
           title="Refresh"
         >
           <RefreshCw size={13} />
@@ -563,7 +564,7 @@ export default function Overview() {
 
       {!isLoading && isError && (
         <div className="text-center py-12 text-[12px] text-gray-500">
-          Dashboard data unavailable —{' '}
+          Dashboard data unavailable.{' '}
           <button onClick={() => refetch()} className="text-neutral-300 hover:underline">retry</button>
         </div>
       )}
@@ -576,7 +577,7 @@ export default function Overview() {
               <AlertTriangle size={14} className="text-accent-red flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-accent-red">
-                  Nightly CI in critical state — {nightly.consecutive_failures} consecutive failures
+                  Nightly CI in critical state: {nightly.consecutive_failures} consecutive failures
                 </p>
                 <p className="text-[10px] text-gray-400 mt-0.5">
                   Last run: {nightly.last_date} · {nightly.failed_jobs?.length ?? 0} jobs failing

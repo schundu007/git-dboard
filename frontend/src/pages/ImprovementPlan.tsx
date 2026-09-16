@@ -12,8 +12,10 @@ import { getImprovementPlan, getIssuesAnalysis, getActiveRepo, auditRepo, genera
 import { useRepoSlug } from '../lib/hooks'
 import BusinessReport from '../components/BusinessReport'
 import { TabBar } from '../components/ui/TabBar'
-import { TargetArchSVG } from '../components/CICDArchitectures'
 import LiveCICDPipeline from '../components/LiveCICDPipeline'
+// Imported (not referenced from /public) so Vite emits it under /assets/, the one
+// path the SPA rewrite in vercel.json does NOT swallow into index.html.
+import archTargetImg from '../assets/rocm-ci-architecture.png'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -784,12 +786,20 @@ function CICDArchitectureSection() {
       </div>
       <div
         className={clsx(
-          'p-2 w-full',
-          view === 'current' ? 'bg-[#060c18] min-h-[320px]' : 'bg-[#060c06]',
+          'w-full',
+          view === 'current' ? 'p-2 bg-[#060c18] min-h-[320px]' : 'bg-[#0a0e14] p-5',
         )}
-        style={view === 'current' ? undefined : { aspectRatio: '1000 / 480' }}
       >
-        {view === 'current' ? <LiveCICDPipeline /> : <TargetArchSVG />}
+        {view === 'current'
+          ? <LiveCICDPipeline />
+          : (
+            <img
+              src={archTargetImg}
+              alt="GPU-Stack CI/CD, AMD Target State architecture"
+              className="block mx-auto rounded-lg border border-white/5"
+              style={{ width: '1560px', height: '968px', maxWidth: '100%' }}
+            />
+          )}
       </div>
       <div className="px-4 py-2 border-t border-border flex items-center gap-4">
         {view === 'current' ? (
@@ -800,7 +810,7 @@ function CICDArchitectureSection() {
         ) : (
           <>
             <span className="text-[9px] font-mono text-neutral-600 uppercase tracking-widest">Improvements</span>
-            <span className="text-[10px] text-[#0d9488] font-mono">BuildKit cache · ECR regional · SBOM + cosign · SLSA L3 · Prometheus + Grafana + PagerDuty</span>
+            <span className="text-[10px] text-[#0d9488] font-mono">Multi-arch dep-graph builds · Golden AMIs · SLURM/Slinky HW-in-loop · OIDC to KMS signing · SLSA L3 · GitPulse control plane</span>
           </>
         )}
       </div>

@@ -357,10 +357,10 @@ function AlertRulesSection() {
                           autoFocus
                           className="w-16 bg-surface-3 border border-brand/50 rounded px-1.5 py-0.5 text-[11px] text-white font-mono focus:outline-none"
                         />
-                        <button onClick={() => saveEdit(rule.id)} className="text-accent-green hover:text-accent-green/80 transition-colors">
+                        <button onClick={() => saveEdit(rule.id)} aria-label="Save threshold" className="text-accent-green hover:text-accent-green/80 transition-colors">
                           <Check size={11} />
                         </button>
-                        <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-300 transition-colors">
+                        <button onClick={cancelEdit} aria-label="Cancel" className="text-gray-500 hover:text-gray-300 transition-colors">
                           <X size={11} />
                         </button>
                       </div>
@@ -388,6 +388,7 @@ function AlertRulesSection() {
                   <button
                     onClick={() => startEdit(rule)}
                     className="flex-shrink-0 text-gray-400 hover:text-gray-300 transition-colors p-1 rounded hover:bg-surface-2"
+                    aria-label="Edit threshold"
                     title="Edit threshold"
                   >
                     <Pencil size={11} />
@@ -855,10 +856,10 @@ export default function Settings() {
                               <datalist id={`units-${r.id}`}>
                                 {existingUnits.map(u => <option key={u} value={u} />)}
                               </datalist>
-                              <button onClick={() => unitMut.mutate({ id: r.id, unit: unitDraft.trim() || null })} className="text-accent-green hover:opacity-80">
+                              <button onClick={() => unitMut.mutate({ id: r.id, unit: unitDraft.trim() || null })} aria-label="Save group" className="text-accent-green hover:opacity-80">
                                 <Check size={10} />
                               </button>
-                              <button onClick={() => setEditingUnitId(null)} className="text-gray-500 hover:text-gray-300">
+                              <button onClick={() => setEditingUnitId(null)} aria-label="Cancel" className="text-gray-500 hover:text-gray-300">
                                 <X size={10} />
                               </button>
                             </div>
@@ -880,6 +881,7 @@ export default function Settings() {
                       {caps.workflows?.length > 0 && (
                         <button
                           onClick={() => setExpandedCaps(showCaps ? null : r.id)}
+                          aria-label="Toggle capabilities"
                           className="text-gray-400 hover:text-gray-400 transition-colors"
                         >
                           {showCaps ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -899,6 +901,7 @@ export default function Settings() {
                         <button
                           onClick={() => deleteMut.mutate(r.id)}
                           disabled={deleteMut.isPending}
+                          aria-label="Delete repository"
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-accent-red hover:bg-accent-red/10 transition-colors"
                         >
                           <Trash2 size={12} />

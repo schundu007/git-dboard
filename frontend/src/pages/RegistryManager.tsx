@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Layers, RefreshCw, Copy, Trash2, CheckCircle, Search,
-  ArrowUpDown, Package, AlertTriangle, Check,
+  ArrowUpDown, Package, AlertTriangle, Check, X,
   Tag, Database,
 } from 'lucide-react'
 import { getECRImages, getECRUri, deleteECRImage, getTagsLifecycle, getActiveRepo } from '../lib/api'
@@ -29,6 +29,7 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
         'p-1 rounded hover:bg-surface-2 text-gray-500 hover:text-white transition-colors flex-shrink-0',
         className,
       )}
+      aria-label="Copy"
       title="Copy"
     >
       {copied ? <CheckCircle size={11} className="text-accent-green" /> : <Copy size={11} />}
@@ -136,6 +137,7 @@ function ImageRow({
                 <button
                   onClick={() => setConfirming(true)}
                   className="p-1 rounded hover:bg-surface-2 text-gray-500 hover:text-red-400 transition-colors"
+                  aria-label="Delete tag"
                   title="Delete tag"
                 >
                   <Trash2 size={11} />
@@ -328,7 +330,7 @@ function RegistryComparison({ repoSlug }: { repoSlug: string }) {
             {REGISTRY_ROWS.map(r => (
               <tr key={r.feature} className="border-t border-border/50 hover:bg-surface-2/30">
                 <td className="py-2 px-3 text-gray-300">{r.feature}</td>
-                <td className="py-2 px-3 text-center">{r.ghcr ? '✅' : '❌'}</td>
+                <td className="py-2 px-3 text-center">{r.ghcr ? <Check size={13} className="inline text-accent-green" /> : <X size={13} className="inline text-accent-red" />}</td>
               </tr>
             ))}
           </tbody>
@@ -502,7 +504,7 @@ export default function RegistryManager() {
                 <option value="size_asc">Smallest first</option>
               </select>
             </div>
-            <button onClick={() => refetch()} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
+            <button onClick={() => refetch()} aria-label="Refresh" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
               <RefreshCw size={11} />
             </button>
             <span className="text-[10px] text-gray-400">{displayed.length} / {images.length} images</span>

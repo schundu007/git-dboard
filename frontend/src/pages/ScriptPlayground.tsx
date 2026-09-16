@@ -131,7 +131,7 @@ export default function ScriptPlayground() {
             Script Playground
           </h1>
           <p className="text-[12px] text-neutral-500 mt-0.5">
-            Paste a script or config file — get errors, enhancements, explanation, and a corrected version
+            Paste a script or config file. Get errors, enhancements, explanation, and a corrected version.
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">

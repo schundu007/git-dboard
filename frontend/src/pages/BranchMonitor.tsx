@@ -366,6 +366,7 @@ export function BranchesTab() {
         <button
           onClick={() => refetch()}
           className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors ml-auto"
+          aria-label="Refresh"
           title="Refresh"
         >
           <RefreshCw size={13} />

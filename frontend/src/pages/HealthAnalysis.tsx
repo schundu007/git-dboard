@@ -15,6 +15,7 @@ import {
   getActiveRepo,
 } from '../lib/api'
 import { useRepoSlug } from '../lib/hooks'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -945,13 +946,17 @@ export default function HealthAnalysis() {
 
   return (
     <div className="space-y-8">
-      {/* Actions row */}
-      <div className="flex justify-end">
-        <a href={`https://github.com/${repoSlug}/actions`} target="_blank" rel="noreferrer"
-          className="flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-accent-blue transition-colors">
-          <ExternalLink size={10} /> GitHub Actions
-        </a>
-      </div>
+      <PageHeader
+        title="Health & DORA"
+        subtitle="DORA metrics, SLOs, and deployment health"
+        icon={Activity}
+        actions={
+          <a href={`https://github.com/${repoSlug}/actions`} target="_blank" rel="noreferrer"
+            className="flex items-center gap-1.5 text-[10px] text-gray-500 hover:text-accent-blue transition-colors">
+            <ExternalLink size={10} /> GitHub Actions
+          </a>
+        }
+      />
 
       {/* SLO Tracker */}
       <section className="space-y-5">

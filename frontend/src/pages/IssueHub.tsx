@@ -8,6 +8,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { getIssues, getIssueStats, getIssueLabels, getIssueMilestones, getActiveRepo } from '../lib/api'
 import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 
 // ── Label badge ───────────────────────────────────────────────────────────────
@@ -225,21 +226,25 @@ export default function IssueHub() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {!statsLoading && stats && (
-            <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
-              {stats.open_count} open · {stats.closed_count} closed
-            </span>
-          )}
-        </div>
-        <a href={`https://github.com/${repoSlug}/issues/new/choose`}
-          target="_blank" rel="noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-green text-black font-medium hover:bg-green-400 transition-colors">
-          <AlertCircle size={11} /> New Issue ↗
-        </a>
-      </div>
+      <PageHeader
+        title="Issues"
+        subtitle="Open issues, labels, and milestones"
+        icon={CircleDot}
+        actions={
+          <>
+            {!statsLoading && stats && (
+              <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
+                {stats.open_count} open · {stats.closed_count} closed
+              </span>
+            )}
+            <a href={`https://github.com/${repoSlug}/issues/new/choose`}
+              target="_blank" rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-green text-black font-medium hover:bg-green-400 transition-colors">
+              <AlertCircle size={11} /> New Issue ↗
+            </a>
+          </>
+        }
+      />
 
       {/* Stats */}
       {stats && <StatsBar stats={stats} />}

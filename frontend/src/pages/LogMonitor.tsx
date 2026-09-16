@@ -7,6 +7,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { getLogs, ingestLogs, purgeLogs, getAllRuns } from '../lib/api'
 import type { LogEntry } from '../lib/types'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 
 type TimeRange = 'all' | '1h' | '6h' | '24h' | '7d'
@@ -47,6 +48,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
+      aria-label="Copy"
       className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-surface-3 text-gray-400 hover:text-gray-300 transition-opacity"
     >
       {copied
@@ -349,6 +351,7 @@ export default function LogMonitor() {
 
   return (
     <div className="flex flex-col gap-4">
+      <PageHeader title="Logs" subtitle="Ingested run logs" icon={ScrollText} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -386,6 +389,7 @@ export default function LogMonitor() {
           {hasLogs && (
             <button
               onClick={download}
+              aria-label="Download logs"
               className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
               title="Download current view"
             >
@@ -394,6 +398,7 @@ export default function LogMonitor() {
           )}
           <button
             onClick={() => purge()}
+            aria-label="Purge logs"
             className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-red-400 transition-colors"
             title="Purge logs older than 30 days"
           >
@@ -401,6 +406,7 @@ export default function LogMonitor() {
           </button>
           <button
             onClick={() => refetch()}
+            aria-label="Refresh"
             className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors"
           >
             <RefreshCw size={13} />

@@ -1,6 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  // Icon-tile helpers in HealthAnalysis/ControlPlane/ImprovementPlan build class
+  // names dynamically (`bg-${color}/10`, `text-${color}`), which Tailwind's JIT
+  // can't see — so those tints silently rendered blank. Safelist guarantees them.
+  safelist: [
+    'bg-accent-green/10',  'text-accent-green',
+    'bg-accent-blue/10',   'text-accent-blue',
+    'bg-accent-red/10',    'text-accent-red',
+    'bg-accent-yellow/10', 'text-accent-yellow',
+    'bg-accent-orange/10', 'text-accent-orange',
+    'bg-accent-purple/10', 'text-accent-purple',
+    'bg-accent-teal/10',   'text-accent-teal',
+    'bg-accent-cyan/10',   'text-accent-cyan',
+  ],
   darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {

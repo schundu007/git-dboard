@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { getNightlyMatrix, getNightlyRuns, getNightlyTrend, triggerNightly, getFailureSummary } from '../lib/api'
 import { useRepoSlug, useActiveRepoName } from '../lib/hooks'
 import StatusBadge from '../components/StatusBadge'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 import type { WorkflowRun } from '../lib/types'
 
@@ -95,7 +96,7 @@ function MatrixTable() {
               <span className={cls}>{sym}</span> {label}
             </span>
           ))}
-          <button onClick={() => refetch()} className="p-1 rounded hover:bg-surface-2 text-gray-400 hover:text-white ml-1">
+          <button onClick={() => refetch()} aria-label="Refresh" className="p-1 rounded hover:bg-surface-2 text-gray-400 hover:text-white ml-1">
             <RefreshCw size={11} />
           </button>
         </div>
@@ -399,29 +400,32 @@ export default function NightlyMonitor() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
-            daily-compatibility.yml
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            value={ref}
-            onChange={(e) => setRef(e.target.value)}
-            className="bg-surface-2 border border-border rounded px-2 py-1 text-xs w-24 text-white"
-            placeholder="ref"
-          />
-          <button
-            onClick={() => trigger()}
-            disabled={isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-yellow text-black hover:opacity-90 disabled:opacity-50 font-medium transition-colors"
-          >
-            <Play size={11} />
-            {isPending ? 'Triggering…' : 'Run Now'}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Nightly Builds"
+        subtitle="Nightly matrix, pass/fail by job"
+        icon={Moon}
+        actions={
+          <>
+            <span className="text-xs text-gray-500 bg-surface-2 px-2 py-0.5 rounded-full">
+              daily-compatibility.yml
+            </span>
+            <input
+              value={ref}
+              onChange={(e) => setRef(e.target.value)}
+              className="bg-surface-2 border border-border rounded px-2 py-1 text-xs w-24 text-white"
+              placeholder="ref"
+            />
+            <button
+              onClick={() => trigger()}
+              disabled={isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-accent-yellow text-black hover:opacity-90 disabled:opacity-50 font-medium transition-colors"
+            >
+              <Play size={11} />
+              {isPending ? 'Triggering…' : 'Run Now'}
+            </button>
+          </>
+        }
+      />
 
       <TrendChart />
 

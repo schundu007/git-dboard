@@ -9,6 +9,7 @@ import {
   TrendingUp, Users, GitCommit, Clock, AlertTriangle,
   ExternalLink, RefreshCw, BarChart2, Calendar, Trophy,
   GitMerge, Zap, Star, DollarSign, Lightbulb, Eye, GitFork, Code, AlertCircle,
+  Server, Package, CheckCircle2,
 } from 'lucide-react'
 import { formatDistanceToNow, fromUnixTime, format } from 'date-fns'
 import {
@@ -186,8 +187,8 @@ function BuildTrendChart() {
           <AreaChart data={series}>
             <defs>
               <linearGradient id="successGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#84cc16" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#84cc16" stopOpacity={0} />
+                <stop offset="5%" stopColor="#76b900" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#76b900" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="failGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#ff1b2d" stopOpacity={0.3} />
@@ -198,7 +199,7 @@ function BuildTrendChart() {
             <XAxis dataKey="date" tick={{ fill: '#86939e', fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} />
             <YAxis tick={{ fill: '#86939e', fontSize: 9 }} width={20} />
             <Tooltip {...TOOLTIP_STYLE} />
-            <Area type="monotone" dataKey="success" stroke="#84cc16" fill="url(#successGrad)" strokeWidth={2} name="success" />
+            <Area type="monotone" dataKey="success" stroke="#76b900" fill="url(#successGrad)" strokeWidth={2} name="success" />
             <Area type="monotone" dataKey="failure" stroke="#ff1b2d" fill="url(#failGrad)" strokeWidth={2} name="failure" />
           </AreaChart>
         </ResponsiveContainer>
@@ -284,7 +285,7 @@ function PRVelocityCard() {
     { name: '>3d', value: dist.gt_3d },
   ] : []
 
-  const PIE_COLORS = ['#84cc16', '#0b5cff', '#a1a1aa', '#ff1b2d', '#ff1b2d']
+  const PIE_COLORS = ['#76b900', '#0b5cff', '#a1a1aa', '#ff1b2d', '#ff1b2d']
 
   return (
     <Card>
@@ -336,7 +337,7 @@ function PRVelocityCard() {
                   <XAxis dataKey="week" tick={{ fill: '#86939e', fontSize: 8 }} tickFormatter={(v: string) => v.slice(5)} />
                   <Tooltip {...TOOLTIP_STYLE} />
                   <Bar dataKey="opened" fill="#0b5cff" name="opened" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="merged" fill="#84cc16" name="merged" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="merged" fill="#76b900" name="merged" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -563,7 +564,7 @@ function ErrorPatternsCard() {
 
 // ── User metrics leaderboard ──────────────────────────────────────────────────
 
-const MEDAL: Record<number, string> = { 0: '🥇', 1: '🥈', 2: '🥉' }
+const MEDAL: Record<number, string> = { 0: '1', 1: '2', 2: '3' }
 
 function UserMetricsCard() {
   const slug = useRepoSlug()
@@ -642,7 +643,7 @@ function UserMetricsCard() {
                     )}
                   >
                     <span className="text-[10px] text-gray-500 text-center">
-                      {MEDAL[i] ?? <span className="text-gray-400">{i + 1}</span>}
+                      {MEDAL[i] ? <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-3 text-[10px] font-mono font-semibold text-neutral-300">{MEDAL[i]}</span> : <span className="text-gray-400">{i + 1}</span>}
                     </span>
                     <div className="flex items-center gap-2 min-w-0">
                       {u.avatar ? (
@@ -746,10 +747,10 @@ const RUNNER_RATES: Record<string, number> = {
 }
 
 const COST_TIPS = [
-  { icon: '🖥️', tip: 'Use self-hosted runners for GPU/long jobs — they run at no per-minute cost' },
-  { icon: '📦', tip: 'Cache dependencies (actions/cache) to reduce build time significantly' },
-  { icon: '✅', tip: 'Skip re-running fully-passing jobs with path filters and concurrency groups' },
-  { icon: '⚡', tip: 'Use matrix strategy to parallelize tests instead of sequential job chains' },
+  { icon: Server, tip: 'Use self-hosted runners for GPU/long jobs — they run at no per-minute cost' },
+  { icon: Package, tip: 'Cache dependencies (actions/cache) to reduce build time significantly' },
+  { icon: CheckCircle2, tip: 'Skip re-running fully-passing jobs with path filters and concurrency groups' },
+  { icon: Zap, tip: 'Use matrix strategy to parallelize tests instead of sequential job chains' },
 ]
 
 interface WorkflowCostRow {
@@ -898,7 +899,7 @@ function PipelineCostAnalytics() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {COST_TIPS.map((tip, i) => (
             <div key={i} className="flex items-start gap-2.5 p-3 bg-surface-2 rounded-lg border border-border">
-              <span className="text-base flex-shrink-0">{tip.icon}</span>
+              <tip.icon size={14} className="text-brand flex-shrink-0 mt-0.5" />
               <p className="text-[11px] text-gray-400 leading-relaxed">{tip.tip}</p>
             </div>
           ))}

@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { getAllRuns, getIssues, getIssueStats, getLogs, ingestLogs, purgeLogs } from '../lib/api'
 import type { LogEntry } from '../lib/types'
 import StatusBadge from '../components/StatusBadge'
+import { PageHeader } from '../components/ui'
 import clsx from 'clsx'
 import { useRepoSlug } from '../lib/hooks'
 
@@ -272,6 +273,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
       }}
+      aria-label="Copy"
       className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-surface-3 text-gray-400 hover:text-gray-300 transition-opacity"
     >
       {copied
@@ -597,6 +599,7 @@ export default function ErrorMonitor() {
 
   return (
     <div className="space-y-4">
+      <PageHeader title="Errors & Diagnostics" subtitle="Error patterns, failing runs, diagnostics" icon={Bug} />
       {/* Tab bar */}
       <div className="bg-surface-2 rounded-xl p-1 flex items-center gap-1 w-fit">
         <button
@@ -626,7 +629,7 @@ export default function ErrorMonitor() {
         <>
           {/* Refresh */}
           <div className="flex justify-end">
-            <button onClick={refreshDiagnostics} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
+            <button onClick={refreshDiagnostics} aria-label="Refresh" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
               <RefreshCw size={13} />
             </button>
           </div>
@@ -732,14 +735,14 @@ export default function ErrorMonitor() {
                 wrap
               </button>
               {hasLogs && (
-                <button onClick={download} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
+                <button onClick={download} aria-label="Download logs" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
                   <Download size={13} />
                 </button>
               )}
-              <button onClick={() => purge()} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-red-400 transition-colors">
+              <button onClick={() => purge()} aria-label="Purge logs" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-red-400 transition-colors">
                 <Trash2 size={13} />
               </button>
-              <button onClick={() => refetchLogs()} className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => refetchLogs()} aria-label="Refresh" className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
                 <RefreshCw size={13} />
               </button>
             </div>

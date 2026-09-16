@@ -422,6 +422,7 @@ function RunCard({ run, showWorkflow = false }: { run: WorkflowRun; showWorkflow
               </button>
             )}
             <button onClick={() => rerun()} disabled={rerunning}
+              aria-label="Re-run"
               className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
               <RotateCcw size={12} />
             </button>
@@ -816,6 +817,7 @@ function CachesPanel() {
                   <div key={`${c.id}-acc`} className={clsx('bg-surface-1 px-3 py-2.5 text-[10px]', s.color)}>{s.label}</div>
                   <div key={`${c.id}-del`} className="bg-surface-1 px-3 py-2.5 flex items-center justify-center">
                     <button onClick={() => del(c.id)} disabled={deleting && deletingId === c.id}
+                      aria-label="Delete cache"
                       className="p-1 rounded text-gray-400 hover:text-accent-red hover:bg-accent-red/10 transition-colors disabled:opacity-50">
                       <Trash2 size={11} />
                     </button>
@@ -1592,7 +1594,7 @@ function NightlyMatrixTable() {
             { sym: '—', cls: 'text-gray-400', label: 'no run' }].map(({ sym, cls, label }) => (
             <span key={label} className="flex items-center gap-1"><span className={cls}>{sym}</span> {label}</span>
           ))}
-          <button onClick={() => refetch()} className="p-1 rounded hover:bg-surface-2 text-gray-400 hover:text-white ml-1">
+          <button onClick={() => refetch()} aria-label="Refresh" className="p-1 rounded hover:bg-surface-2 text-gray-400 hover:text-white ml-1">
             <RefreshCw size={11} />
           </button>
         </div>
@@ -1919,6 +1921,7 @@ export default function BuildPipeline() {
                 qc.invalidateQueries({ queryKey: [slug, 'nightly-trend'] })
               }
             }}
+            aria-label="Refresh"
             className="p-1.5 rounded hover:bg-surface-2 text-gray-400 hover:text-white transition-colors">
             <RefreshCw size={13} />
           </button>
