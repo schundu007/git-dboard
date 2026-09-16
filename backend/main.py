@@ -21,13 +21,14 @@ logger = logging.getLogger("auto_ingest")
 
 import os as _os, re as _re
 _extra = [o.strip() for o in _os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
-CORS_ORIGINS = [f"http://localhost:{p}" for p in range(5173, 5180)] + ["http://localhost:3000", "https://gitpulser.vercel.app", "https://www.sudhakarchundu.org", "https://sudhakarchundu.org"] + _extra
-# Allow the Vercel production domain AND dynamic preview subdomains (*.vercel.app).
-CORS_ORIGIN_REGEX = r"https://([a-z0-9-]+\.)*vercel\.app"
+CORS_ORIGINS = [f"http://localhost:{p}" for p in range(5173, 5180)] + ["http://localhost:3000", "https://gitpulser.vercel.app", "https://gitpulse.cariara.com", "https://www.sudhakarchundu.org", "https://sudhakarchundu.org"] + _extra
+# Allow the Vercel production domain AND dynamic preview subdomains (*.vercel.app),
+# plus the custom domain and its subdomains (*.cariara.com).
+CORS_ORIGIN_REGEX = r"https://([a-z0-9-]+\.)*(vercel\.app|cariara\.com)"
 
 
 def _cors_allowed(origin: str) -> bool:
-    return bool(origin) and (origin in CORS_ORIGINS or _re.match(CORS_ORIGIN_REGEX, origin) is not None)
+    return bool(origin) and (origin in CORS_ORIGINS or _re.fullmatch(CORS_ORIGIN_REGEX, origin) is not None)
 
 AUTO_INGEST_INTERVAL = 300  # seconds between polls
 
